@@ -125,9 +125,11 @@ export function DashboardPage() {
         <p className="govuk-body">Loading sitting data…</p>
       ) : reports ? (
         <>
-          <p className="govuk-body govuk-!-margin-bottom-4">
-            Current fiscal year: <strong>{reports.fiscal_year.label}</strong> (Q{reports.fiscal_year.quarter})
-          </p>
+          {reports.fiscal_year && (
+            <p className="govuk-body govuk-!-margin-bottom-4">
+              Current fiscal year: <strong>{reports.fiscal_year.label}</strong> (Q{reports.fiscal_year.quarter})
+            </p>
+          )}
           <div className="govuk-grid-row govuk-!-margin-bottom-6">
             <div className="govuk-grid-column-one-quarter">
               <p className="govuk-body govuk-!-font-weight-bold govuk-!-margin-bottom-1">Completed</p>
@@ -170,7 +172,7 @@ export function DashboardPage() {
             </div>
           </div>
 
-          <DjCancellationSection report={reports.dj_cancellations} />
+          {reports.dj_cancellations && <DjCancellationSection report={reports.dj_cancellations} />}
 
           <div className="govuk-grid-row">
             <div className="govuk-grid-column-one-half">
@@ -261,7 +263,9 @@ export function DashboardPage() {
 
           <CourtRoomTable rows={reports.by_court_room} />
 
-          <ClusterMovementSection report={reports.home_court_movement} />
+          {reports.home_court_movement && (
+            <ClusterMovementSection report={reports.home_court_movement} />
+          )}
 
           <h3 className="govuk-heading-m govuk-!-margin-top-6">Away from home court</h3>
           {reports.away_from_home.length === 0 ? (

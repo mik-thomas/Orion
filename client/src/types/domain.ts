@@ -192,7 +192,7 @@ export interface FiscalYearContext {
 }
 
 export interface ReportsOverview {
-  fiscal_year: FiscalYearContext;
+  fiscal_year?: FiscalYearContext;
   summary: {
     magistrates: number;
     active_magistrates: number;
@@ -209,8 +209,8 @@ export interface ReportsOverview {
   by_court_room: CourtRoomRow[];
   away_from_home: Array<{ magistrate_id: number; magistrate: string; away_sittings: number }>;
   by_sitting_type: Array<{ sitting_type: string; sittings: number }>;
-  dj_cancellations: DjCancellations;
-  home_court_movement: HomeCourtMovementReport;
+  dj_cancellations?: DjCancellations;
+  home_court_movement?: HomeCourtMovementReport;
   login_report: Array<{
     magistrate_id: number;
     magistrate: string;
