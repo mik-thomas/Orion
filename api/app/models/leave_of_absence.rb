@@ -1,4 +1,6 @@
 class LeaveOfAbsence < ApplicationRecord
+  self.table_name = "leaves_of_absence"
+
   belongs_to :magistrate
 
   validates :starts_on, presence: true
