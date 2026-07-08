@@ -1,0 +1,23 @@
+{
+  "name": "orion",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Orion web application",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "start": "node server.js",
+    "dev": "bash scripts/dev.sh",
+    "dev:api": "api/bin/dev-server",
+    "dev:client": "cd client && npm run dev",
+    "db:up": "docker compose up -d db",
+    "db:setup": "cd api && POSTGRES_PORT=5434 bin/rails db:prepare db:seed",
+    "db:migrate": "cd api && POSTGRES_PORT=5434 bin/rails db:migrate",
+    "setup": "bash scripts/setup-local.sh",
+    "check": "bash scripts/check.sh",
+    "deploy": "bash scripts/deploy.sh",
+    "test": "node --test test/*.test.js",
+    "test:client": "cd client && npm run build"
+  }
+}

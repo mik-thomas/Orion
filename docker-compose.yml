@@ -1,0 +1,20 @@
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: orion
+      POSTGRES_PASSWORD: orion
+      POSTGRES_DB: orion_development
+    ports:
+      - "5434:5432"
+    volumes:
+      - orion_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U orion -d orion_development"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  orion_postgres_data:

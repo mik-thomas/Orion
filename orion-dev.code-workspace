@@ -1,0 +1,13 @@
+{
+  "folders": [
+    { "path": ".", "name": "Orion" },
+    { "path": "api", "name": "API" },
+    { "path": "client", "name": "Client" }
+  ],
+  "settings": {
+    "files.exclude": {
+      "**/node_modules": true,
+      "**/.cache": true
+    }
+  }
+}

@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+set -euo pipefail
+cd "$(dirname "$0")/.."
+
+if command -v rbenv >/dev/null 2>&1; then
+  export PATH="$HOME/.rbenv/shims:$HOME/.rbenv/bin:$PATH"
+  eval "$(rbenv init - bash)" 2>/dev/null || true
+elif [[ -d "$HOME/.asdf/shims" ]]; then
+  export PATH="$HOME/.asdf/shims:$PATH"
+fi
+
+export POSTGRES_PORT="${POSTGRES_PORT:-5434}"
+exec bundle exec rails server -p 3001 -b 127.0.0.1 "$@"

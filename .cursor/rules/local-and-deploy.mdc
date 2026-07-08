@@ -1,0 +1,25 @@
+---
+description: Local dev in Cursor and git-based deploy to Railway staging
+alwaysApply: true
+---
+
+# Orion: local work → approved merge → Railway
+
+## Local development
+
+- Run the full stack: `npm run dev` (Postgres docker, API on **3001**, Vite on **5173** with `/api` proxy).
+- First-time setup: `npm run setup`.
+- Before opening a PR or pushing: `npm run check` (matches GitHub CI).
+- Do **not** set `VITE_API_URL` locally unless debugging against a remote API.
+- API env: copy `api/.env` from `api/.env.example`. Client: `client/.env` optional.
+
+## Git and deploy (single path)
+
+- **Only `main`** is deployed. There is no `staging` git branch and no Railway production environment.
+- When the user says **deploy**, run `npm run deploy` (see `deploy-command.mdc`) — do not hand them manual git steps.
+- **Never** use `railway up` for routine releases; deploys come from **git push to `main`** (GitHub → Railway auto-deploy).
+- Railway environment is named `staging` (URLs `*-staging.up.railway.app`) but tracks **`main`** on GitHub.
+
+## When changing hosting or CI
+
+- Staging API URL for client builds: `https://orion-staging.up.railway.app` (`VITE_API_URL` on Railway `orion-client`).

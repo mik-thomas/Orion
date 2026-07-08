@@ -1,0 +1,42 @@
+---
+description: When the user says deploy, ship, or release — run the full staging deploy flow
+alwaysApply: true
+---
+
+# Deploy by default
+
+**Default:** after you finish implementation work that should reach staging, **run the deploy yourself** without waiting for the user to say "deploy". Only skip deploy when the user explicitly says not to (e.g. "don't deploy", "local only", "no ship"), or when there are no code changes to ship.
+
+Also deploy when the user says **deploy**, **ship**, **release**, **push to staging**, or similar (and is not asking a hypothetical question). Do not give them a checklist of manual git/gh steps.
+
+## What to run
+
+From the repo root:
+
+```bash
+npm run deploy -- -m "<short commit message summarizing this session's changes>"
+```
+
+- Derive the message from what you changed in the conversation.
+- If there are **no** uncommitted changes and the branch is already pushed, use `--skip-commit` only when appropriate; otherwise push/PR/merge still runs.
+
+Optional:
+
+- `--no-merge` — only if they want a PR without merging yet.
+- Do **not** use `railway up` for routine deploys.
+
+## After the command
+
+Report in plain language:
+
+1. Whether commit/push/PR/merge succeeded
+2. PR URL (if any)
+3. CI result
+4. Staging URLs: https://orion-client-staging.up.railway.app and https://orion-staging.up.railway.app
+5. If merge failed (e.g. GitHub requires human approval), say what they need to click on GitHub
+
+## Failures
+
+If `gh` is missing or not logged in, run `gh auth login` guidance once, then retry.
+
+If checks fail, fix the code and run deploy again — do not merge broken work.

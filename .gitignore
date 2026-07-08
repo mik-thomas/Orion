@@ -1,0 +1,39 @@
+# Dependencies
+node_modules/
+client/node_modules/
+
+# Rails API
+api/log/*
+api/tmp/*
+!api/log/.keep
+!api/tmp/.keep
+api/tmp/pids/*
+!api/tmp/pids/.keep
+api/.env
+api/config/master.key
+
+# Environment
+.env
+.env.*
+!.env.example
+!api/.env.example
+!client/.env.example
+
+# Build / cache
+dist/
+build/
+.cache/
+client/.cache/
+.turbo/
+
+# Logs
+*.log
+npm-debug.log*
+
+# OS / editor
+.DS_Store
+.idea/
+.vscode/*
+!.vscode/extensions.json
+!.vscode/tasks.json
+!.vscode/launch.json
