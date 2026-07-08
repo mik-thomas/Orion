@@ -1,0 +1,42 @@
+/* Orion branding overrides — extends GOV.UK header with court-service identity */
+
+.orion-header.govuk-header {
+  background-color: #003078;
+  border-bottom: 4px solid #1d70b8;
+}
+
+.orion-header .govuk-header__link:link,
+.orion-header .govuk-header__link:visited,
+.orion-header .govuk-header__link:hover,
+.orion-header .govuk-header__link:active,
+.orion-header .govuk-header__link:focus {
+  color: #ffffff;
+}
+
+.orion-header .govuk-header__link:focus {
+  color: #0b0c0c;
+}
+
+.orion-header__logo {
+  display: inline-block;
+  width: 2.25rem;
+  height: 2.25rem;
+  margin-right: 0.5rem;
+  vertical-align: middle;
+  flex-shrink: 0;
+}
+
+.orion-header__brand {
+  display: inline-flex;
+  align-items: center;
+}
+
+.orion-header .govuk-header__logotype-text {
+  color: #ffffff;
+  font-weight: 700;
+}
+
+.orion-header .govuk-header__product-name {
+  color: #ffffff;
+  opacity: 0.9;
+}

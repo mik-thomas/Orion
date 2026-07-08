@@ -7,14 +7,23 @@ export function GovUkLayout() {
         Skip to main content
       </a>
 
-      <header className="govuk-header" role="banner" data-module="govuk-header">
+      <header className="govuk-header orion-header" role="banner" data-module="govuk-header">
         <div className="govuk-header__container govuk-width-container">
           <div className="govuk-header__logo">
             <Link to="/" className="govuk-header__link govuk-header__link--homepage">
-              <span className="govuk-header__logotype">
-                <span className="govuk-header__logotype-text">Orion</span>
+              <span className="orion-header__brand">
+                <img
+                  src="/orion-logo.svg"
+                  alt=""
+                  className="orion-header__logo"
+                  width={36}
+                  height={36}
+                />
+                <span className="govuk-header__logotype">
+                  <span className="govuk-header__logotype-text">Orion</span>
+                </span>
               </span>
-              <span className="govuk-header__product-name">Magistrates</span>
+              <span className="govuk-header__product-name">Court management</span>
             </Link>
           </div>
           <nav aria-label="Top level navigation" className="govuk-header__navigation">
