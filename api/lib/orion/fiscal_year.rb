@@ -54,7 +54,7 @@ module Orion
     end
 
     def parse_year_label(year_label)
-      match = year_label.to_s.strip.match(/\A(\d{4})[-/](\d{2})\z/)
+      match = year_label.to_s.strip.match(%r{\A(\d{4})[-/](\d{2})\z})
       raise ArgumentError, "Invalid fiscal year label: #{year_label}" unless match
 
       start_year = match[1].to_i
