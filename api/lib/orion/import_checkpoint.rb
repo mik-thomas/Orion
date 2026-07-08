@@ -17,8 +17,6 @@ module Orion
       @data = nil
     end
 
-    attr_reader :data
-
     def exists?
       File.exist?(self.class.path)
     end
@@ -92,6 +90,10 @@ module Orion
 
     def completed_phase_keys
       phases.filter_map { |key, value| key if value["status"] == "completed" }
+    end
+
+    def updated_at
+      data["updated_at"]
     end
 
     private

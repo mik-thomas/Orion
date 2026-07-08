@@ -117,7 +117,7 @@ module Orion
           @checkpoint.load!
           completed = @checkpoint.completed_phase_keys
           @progress.message(
-            "Resuming from checkpoint at #{@checkpoint.data['updated_at']} " \
+            "Resuming from checkpoint at #{@checkpoint.updated_at} " \
             "(#{completed.size} phases complete)"
           )
         else
