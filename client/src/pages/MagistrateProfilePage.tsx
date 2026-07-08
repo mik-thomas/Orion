@@ -3,6 +3,8 @@ import { Link, useParams } from "react-router-dom";
 import { getMagistrate } from "../api/magistrates";
 import { ApiError } from "../api/http";
 import { ComplianceViolations } from "../components/ComplianceViolations";
+import { CourtRoomTable } from "../components/CourtRoomTable";
+import { DjCancellationSection } from "../components/DjCancellationSection";
 import type { MagistrateDetail, Sitting } from "../types/domain";
 
 function sittingStatusLabel(sitting: Sitting) {
@@ -249,6 +251,19 @@ export function MagistrateProfilePage() {
         </div>
       </div>
 
+      {magistrate.sitting_summary.dj_cancellations.total > 0 && (
+        <DjCancellationSection
+          report={magistrate.sitting_summary.dj_cancellations}
+          heading="District Judge cancellations"
+        />
+      )}
+
+      <CourtRoomTable
+        rows={magistrate.sitting_summary.by_court_room}
+        heading="Sittings by court room"
+        emptyMessage="No court room data for this magistrate."
+      />
+
       {magistrate.sittings.length === 0 ? (
         <p className="govuk-body">No individual sittings recorded.</p>
       ) : (
@@ -263,6 +278,9 @@ export function MagistrateProfilePage() {
               </th>
               <th scope="col" className="govuk-table__header">
                 Location
+              </th>
+              <th scope="col" className="govuk-table__header">
+                Court room
               </th>
               <th scope="col" className="govuk-table__header">
                 Type
@@ -284,6 +302,7 @@ export function MagistrateProfilePage() {
                   {sitting.courthouse.name}
                   {sitting.away_from_home_court ? " (away)" : ""}
                 </td>
+                <td className="govuk-table__cell">{sitting.court_room ?? "—"}</td>
                 <td className="govuk-table__cell">{sitting.sitting_type.name}</td>
                 <td className="govuk-table__cell">{sitting.court_type ?? "—"}</td>
                 <td className="govuk-table__cell">

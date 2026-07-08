@@ -46,7 +46,9 @@ module JsonRenderable
         .map { |name, count| { "court_type" => name || "Unknown", "sittings" => count } },
       "by_sitting_type" => sittings.joins(:sitting_type).group("sitting_types.name").count
         .sort_by { |_, count| -count }
-        .map { |name, count| { "sitting_type" => name, "sittings" => count } }
+        .map { |name, count| { "sitting_type" => name, "sittings" => count } },
+      "by_court_room" => Orion::SittingReports.court_room_rows(sittings),
+      "dj_cancellations" => Orion::SittingReports.dj_cancellation_report_for(sittings)
     }
   end
 

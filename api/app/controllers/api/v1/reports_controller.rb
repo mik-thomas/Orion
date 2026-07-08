@@ -13,12 +13,15 @@ module Api
             completed_sittings: Sitting.completed.count,
             vacated_sittings: Sitting.vacated.count,
             cancelled_sittings: Sitting.cancelled.count,
+            cancelled_by_dj: Sitting.cancelled.where(cancellation_category: "district_judge").count,
             sitting_types: SittingType.count
           },
           by_courthouse: courthouse_sitting_counts,
           by_court_type: court_type_counts,
+          by_court_room: Orion::SittingReports.court_room_rows(Sitting.all),
           away_from_home: away_from_home_counts,
           by_sitting_type: sitting_type_counts,
+          dj_cancellations: Orion::SittingReports.dj_cancellation_report,
           login_report: login_report_rows,
           note: "South Yorkshire import: completed, vacated and cancelled sittings from April 2025 to March 2026."
         }

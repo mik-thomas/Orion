@@ -4,6 +4,8 @@ import { getReportsOverview } from "../api/reports";
 import { ApiError } from "../api/http";
 import { MagistrateLink } from "../components/MagistrateLink";
 import { LoginReportTable } from "../components/LoginReportTable";
+import { CourtRoomTable } from "../components/CourtRoomTable";
+import { DjCancellationSection } from "../components/DjCancellationSection";
 import type { MagistrateSummary, ReportsOverview } from "../types/domain";
 
 export function DashboardPage() {
@@ -136,6 +138,10 @@ export function DashboardPage() {
               <p className="govuk-heading-m govuk-!-margin-top-0">{reports.summary.cancelled_sittings}</p>
             </div>
             <div className="govuk-grid-column-one-quarter">
+              <p className="govuk-body govuk-!-font-weight-bold govuk-!-margin-bottom-1">Cancelled by DJ</p>
+              <p className="govuk-heading-m govuk-!-margin-top-0">{reports.summary.cancelled_by_dj}</p>
+            </div>
+            <div className="govuk-grid-column-one-quarter">
               <p className="govuk-body govuk-!-font-weight-bold govuk-!-margin-bottom-1">Magistrates</p>
               <p className="govuk-heading-m govuk-!-margin-top-0">{reports.summary.magistrates}</p>
             </div>
@@ -159,6 +165,8 @@ export function DashboardPage() {
               <p className="govuk-heading-m govuk-!-margin-top-0">{reports.summary.sitting_types}</p>
             </div>
           </div>
+
+          <DjCancellationSection report={reports.dj_cancellations} />
 
           <div className="govuk-grid-row">
             <div className="govuk-grid-column-one-half">
@@ -246,6 +254,8 @@ export function DashboardPage() {
               )}
             </div>
           </div>
+
+          <CourtRoomTable rows={reports.by_court_room} />
 
           <h3 className="govuk-heading-m govuk-!-margin-top-6">Away from home court</h3>
           {reports.away_from_home.length === 0 ? (
