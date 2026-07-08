@@ -77,10 +77,42 @@ export interface MagistrateSummary {
   has_violations: boolean;
 }
 
+export interface Sitting {
+  id: number;
+  magistrate_id: number;
+  courthouse_id: number;
+  sitting_type_id: number;
+  session_date: string;
+  session: string | null;
+  status: "completed" | "vacated" | "cancelled";
+  court_type: string | null;
+  sitting_position: string | null;
+  court_room: string | null;
+  business_type: string | null;
+  cancellation_category: string | null;
+  away_from_home_court: boolean;
+  courthouse: Courthouse;
+  sitting_type: SittingType;
+}
+
+export interface SittingSummary {
+  totals: {
+    completed: number;
+    vacated: number;
+    cancelled: number;
+    cancelled_by_dj: number;
+  };
+  by_location: Array<{ courthouse: string; sittings: number }>;
+  by_court_type: Array<{ court_type: string; sittings: number }>;
+  by_sitting_type: Array<{ sitting_type: string; sittings: number }>;
+}
+
 export interface MagistrateDetail extends MagistrateSummary {
   sitting_locations: Courthouse[];
   leaves_of_absence: LeaveOfAbsence[];
   cases: CaseSummary[];
+  sitting_summary: SittingSummary;
+  sittings: Sitting[];
 }
 
 export interface ReportsOverview {
@@ -96,7 +128,7 @@ export interface ReportsOverview {
   };
   by_courthouse: Array<{ courthouse: string; sittings: number }>;
   by_court_type: Array<{ court_type: string; sittings: number }>;
-  away_from_home: Array<{ magistrate: string; away_sittings: number }>;
+  away_from_home: Array<{ magistrate_id: number; magistrate: string; away_sittings: number }>;
   by_sitting_type: Array<{ sitting_type: string; sittings: number }>;
   note: string;
 }

@@ -22,8 +22,31 @@ module JsonRenderable
     magistrate_summary_json(magistrate).merge(
       "sitting_locations" => magistrate.sitting_locations.map { |c| courthouse_json(c) },
       "leaves_of_absence" => magistrate.leaves_of_absence.ordered.map { |leave| leave_json(leave) },
-      "cases" => magistrate.cases.order(updated_at: :desc).map { |kase| case_json(kase) }
+      "cases" => magistrate.cases.order(updated_at: :desc).map { |kase| case_json(kase) },
+      "sitting_summary" => magistrate_sitting_summary_json(magistrate),
+      "sittings" => magistrate.sittings.ordered.map { |sitting| sitting_json(sitting) }
     )
+  end
+
+  def magistrate_sitting_summary_json(magistrate)
+    sittings = magistrate.sittings
+    {
+      "totals" => {
+        "completed" => sittings.completed.count,
+        "vacated" => sittings.vacated.count,
+        "cancelled" => sittings.cancelled.count,
+        "cancelled_by_dj" => sittings.cancelled.where(cancellation_category: "district_judge").count
+      },
+      "by_location" => sittings.joins(:courthouse).group("courthouses.name").count
+        .sort_by { |_, count| -count }
+        .map { |name, count| { "courthouse" => name, "sittings" => count } },
+      "by_court_type" => sittings.group(:court_type).count
+        .sort_by { |_, count| -count }
+        .map { |name, count| { "court_type" => name || "Unknown", "sittings" => count } },
+      "by_sitting_type" => sittings.joins(:sitting_type).group("sitting_types.name").count
+        .sort_by { |_, count| -count }
+        .map { |name, count| { "sitting_type" => name, "sittings" => count } }
+    }
   end
 
   def leave_json(leave)

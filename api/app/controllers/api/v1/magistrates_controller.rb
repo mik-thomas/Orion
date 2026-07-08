@@ -43,7 +43,10 @@ module Api
       private
 
       def set_magistrate
-        @magistrate = Magistrate.includes(:home_courthouse, :sitting_locations, :leaves_of_absence, :cases).find(params[:id])
+        @magistrate = Magistrate.includes(
+          :home_courthouse, :sitting_locations, :leaves_of_absence, :cases,
+          sittings: %i[courthouse sitting_type magistrate]
+        ).find(params[:id])
       rescue ActiveRecord::RecordNotFound
         render json: { error: "Not found" }, status: :not_found
       end

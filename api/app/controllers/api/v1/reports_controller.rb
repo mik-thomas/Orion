@@ -32,13 +32,17 @@ module Api
       end
 
       def away_from_home_counts
-        Sitting.completed.includes(:magistrate, :courthouse).find_each.with_object(Hash.new(0)) do |sitting, counts|
+        Sitting.completed.includes(:magistrate, :courthouse).find_each.with_object({}) do |sitting, counts|
           next if sitting.magistrate.home_courthouse_id.nil?
           next unless sitting.courthouse_id != sitting.magistrate.home_courthouse_id
 
-          key = sitting.magistrate.full_name
-          counts[key] += 1
-        end.map { |magistrate, count| { magistrate:, away_sittings: count } }.sort_by { |row| -row[:away_sittings] }.first(25)
+          entry = counts[sitting.magistrate_id] ||= {
+            magistrate_id: sitting.magistrate_id,
+            magistrate: sitting.magistrate.full_name,
+            away_sittings: 0
+          }
+          entry[:away_sittings] += 1
+        end.values.sort_by { |row| -row[:away_sittings] }.first(25)
       end
 
       def sitting_type_counts

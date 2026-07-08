@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
 import { listMagistrates } from "../api/magistrates";
 import { ApiError } from "../api/http";
+import { MagistrateLink } from "../components/MagistrateLink";
 import type { MagistrateSummary } from "../types/domain";
 
 export function MagistratesPage() {
@@ -57,9 +57,7 @@ export function MagistratesPage() {
             {magistrates.map((magistrate) => (
               <tr key={magistrate.id} className="govuk-table__row">
                 <td className="govuk-table__cell">
-                  <Link to={`/magistrates/${magistrate.id}`} className="govuk-link">
-                    {magistrate.full_name}
-                  </Link>
+                  <MagistrateLink id={magistrate.id} name={magistrate.full_name} />
                 </td>
                 <td className="govuk-table__cell">{magistrate.home_courthouse?.name ?? "—"}</td>
                 <td className="govuk-table__cell">{magistrate.date_of_appointment ?? "—"}</td>

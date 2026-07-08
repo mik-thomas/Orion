@@ -3,7 +3,24 @@ import { Link, useParams } from "react-router-dom";
 import { getMagistrate } from "../api/magistrates";
 import { ApiError } from "../api/http";
 import { ComplianceViolations } from "../components/ComplianceViolations";
-import type { MagistrateDetail } from "../types/domain";
+import type { MagistrateDetail, Sitting } from "../types/domain";
+
+function sittingStatusLabel(sitting: Sitting) {
+  if (sitting.status === "cancelled" && sitting.cancellation_category === "district_judge") {
+    return "Cancelled by DJ";
+  }
+
+  switch (sitting.status) {
+    case "completed":
+      return "Completed";
+    case "vacated":
+      return "Vacated";
+    case "cancelled":
+      return "Cancelled";
+    default:
+      return sitting.status;
+  }
+}
 
 export function MagistrateProfilePage() {
   const { id } = useParams();
@@ -99,6 +116,164 @@ export function MagistrateProfilePage() {
           </dd>
         </div>
       </dl>
+
+      <h2 className="govuk-heading-l">Sittings</h2>
+      <div className="govuk-grid-row govuk-!-margin-bottom-6">
+        <div className="govuk-grid-column-one-quarter">
+          <p className="govuk-body govuk-!-font-weight-bold govuk-!-margin-bottom-1">Completed</p>
+          <p className="govuk-heading-m govuk-!-margin-top-0">{magistrate.sitting_summary.totals.completed}</p>
+        </div>
+        <div className="govuk-grid-column-one-quarter">
+          <p className="govuk-body govuk-!-font-weight-bold govuk-!-margin-bottom-1">Vacated</p>
+          <p className="govuk-heading-m govuk-!-margin-top-0">{magistrate.sitting_summary.totals.vacated}</p>
+        </div>
+        <div className="govuk-grid-column-one-quarter">
+          <p className="govuk-body govuk-!-font-weight-bold govuk-!-margin-bottom-1">Cancelled</p>
+          <p className="govuk-heading-m govuk-!-margin-top-0">{magistrate.sitting_summary.totals.cancelled}</p>
+        </div>
+        <div className="govuk-grid-column-one-quarter">
+          <p className="govuk-body govuk-!-font-weight-bold govuk-!-margin-bottom-1">Cancelled by DJ</p>
+          <p className="govuk-heading-m govuk-!-margin-top-0">{magistrate.sitting_summary.totals.cancelled_by_dj}</p>
+        </div>
+      </div>
+
+      <div className="govuk-grid-row govuk-!-margin-bottom-6">
+        <div className="govuk-grid-column-one-third">
+          <h3 className="govuk-heading-m">By location</h3>
+          {magistrate.sitting_summary.by_location.length === 0 ? (
+            <p className="govuk-body">No sittings recorded.</p>
+          ) : (
+            <table className="govuk-table">
+              <thead className="govuk-table__head">
+                <tr className="govuk-table__row">
+                  <th scope="col" className="govuk-table__header">
+                    Courthouse
+                  </th>
+                  <th scope="col" className="govuk-table__header">
+                    Sittings
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="govuk-table__body">
+                {magistrate.sitting_summary.by_location.map((row) => (
+                  <tr key={row.courthouse} className="govuk-table__row">
+                    <td className="govuk-table__cell">{row.courthouse}</td>
+                    <td className="govuk-table__cell">{row.sittings}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
+        <div className="govuk-grid-column-one-third">
+          <h3 className="govuk-heading-m">By court type</h3>
+          {magistrate.sitting_summary.by_court_type.length === 0 ? (
+            <p className="govuk-body">No court types recorded.</p>
+          ) : (
+            <table className="govuk-table">
+              <thead className="govuk-table__head">
+                <tr className="govuk-table__row">
+                  <th scope="col" className="govuk-table__header">
+                    Court type
+                  </th>
+                  <th scope="col" className="govuk-table__header">
+                    Sittings
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="govuk-table__body">
+                {magistrate.sitting_summary.by_court_type.map((row) => (
+                  <tr key={row.court_type} className="govuk-table__row">
+                    <td className="govuk-table__cell">{row.court_type}</td>
+                    <td className="govuk-table__cell">{row.sittings}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
+        <div className="govuk-grid-column-one-third">
+          <h3 className="govuk-heading-m">By sitting type</h3>
+          {magistrate.sitting_summary.by_sitting_type.length === 0 ? (
+            <p className="govuk-body">No sitting types recorded.</p>
+          ) : (
+            <table className="govuk-table">
+              <thead className="govuk-table__head">
+                <tr className="govuk-table__row">
+                  <th scope="col" className="govuk-table__header">
+                    Type
+                  </th>
+                  <th scope="col" className="govuk-table__header">
+                    Sittings
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="govuk-table__body">
+                {magistrate.sitting_summary.by_sitting_type.map((row) => (
+                  <tr key={row.sitting_type} className="govuk-table__row">
+                    <td className="govuk-table__cell">{row.sitting_type}</td>
+                    <td className="govuk-table__cell">{row.sittings}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
+      </div>
+
+      {magistrate.sittings.length === 0 ? (
+        <p className="govuk-body">No individual sittings recorded.</p>
+      ) : (
+        <table className="govuk-table">
+          <thead className="govuk-table__head">
+            <tr className="govuk-table__row">
+              <th scope="col" className="govuk-table__header">
+                Date
+              </th>
+              <th scope="col" className="govuk-table__header">
+                Session
+              </th>
+              <th scope="col" className="govuk-table__header">
+                Location
+              </th>
+              <th scope="col" className="govuk-table__header">
+                Type
+              </th>
+              <th scope="col" className="govuk-table__header">
+                Court type
+              </th>
+              <th scope="col" className="govuk-table__header">
+                Status
+              </th>
+            </tr>
+          </thead>
+          <tbody className="govuk-table__body">
+            {magistrate.sittings.map((sitting) => (
+              <tr key={sitting.id} className="govuk-table__row">
+                <td className="govuk-table__cell">{sitting.session_date}</td>
+                <td className="govuk-table__cell">{sitting.session ?? "—"}</td>
+                <td className="govuk-table__cell">
+                  {sitting.courthouse.name}
+                  {sitting.away_from_home_court ? " (away)" : ""}
+                </td>
+                <td className="govuk-table__cell">{sitting.sitting_type.name}</td>
+                <td className="govuk-table__cell">{sitting.court_type ?? "—"}</td>
+                <td className="govuk-table__cell">
+                  {sitting.status === "cancelled" && sitting.cancellation_category === "district_judge" ? (
+                    <strong className="govuk-tag govuk-tag--red">Cancelled by DJ</strong>
+                  ) : sitting.status === "vacated" ? (
+                    <strong className="govuk-tag govuk-tag--yellow">Vacated</strong>
+                  ) : sitting.status === "cancelled" ? (
+                    <strong className="govuk-tag govuk-tag--red">Cancelled</strong>
+                  ) : (
+                    sittingStatusLabel(sitting)
+                  )}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
 
       <h2 className="govuk-heading-l">Leave of absence</h2>
       {magistrate.leaves_of_absence.length === 0 ? (

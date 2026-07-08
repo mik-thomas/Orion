@@ -1,8 +1,8 @@
 import { useEffect, useState, type FormEvent } from "react";
-import { Link } from "react-router-dom";
 import { listMagistrates } from "../api/magistrates";
 import { getReportsOverview } from "../api/reports";
 import { ApiError } from "../api/http";
+import { MagistrateLink } from "../components/MagistrateLink";
 import type { MagistrateSummary, ReportsOverview } from "../types/domain";
 
 export function DashboardPage() {
@@ -104,9 +104,7 @@ export function DashboardPage() {
                 {results.map((magistrate) => (
                   <tr key={magistrate.id} className="govuk-table__row">
                     <td className="govuk-table__cell">
-                      <Link to={`/magistrates/${magistrate.id}`} className="govuk-link">
-                        {magistrate.full_name}
-                      </Link>
+                      <MagistrateLink id={magistrate.id} name={magistrate.full_name} />
                     </td>
                 <td className="govuk-table__cell">{magistrate.home_courthouse?.name ?? "—"}</td>
                 <td className="govuk-table__cell">{magistrate.home_courthouse?.bench ?? "—"}</td>
@@ -265,8 +263,10 @@ export function DashboardPage() {
               </thead>
               <tbody className="govuk-table__body">
                 {reports.away_from_home.map((row) => (
-                  <tr key={row.magistrate} className="govuk-table__row">
-                    <td className="govuk-table__cell">{row.magistrate}</td>
+                  <tr key={row.magistrate_id} className="govuk-table__row">
+                    <td className="govuk-table__cell">
+                      <MagistrateLink id={row.magistrate_id} name={row.magistrate} />
+                    </td>
                     <td className="govuk-table__cell">{row.away_sittings}</td>
                   </tr>
                 ))}
