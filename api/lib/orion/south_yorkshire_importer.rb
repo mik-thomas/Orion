@@ -213,12 +213,23 @@ module Orion
     end
 
     def cache_magistrate!(magistrate)
+      return nil unless magistrate
+
       key = normalize_email(magistrate.email)
-      return magistrate unless key.present?
+      unless key.present?
+        return magistrate if magistrate.persisted? && Magistrate.exists?(magistrate.id)
+
+        return nil
+      end
 
       reloaded = Magistrate.find_by(email: key)
-      @magistrates_by_email[key] = reloaded if reloaded
-      reloaded || magistrate
+      if reloaded
+        @magistrates_by_email[key] = reloaded
+        return reloaded
+      end
+
+      @magistrates_by_email.delete(key)
+      nil
     end
 
     def ensure_magistrate_persisted!(magistrate)
@@ -415,8 +426,12 @@ module Orion
       ActiveRecord::Base.connection_pool.with_connection do
         ActiveRecord::Base.transaction do
           data_rows.each do |row|
-            magistrate = find_magistrate_by_name(row[2], row[0])
-            next unless magistrate
+            magistrate = ensure_magistrate_persisted!(find_magistrate_by_name(row[2], row[0]))
+            unless magistrate
+              stats[:home_courthouses_skipped_no_magistrate] += 1
+              @progress.tick
+              next
+            end
 
             counts = location_columns.values.index_with { 0 }
             location_columns.each { |idx, name| counts[name] += row[idx].to_i }
@@ -448,8 +463,12 @@ module Orion
       ActiveRecord::Base.connection_pool.with_connection do
         ActiveRecord::Base.transaction do
           rows.each do |row|
-            magistrate = find_magistrate(row[9], row[2], row[0])
-            next unless magistrate
+            magistrate = ensure_magistrate_persisted!(find_magistrate(row[9], row[2], row[0]))
+            unless magistrate
+              stats[:leaves_skipped_no_magistrate] += 1
+              @progress.tick
+              next
+            end
 
             if row[4].present? || row[5].present?
               magistrate.update!(
