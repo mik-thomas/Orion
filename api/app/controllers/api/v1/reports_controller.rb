@@ -33,6 +33,7 @@ module Api
           away_from_home: away_from_home_counts(fiscal_sittings),
           by_sitting_type: sitting_type_counts(fiscal_sittings),
           dj_cancellations: Orion::SittingReports.dj_cancellation_report_for(fiscal_sittings),
+          home_court_movement: Orion::SittingReports.home_court_movement_report_for(fiscal_sittings),
           login_report: login_report_rows,
           note: "South Yorkshire import: completed, vacated and cancelled sittings from April 2025 to March 2026 (fiscal year #{Orion::FiscalYear.fiscal_year_label(fiscal_year_start)})."
         }

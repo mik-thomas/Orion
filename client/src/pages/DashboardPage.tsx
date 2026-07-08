@@ -2,6 +2,7 @@ import { useEffect, useState, type FormEvent } from "react";
 import { listMagistrates } from "../api/magistrates";
 import { getReportsOverview } from "../api/reports";
 import { ApiError } from "../api/http";
+import { ClusterMovementSection } from "../components/ClusterMovementSection";
 import { MagistrateLink } from "../components/MagistrateLink";
 import { LoginReportTable } from "../components/LoginReportTable";
 import { CourtRoomTable } from "../components/CourtRoomTable";
@@ -259,6 +260,8 @@ export function DashboardPage() {
           </div>
 
           <CourtRoomTable rows={reports.by_court_room} />
+
+          <ClusterMovementSection report={reports.home_court_movement} />
 
           <h3 className="govuk-heading-m govuk-!-margin-top-6">Away from home court</h3>
           {reports.away_from_home.length === 0 ? (

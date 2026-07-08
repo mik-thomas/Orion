@@ -127,6 +127,53 @@ export interface SittingSummary {
   by_sitting_type: Array<{ sitting_type: string; sittings: number }>;
   by_court_room: CourtRoomRow[];
   dj_cancellations: DjCancellations;
+  home_away: {
+    at_home: number;
+    away: number;
+    total_completed: number;
+    away_pct: number;
+  } | null;
+}
+
+export interface HomeCourtMovementReport {
+  summary: {
+    total_completed_sittings: number;
+    completed_at_home: number;
+    completed_away: number;
+    away_pct: number;
+    magistrates_with_home_court: number;
+    magistrates_missing_home_court: number;
+  };
+  courthouses: string[];
+  by_home_court: Array<{
+    home_courthouse: string;
+    magistrates: number;
+    completed_at_home: number;
+    completed_away: number;
+    completed_total: number;
+    away_pct: number;
+  }>;
+  matrix: Array<{
+    home_courthouse: string;
+    at_home: number;
+    away: number;
+    total: number;
+    cells: Record<string, number>;
+  }>;
+  flags: {
+    zero_completed_sittings: Array<{
+      magistrate_id: number;
+      magistrate: string;
+      home_courthouse: string;
+    }>;
+    sheffield_at_barnsley: Array<{
+      magistrate_id: number;
+      magistrate: string;
+      barnsley_sittings: number;
+      total_completed: number;
+      barnsley_pct: number;
+    }>;
+  };
 }
 
 export interface MagistrateDetail extends MagistrateSummary {
@@ -163,6 +210,7 @@ export interface ReportsOverview {
   away_from_home: Array<{ magistrate_id: number; magistrate: string; away_sittings: number }>;
   by_sitting_type: Array<{ sitting_type: string; sittings: number }>;
   dj_cancellations: DjCancellations;
+  home_court_movement: HomeCourtMovementReport;
   login_report: Array<{
     magistrate_id: number;
     magistrate: string;

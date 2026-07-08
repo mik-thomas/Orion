@@ -167,6 +167,23 @@ export function MagistrateProfilePage() {
         </div>
       </div>
 
+      {magistrate.sitting_summary.home_away && (
+        <div className="govuk-grid-row govuk-!-margin-bottom-6">
+          <div className="govuk-grid-column-one-quarter">
+            <p className="govuk-body govuk-!-font-weight-bold govuk-!-margin-bottom-1">At home court</p>
+            <p className="govuk-heading-m govuk-!-margin-top-0">{magistrate.sitting_summary.home_away.at_home}</p>
+          </div>
+          <div className="govuk-grid-column-one-quarter">
+            <p className="govuk-body govuk-!-font-weight-bold govuk-!-margin-bottom-1">Away from home</p>
+            <p className="govuk-heading-m govuk-!-margin-top-0">{magistrate.sitting_summary.home_away.away}</p>
+          </div>
+          <div className="govuk-grid-column-one-quarter">
+            <p className="govuk-body govuk-!-font-weight-bold govuk-!-margin-bottom-1">Away %</p>
+            <p className="govuk-heading-m govuk-!-margin-top-0">{magistrate.sitting_summary.home_away.away_pct}%</p>
+          </div>
+        </div>
+      )}
+
       <div className="govuk-grid-row govuk-!-margin-bottom-6">
         <div className="govuk-grid-column-one-third">
           <h3 className="govuk-heading-m">By location</h3>

@@ -48,9 +48,26 @@ module JsonRenderable
         .sort_by { |_, count| -count }
         .map { |name, count| { "sitting_type" => name, "sittings" => count } },
       "by_court_room" => Orion::SittingReports.court_room_rows(sittings),
-      "dj_cancellations" => Orion::SittingReports.dj_cancellation_report_for(sittings)
+      "dj_cancellations" => Orion::SittingReports.dj_cancellation_report_for(sittings),
+      "home_away" => magistrate_home_away_json(magistrate, sittings)
     }
   end
+
+  def magistrate_home_away_json(magistrate, sittings)
+    home_id = magistrate.home_courthouse_id
+    return nil if home_id.nil?
+
+    completed = sittings.completed
+    at_home = completed.where(courthouse_id: home_id).count
+    away = completed.where.not(courthouse_id: home_id).count
+    total = at_home + away
+
+    {
+      "at_home" => at_home,
+      "away" => away,
+      "total_completed" => total,
+      "away_pct" => total.positive? ? ((away.to_f / total) * 100).round(1) : 0.0
+    }
 
   def leave_json(leave)
     leave.as_json(only: %i[id magistrate_id starts_on ends_on reason notes]).merge(
