@@ -33,6 +33,7 @@ module Orion
     def import!
       validate_files!
       @progress.message("Starting South Yorkshire import from #{@root}")
+      @progress.message("Importer: #{importer_version}")
 
       with_connection_transaction("clearing existing data") { clear_existing! } if @clear
       with_connection_transaction("seeding courthouses") { seed_canonical_courthouses! }
@@ -81,6 +82,10 @@ module Orion
       @sitting_types_by_name = {}
     end
 
+    def importer_version
+      "2026-07-08c (row-resilient batches)"
+    end
+
     def path_for(key) = @root + FILES.fetch(key)
 
     def open_sheet(key, sheet_name)
@@ -102,11 +107,16 @@ module Orion
 
       rows.each_slice(SITTING_BATCH_SIZE) do |batch|
         ActiveRecord::Base.connection_pool.with_connection do
-          ActiveRecord::Base.transaction do
-            batch.each do |row|
-              yield row
-              @progress.tick
+          batch.each do |row|
+            begin
+              ActiveRecord::Base.transaction(requires_new: true) do
+                yield row
+              end
+            rescue StandardError => e
+              stats[:rows_failed] += 1
+              @progress.warn("#{label}: row skipped — #{e.class}: #{e.message}")
             end
+            @progress.tick
           end
         end
       end
@@ -288,13 +298,13 @@ module Orion
         source
       ])
 
-      sitting = Sitting.find_or_initialize_by(import_key: key)
-      if sitting.persisted?
+      sitting = Sitting.find_by(import_key: key)
+      if sitting
         stats[:sittings_skipped] += 1
         return
       end
 
-      sitting.assign_attributes(
+      sitting = Sitting.new(
         magistrate:,
         courthouse:,
         sitting_type:,
@@ -312,6 +322,8 @@ module Orion
       )
       sitting.save!
       stats[:"sittings_#{status}"] += 1
+    rescue ActiveRecord::RecordNotUnique
+      stats[:sittings_skipped] += 1
     end
 
     def rows_after_header(sheet, header_first_cell)
