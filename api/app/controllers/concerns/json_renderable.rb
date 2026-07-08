@@ -68,6 +68,7 @@ module JsonRenderable
       "total_completed" => total,
       "away_pct" => total.positive? ? ((away.to_f / total) * 100).round(1) : 0.0
     }
+  end
 
   def leave_json(leave)
     leave.as_json(only: %i[id magistrate_id starts_on ends_on reason notes]).merge(
