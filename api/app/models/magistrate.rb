@@ -24,7 +24,7 @@ class Magistrate < ApplicationRecord
   end
 
   def active_leave?
-    current_leaves.exists?
+    current_leaves.any?
   end
 
   def current_leaves

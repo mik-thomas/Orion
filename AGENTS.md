@@ -18,3 +18,16 @@ That script: `npm run check` → commit (if needed) → push → PR → wait for
 Manual equivalent: branch off `main` → PR → CI green → merge → Railway.
 
 Do not use `railway up` for normal releases.
+
+## Railway production (monorepo)
+
+Both services deploy from `main` on GitHub (`mik-thomas/Orion`):
+
+| Service | Root directory | Config file | Dockerfile |
+| --- | --- | --- | --- |
+| `orion` (API) | `/` (repo root) | `/railway.json` | root `Dockerfile` |
+| `orion-client` | `client` | `/client/railway.json` | `client/Dockerfile` |
+
+If `orion-client` builds the Rails API (missing `secret_key_base`), its Railway service is misconfigured — set **Root Directory** to `client` and **Config file** to `/client/railway.json`. `scripts/railway-production-client.sh` sets client env vars.
+
+Production URLs: API https://orion-production-7f9f.up.railway.app — client https://orion-client-production.up.railway.app
