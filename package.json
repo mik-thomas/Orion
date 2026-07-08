@@ -17,6 +17,7 @@
     "setup": "bash scripts/setup-local.sh",
     "check": "bash scripts/check.sh",
     "deploy": "bash scripts/deploy.sh",
+    "import:south-yorkshire": "bash scripts/import-south-yorkshire.sh",
     "test": "node --test test/*.test.js",
     "test:client": "cd client && npm run build"
   }
