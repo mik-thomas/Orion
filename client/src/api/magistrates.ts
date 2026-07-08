@@ -6,6 +6,10 @@ export function listMagistrates(q?: string) {
   return request<MagistrateSummary[]>(`/api/v1/magistrates${params}`);
 }
 
+export function listMagistratesOnLeave() {
+  return request<MagistrateSummary[]>("/api/v1/magistrates/on_leave");
+}
+
 export function getMagistrate(id: number) {
   return request<MagistrateDetail>(`/api/v1/magistrates/${id}`);
 }

@@ -39,6 +39,11 @@ export function GovUkLayout() {
                 </Link>
               </li>
               <li className="govuk-header__navigation-item">
+                <Link to="/magistrates/on-leave" className="govuk-header__link">
+                  On leave
+                </Link>
+              </li>
+              <li className="govuk-header__navigation-item">
                 <Link to="/reports" className="govuk-header__link">
                   Reports
                 </Link>

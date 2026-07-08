@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import { listMagistrates } from "../api/magistrates";
 import { ApiError } from "../api/http";
 import { MagistrateLink } from "../components/MagistrateLink";
@@ -19,7 +20,13 @@ export function MagistratesPage() {
   return (
     <>
       <h1 className="govuk-heading-xl">Magistrates</h1>
-      <p className="govuk-body">Profiles include appointment details, sitting locations, adjustments and leave.</p>
+      <p className="govuk-body">
+        Profiles include appointment details, sitting locations, adjustments and leave.{" "}
+        <Link to="/magistrates/on-leave" className="govuk-link">
+          View magistrates currently on leave
+        </Link>
+        .
+      </p>
 
       {error && (
         <div className="govuk-error-summary" role="alert">

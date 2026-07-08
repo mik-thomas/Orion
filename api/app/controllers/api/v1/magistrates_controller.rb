@@ -8,7 +8,16 @@ module Api
       def index
         magistrates = Magistrate.includes(:home_courthouse, :leaves_of_absence, :sitting_locations)
           .order(:last_name, :first_name)
+        magistrates = magistrates.on_leave if params[:on_leave] == "1"
         magistrates = apply_search(magistrates, params[:q])
+        render json: magistrates.map { |magistrate| magistrate_summary_json(magistrate) }
+      end
+
+      def on_leave
+        magistrates = Magistrate.on_leave
+          .includes(:home_courthouse, :leaves_of_absence)
+          .order(:last_name, :first_name)
+
         render json: magistrates.map { |magistrate| magistrate_summary_json(magistrate) }
       end
 

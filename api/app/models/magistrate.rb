@@ -8,6 +8,10 @@ class Magistrate < ApplicationRecord
   has_many :sittings, dependent: :destroy
   has_many :training_records, dependent: :destroy
 
+  scope :on_leave, lambda {
+    joins(:leaves_of_absence).merge(LeaveOfAbsence.active_on(Date.current)).distinct
+  }
+
   validates :first_name, :last_name, presence: true
   validates :cluster, :bench, presence: true
 
@@ -20,7 +24,20 @@ class Magistrate < ApplicationRecord
   end
 
   def active_leave?
-    leaves_of_absence.active_on(Date.current).exists?
+    current_leaves.exists?
+  end
+
+  def current_leaves
+    today = Date.current
+    active = if leaves_of_absence.loaded?
+               leaves_of_absence.select do |leave|
+                 leave.starts_on <= today && (leave.ends_on.nil? || leave.ends_on >= today)
+               end
+             else
+               leaves_of_absence.active_on(today).to_a
+             end
+
+    active.sort_by(&:starts_on).reverse
   end
 
   def compliance_violations(as_of: Date.current)

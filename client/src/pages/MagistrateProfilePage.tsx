@@ -74,6 +74,14 @@ export function MagistrateProfilePage() {
           </div>
           <div className="govuk-notification-banner__content">
             <p className="govuk-notification-banner__heading">Check current leave dates before assigning sittings.</p>
+            <ul className="govuk-list govuk-!-margin-top-2">
+              {magistrate.current_leaves.map((leave) => (
+                <li key={leave.id}>
+                  {leave.starts_on} to {leave.ends_on ?? "open-ended"}
+                  {leave.reason ? ` — ${leave.reason}` : ""}
+                </li>
+              ))}
+            </ul>
           </div>
         </div>
       )}

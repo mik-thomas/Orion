@@ -9,6 +9,9 @@ Rails.application.routes.draw do
       get "reports/overview", to: "reports#overview"
 
       resources :magistrates do
+        collection do
+          get :on_leave
+        end
         resources :leaves_of_absence, only: %i[index create update destroy]
         resources :cases, only: %i[index create]
       end

@@ -65,6 +65,7 @@ export interface MagistrateSummary {
   reasonable_adjustments: string | null;
   home_courthouse: Courthouse | null;
   active_leave: boolean;
+  current_leaves: LeaveOfAbsence[];
   cluster: string;
   bench: string;
   bench_role: string | null;

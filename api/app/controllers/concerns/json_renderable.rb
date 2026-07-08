@@ -13,12 +13,13 @@ module JsonRenderable
           "full_name" => magistrate.full_name,
           "home_courthouse" => magistrate.home_courthouse && courthouse_json(magistrate.home_courthouse),
           "active_leave" => magistrate.active_leave?,
+          "current_leaves" => magistrate.current_leaves.map { |leave| leave_json(leave) },
           "violations" => violations,
           "has_violations" => violations.any?
         )
       end
 
-  def magistrate_detail_json(magistrate)
+      def magistrate_detail_json(magistrate)
     magistrate_summary_json(magistrate).merge(
       "sitting_locations" => magistrate.sitting_locations.map { |c| courthouse_json(c) },
       "leaves_of_absence" => magistrate.leaves_of_absence.ordered.map { |leave| leave_json(leave) },
