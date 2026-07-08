@@ -23,11 +23,23 @@ module Orion
       File.exist?(self.class.path)
     end
 
+    def synthetic?
+      data["synthetic"] == true
+    end
+
     def load!
       raise "No import checkpoint at #{self.class.path}" unless exists?
 
       @data = JSON.parse(File.read(self.class.path))
       validate!
+      @data
+    end
+
+    def synthesize!
+      @data = new_state
+      @data["synthetic"] = true
+      yield self if block_given?
+      persist!
       @data
     end
 
@@ -39,6 +51,10 @@ module Orion
     def clear!
       FileUtils.rm_f(self.class.path)
       @data = nil
+    end
+
+    def flush!
+      persist! if @data
     end
 
     def phase_complete?(key)

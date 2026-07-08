@@ -18,10 +18,16 @@ Local (default):
   Uses Docker Postgres on localhost:5434 when DATABASE_URL is unset.
   Ensure spreadsheets are in ORION_IMPORT_ROOT (default: ~/Desktop/Courts).
 
-Resume after failure:
+Resume after failure or cancel (Ctrl+C):
   npm run import:south-yorkshire -- --resume
-  Skips table truncation and phases already recorded in api/tmp/orion_import_checkpoint.json.
+  Skips table truncation. Uses api/tmp/orion_import_checkpoint.json when present;
+  if missing, infers completed phases from the database (no truncate, import_key dedup).
   Sitting rows use import_key upserts — re-processing the same batch is safe.
+
+Fresh start (truncates and re-imports everything):
+  npm run import:south-yorkshire
+
+Typical duration: ~5–15 min local, ~15–45 min on Railway (13k sitting rows).
 
 Production:
   Option A — export DATABASE_URL from Railway (orion service, staging), then run:
@@ -77,12 +83,22 @@ else
   export RAILS_ENV="${RAILS_ENV:-development}"
 fi
 
+CHECKPOINT="$ROOT/api/tmp/orion_import_checkpoint.json"
+
 echo ""
 echo "Importing from: $ORION_IMPORT_ROOT"
 if [[ "$RESUME" == "1" ]]; then
   echo "Resume mode: skipping clear and completed import phases"
+  if [[ ! -f "$CHECKPOINT" ]]; then
+    echo ""
+    echo "Note: no checkpoint file at api/tmp/orion_import_checkpoint.json"
+    echo "      Import will infer progress from the database (no truncate)."
+    echo "      Duplicate sittings are skipped via import_key."
+    echo "      For a fresh start instead: npm run import:south-yorkshire"
+    echo ""
+  fi
 fi
-echo "Watch for progress: [Orion Import] [████░░░░] X% (done/total) — step"
+echo "Watch for progress: [Orion Import] [████░░░░] X% (done/total) ~rows/s ETA — step"
 echo ""
 
 cd api

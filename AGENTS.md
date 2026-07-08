@@ -7,7 +7,10 @@ npm run setup   # once: deps, docker Postgres, db:prepare
 npm run dev     # http://localhost:5173 → proxies /api to :3001
 npm run check   # CI parity before PR
 npm run import:south-yorkshire   # import South Yorkshire spreadsheets (ORION_IMPORT_ROOT)
-npm run import:south-yorkshire -- --resume   # continue after a failed import (no truncate)
+npm run import:south-yorkshire -- --resume   # continue after failure/cancel (no truncate; checkpoint optional)
+
+Import ~13k sitting rows. Typical duration: ~5–15 min local Postgres, ~15–45 min on Railway.
+Resume without a checkpoint file infers completed phases from the DB; sittings dedupe by `import_key`.
 ```
 
 ## Ship to staging (Railway)

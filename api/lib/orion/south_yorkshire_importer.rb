@@ -2,13 +2,15 @@
 
 require "digest"
 require "roo"
+require "set"
 
 module Orion
   class SouthYorkshireImporter
     DATA_ROOT = ENV.fetch("ORION_IMPORT_ROOT", "/Users/michaelthomas/Desktop/Courts")
     CLUSTER = Domain::CLUSTER
     BENCH = Domain::BENCH
-    SITTING_BATCH_SIZE = 500
+    SITTING_BATCH_SIZE = 2000
+    INFER_COMPLETE_RATIO = 0.95
 
     FILES = {
       summary: "SITTINGSUMMARY - South Yorkshire 01.04.2025-31.03.2026.xlsx",
@@ -24,8 +26,11 @@ module Orion
       @clear = clear && !resume
       @progress = progress
       @magistrates_by_email = {}
+      @magistrates_by_name = {}
       @courthouses_by_name = {}
       @sitting_types_by_name = {}
+      @known_import_keys = nil
+      @lookup_caches_warm = false
       @stats = Hash.new(0)
       @checkpoint = nil
     end
@@ -35,6 +40,7 @@ module Orion
     def import!
       validate_files!
       setup_checkpoint!
+      register_interrupt_handler!
 
       @progress.message("Starting South Yorkshire import from #{@root}")
       @progress.message("Importer: #{importer_version}")
@@ -92,27 +98,123 @@ module Orion
 
     def reset_import_caches!
       @magistrates_by_email = {}
+      @magistrates_by_name = {}
       @courthouses_by_name = {}
       @sitting_types_by_name = {}
+      @known_import_keys = nil
+      @lookup_caches_warm = false
     end
 
     def importer_version
-      "2026-07-09a (resume checkpoints)"
+      "2026-07-09b (bulk sittings, synthetic resume)"
     end
 
     def setup_checkpoint!
       @checkpoint = ImportCheckpoint.new(root: @root, importer_version: importer_version)
 
       if @resume
-        @checkpoint.load!
-        completed = @checkpoint.completed_phase_keys
-        @progress.message(
-          "Resuming from checkpoint at #{@checkpoint.data['updated_at']} " \
-          "(#{completed.size} phases complete)"
-        )
+        if @checkpoint.exists?
+          @checkpoint.load!
+          completed = @checkpoint.completed_phase_keys
+          @progress.message(
+            "Resuming from checkpoint at #{@checkpoint.data['updated_at']} " \
+            "(#{completed.size} phases complete)"
+          )
+        else
+          @progress.message("No checkpoint file at #{ImportCheckpoint.path}")
+          @progress.message("Inferring progress from database — existing data will not be truncated")
+          @checkpoint.synthesize! { |cp| infer_checkpoint_from_db!(cp) }
+          completed = @checkpoint.completed_phase_keys
+          if completed.any?
+            @progress.message(
+              "Synthetic checkpoint: #{completed.size} phases marked complete " \
+              "(#{completed.join(', ')})"
+            )
+          else
+            @progress.message("No completed phases inferred — running all phases (idempotent)")
+          end
+          @progress.message("Sitting rows deduplicated by import_key — safe to re-run")
+        end
       else
         @checkpoint.reset!
       end
+    end
+
+    def register_interrupt_handler!
+      return unless @resume
+
+      previous = Signal.trap("INT") do
+        @checkpoint&.flush!
+        @progress.message(
+          "Interrupted — checkpoint saved at #{ImportCheckpoint.path}. " \
+          "Resume with: npm run import:south-yorkshire -- --resume"
+        )
+        previous&.call
+        exit 130
+      end
+    end
+
+    def infer_checkpoint_from_db!(checkpoint)
+      checkpoint.complete_phase!("clear_existing")
+
+      if Courthouse.count >= Domain::LOCATIONS.size
+        checkpoint.complete_phase!("seed_canonical_courthouses")
+      end
+
+      overview_total = overview_rows(open_sheet(:summary, "Overview")).size
+      if overview_total.positive? && Magistrate.count >= (overview_total * INFER_COMPLETE_RATIO).ceil
+        checkpoint.complete_phase!("import_magistrates_from_overview")
+      end
+
+      rota_total = open_sheet(:rota, "Northeast Rota Last Login").parse[1..]&.count { |row| row.compact.present? } || 0
+      if rota_total.positive? && Magistrate.where.not(last_login_on: nil).count >= (rota_total * INFER_COMPLETE_RATIO).ceil
+        checkpoint.complete_phase!("enrich_from_rota")
+      end
+
+      if Magistrate.where.not(home_courthouse_id: nil).count >= (overview_total * INFER_COMPLETE_RATIO).ceil
+        checkpoint.complete_phase!("import_home_courthouses")
+      end
+
+      appraisal_total = appraisal_rows(open_sheet(:summary, "Appraisal & LoA")).size
+      if appraisal_total.positive? && LeaveOfAbsence.count >= (appraisal_total * INFER_COMPLETE_RATIO).ceil
+        checkpoint.complete_phase!("import_leaves")
+      end
+
+      infer_sitting_phase_complete!(
+        checkpoint,
+        "import_completed_sittings_populated_by_ra",
+        "populated_by_ra",
+        surname_rows(open_sheet(:vacancy, "Populated by RA")).size
+      )
+      infer_sitting_phase_complete!(
+        checkpoint,
+        "import_completed_sittings_accepted_by_magistrate",
+        "accepted_by_magistrate",
+        surname_rows(open_sheet(:vacancy, "Accepted by Magistrate - in LJA")).size
+      )
+      infer_sitting_phase_complete!(
+        checkpoint,
+        "import_vacated_sittings",
+        "vacated",
+        report_rows(open_sheet(:vacated, "Report")).size
+      )
+      infer_sitting_phase_complete!(
+        checkpoint,
+        "import_cancelled_sittings",
+        "cancelled",
+        report_rows(open_sheet(:cancelled, "Report")).size
+      )
+
+      %w[warm_lookup_caches_1 warm_lookup_caches_2 warm_lookup_caches_3].each do |key|
+        checkpoint.complete_phase!(key) if checkpoint.phase_complete?("import_magistrates_from_overview")
+      end
+    end
+
+    def infer_sitting_phase_complete!(checkpoint, phase_key, source, expected_rows)
+      return unless expected_rows.positive?
+
+      imported = Sitting.where(import_source: source).count
+      checkpoint.complete_phase!(phase_key) if imported >= (expected_rows * INFER_COMPLETE_RATIO).ceil
     end
 
     def phase_complete?(key)
@@ -136,9 +238,7 @@ module Orion
       return skip_phase!(label) if phase_complete?(phase_key)
 
       offset = @resume ? @checkpoint.rows_processed(phase_key) : 0
-      if offset.positive?
-        @progress.message("Resuming #{label} from row #{offset}/#{total}")
-      end
+      @progress.message("Resuming #{label} from row #{offset}/#{total}") if offset.positive?
 
       if offset >= total && total.positive?
         @checkpoint.complete_phase!(phase_key)
@@ -161,10 +261,12 @@ module Orion
 
       rows.each_slice(SITTING_BATCH_SIZE) do |batch|
         ActiveRecord::Base.connection_pool.with_connection do
-          batch.each do |row|
-            ActiveRecord::Base.transaction(requires_new: true) { yield row }
-            processed += 1
-            @progress.tick
+          ActiveRecord::Base.transaction do
+            batch.each do |row|
+              yield row
+              processed += 1
+              @progress.tick
+            end
           end
         end
         @checkpoint.save_progress!(phase_key, processed, total: total)
@@ -188,14 +290,14 @@ module Orion
       @progress.finish_phase
     end
 
-    def with_batched_rows(label, rows, phase_key:)
+    def with_bulk_sitting_import(label, rows, phase_key:, status:, source:, format:)
       total = rows.size
       return skip_phase!(label) if phase_complete?(phase_key)
 
+      ensure_import_keys_loaded!
+
       offset = @resume ? @checkpoint.rows_processed(phase_key) : 0
-      if offset.positive?
-        @progress.message("Resuming #{label} from row #{offset}/#{total}")
-      end
+      @progress.message("Resuming #{label} from row #{offset}/#{total}") if offset.positive?
 
       if offset >= total && total.positive?
         @checkpoint.complete_phase!(phase_key)
@@ -217,24 +319,182 @@ module Orion
       end
 
       rows.each_slice(SITTING_BATCH_SIZE) do |batch|
+        to_insert = []
         ActiveRecord::Base.connection_pool.with_connection do
-          batch.each do |row|
-            begin
-              ActiveRecord::Base.transaction(requires_new: true) do
-                yield row
+          ActiveRecord::Base.transaction do
+            batch.each do |row|
+              begin
+                attrs = build_sitting_attributes(row, status:, source:, format:)
+                to_insert << attrs if attrs
+              rescue StandardError => e
+                stats[:rows_failed] += 1
+                @progress.warn("#{label}: row skipped — #{e.class}: #{e.message}")
               end
-            rescue StandardError => e
-              stats[:rows_failed] += 1
-              @progress.warn("#{label}: row skipped — #{e.class}: #{e.message}")
             end
-            processed += 1
-            @progress.tick
+            bulk_insert_sittings!(to_insert, status) if to_insert.any?
           end
         end
+        processed += batch.size
+        @progress.tick(batch.size)
         @checkpoint.save_progress!(phase_key, processed, total: total)
       end
+
       @checkpoint.complete_phase!(phase_key)
       @progress.finish_phase
+    end
+
+    def ensure_import_keys_loaded!
+      @known_import_keys ||= Set.new(Sitting.where.not(import_key: nil).pluck(:import_key))
+    end
+
+    def bulk_insert_sittings!(records, status)
+      return if records.empty?
+
+      Sitting.upsert_all(
+        records,
+        unique_by: :import_key,
+        on_duplicate: :skip,
+        record_timestamps: true
+      )
+      records.each { |r| @known_import_keys.add(r[:import_key]) }
+      stats[:"sittings_#{status}"] += records.size
+    end
+
+    def build_sitting_attributes(row, status:, source:, format:)
+      magistrate = resolve_magistrate_for_sitting_row!(row, format:)
+      unless magistrate
+        stats[:sittings_skipped_no_magistrate] += 1
+        return nil
+      end
+
+      courthouse_col, sitting_type_col, date_col, session_col = sitting_columns_for(format, status:)
+      courthouse = courthouse_for_existing!(row[courthouse_col])
+      unless courthouse
+        stats[:sittings_skipped_no_courthouse] += 1
+        return nil
+      end
+
+      sitting_type = sitting_type_for!(row[sitting_type_col])
+      session_date = parse_date(row[date_col])
+      unless session_date
+        stats[:"#{status}_skipped_no_date"] += 1
+        return nil
+      end
+
+      extra = sitting_extra_attrs(row, format:, status:)
+      session = normalize_name(row[session_col])
+      venue_name = extra.delete(:venue_name)
+      position = extra.delete(:position)
+      panel = extra.delete(:panel)
+
+      key = import_key_for([
+        magistrate.email,
+        session_date,
+        session,
+        courthouse.name,
+        venue_name,
+        sitting_type.name,
+        panel,
+        position,
+        status,
+        source
+      ])
+
+      if @known_import_keys.include?(key)
+        stats[:sittings_skipped] += 1
+        return nil
+      end
+
+      {
+        magistrate_id: magistrate.id,
+        courthouse_id: courthouse.id,
+        sitting_type_id: sitting_type.id,
+        session_date: session_date,
+        session: session,
+        status: status,
+        import_source: source,
+        import_key: key,
+        vacated: status == "vacated",
+        court_type: extra[:court_type] || Domain.court_type_for_panel(panel),
+        sitting_position: extra[:sitting_position] || Domain.normalize_position(position),
+        court_room: extra[:court_room] || Domain.normalize_court_room(venue_name),
+        cancellation_category: extra[:cancellation_category],
+        venue_name: venue_name,
+        position: position,
+        panel: panel,
+        business_type: extra[:business_type],
+        justice_area: extra[:justice_area],
+        ad_hoc: extra[:ad_hoc] || false,
+        event_at: extra[:event_at],
+        notice_days: extra[:notice_days],
+        action_reason: extra[:action_reason],
+        action_by: extra[:action_by]
+      }
+    end
+
+    def sitting_columns_for(format, status: nil)
+      case format
+      when :vacancy
+        [12, 8, 5, 6]
+      when :report
+        if status == "cancelled"
+          [10, 8, 4, 5]
+        else
+          [7, 16, 4, 5]
+        end
+      else
+        raise "Unknown sitting row format: #{format}"
+      end
+    end
+
+    def sitting_extra_attrs(row, format:, status:)
+      case format
+      when :vacancy
+        {
+          venue_name: normalize_name(row[11]),
+          position: normalize_name(row[10]),
+          panel: normalize_name(row[9]),
+          business_type: normalize_name(row[8]),
+          justice_area: normalize_name(row[4]),
+          ad_hoc: normalize_name(row[13]) == "Y"
+        }
+      when :report
+        if status == "cancelled"
+          {
+            venue_name: normalize_name(row[9]),
+            position: normalize_name(row[7]),
+            panel: normalize_name(row[6]),
+            business_type: normalize_name(row[8]),
+            justice_area: normalize_name(row[11]),
+            event_at: parse_datetime(row[12]),
+            notice_days: row[13].to_i,
+            action_reason: normalize_name(row[14]),
+            action_by: normalize_name(row[15]),
+            cancellation_category: Domain.cancellation_category(
+              reason: normalize_name(row[14]),
+              action_by: normalize_name(row[15])
+            )
+          }
+        else
+          {
+            venue_name: normalize_name(row[6]),
+            position: normalize_name(row[15]),
+            panel: normalize_name(row[14]),
+            business_type: normalize_name(row[16]),
+            justice_area: normalize_name(row[8]),
+            event_at: parse_datetime(row[9]),
+            notice_days: row[10].to_i,
+            action_reason: normalize_name(row[11]),
+            action_by: normalize_name(row[12]),
+            cancellation_category: Domain.cancellation_category(
+              reason: normalize_name(row[11]),
+              action_by: normalize_name(row[12])
+            )
+          }
+        end
+      else
+        raise "Unknown sitting row format: #{format}"
+      end
     end
 
     def normalize_email(value)
@@ -243,6 +503,18 @@ module Orion
 
     def normalize_name(value)
       value.to_s.strip.presence
+    end
+
+    def name_key(first_name, surname)
+      "#{first_name.to_s.strip.downcase}|#{surname.to_s.strip.downcase}"
+    end
+
+    def index_magistrate_by_name!(magistrate)
+      fn = magistrate.first_name
+      sn = magistrate.last_name
+      return if fn.blank? || sn.blank?
+
+      @magistrates_by_name[name_key(fn, sn)] = magistrate
     end
 
     def parse_date(value)
@@ -270,9 +542,7 @@ module Orion
       return nil if canonical.blank?
 
       cached = @courthouses_by_name[canonical]
-      if cached&.persisted? && Courthouse.exists?(cached.id)
-        return cached
-      end
+      return cached if cached&.persisted?
 
       @courthouses_by_name[canonical] = Courthouse.find_or_create_by!(name: canonical) do |c|
         c.cluster = CLUSTER
@@ -285,9 +555,7 @@ module Orion
       return nil if canonical.blank?
 
       cached = @courthouses_by_name[canonical]
-      if cached&.persisted? && Courthouse.exists?(cached.id)
-        return cached
-      end
+      return cached if cached&.persisted?
 
       courthouse = Courthouse.find_by(name: canonical)
       @courthouses_by_name[canonical] = courthouse if courthouse
@@ -300,8 +568,11 @@ module Orion
       @checkpoint.start_phase!(phase_key)
       @progress.phase("warming lookup caches", 1)
       @magistrates_by_email = Magistrate.all.index_by { |m| m.email.to_s.downcase }
+      @magistrates_by_name = {}
+      @magistrates_by_email.each_value { |m| index_magistrate_by_name!(m) }
       @courthouses_by_name = Courthouse.all.index_by(&:name)
       @sitting_types_by_name = SittingType.all.index_by(&:name)
+      @lookup_caches_warm = true
       @progress.finish_phase
       @checkpoint.complete_phase!(phase_key)
     end
@@ -313,7 +584,7 @@ module Orion
     def sitting_type_for!(business_type)
       clean = normalize_name(business_type) || "General"
       cached = @sitting_types_by_name[clean]
-      return cached if cached&.persisted? && SittingType.exists?(cached.id)
+      return cached if cached&.persisted?
 
       @sitting_types_by_name[clean] = SittingType.find_or_create_by!(name: clean) do |type|
         type.code = clean.parameterize(separator: "_")
@@ -326,7 +597,7 @@ module Orion
 
       cached = @magistrates_by_email[key]
       record = ensure_magistrate_persisted!(cached) if cached
-      record ||= Magistrate.find_by(email: key)
+      record ||= Magistrate.find_by(email: key) unless @lookup_caches_warm
       record ||= Magistrate.new(email: key)
       record.assign_attributes(
         title: title || record.title,
@@ -337,7 +608,7 @@ module Orion
         **attrs
       )
       record.save!
-      cache_magistrate!(record)
+      cache_magistrate!(record, trust: true)
     end
 
     def db_lookup
@@ -347,108 +618,73 @@ module Orion
       yield
     end
 
-    def cache_magistrate!(magistrate)
+    def cache_magistrate!(magistrate, trust: false)
       return nil unless magistrate
 
       key = normalize_email(magistrate.email)
-      unless key.present?
-        return magistrate if magistrate.persisted? && db_lookup { Magistrate.exists?(magistrate.id) }
+      if key.present?
+        if trust || magistrate.persisted?
+          @magistrates_by_email[key] = magistrate
+          index_magistrate_by_name!(magistrate)
+          return magistrate
+        end
 
+        reloaded = db_lookup { Magistrate.find_by(email: key) }
+        if reloaded
+          @magistrates_by_email[key] = reloaded
+          index_magistrate_by_name!(reloaded)
+          return reloaded
+        end
+
+        @magistrates_by_email.delete(key)
         return nil
       end
 
-      reloaded = db_lookup { Magistrate.find_by(email: key) }
-      if reloaded
-        @magistrates_by_email[key] = reloaded
-        return reloaded
+      magistrate if magistrate.persisted?
+    end
+
+    def cached_magistrate?(magistrate)
+      key = normalize_email(magistrate.email)
+      if key.present?
+        return @magistrates_by_email[key]&.id == magistrate.id
       end
 
-      @magistrates_by_email.delete(key)
-      nil
+      @magistrates_by_name[name_key(magistrate.first_name, magistrate.last_name)]&.id == magistrate.id
     end
 
     def ensure_magistrate_persisted!(magistrate)
       return nil unless magistrate
 
-      if magistrate.persisted? && Magistrate.exists?(magistrate.id)
-        cache_magistrate!(magistrate)
-        return magistrate
+      if magistrate.persisted?
+        return magistrate if cached_magistrate?(magistrate) || @lookup_caches_warm
+
+        return cache_magistrate!(magistrate, trust: true)
       end
 
       key = normalize_email(magistrate.email)
       if key.present?
-        reloaded = Magistrate.find_by(email: key)
-        return cache_magistrate!(reloaded) if reloaded
+        cached = @magistrates_by_email[key]
+        return cached if cached&.persisted?
+
+        reloaded = Magistrate.find_by(email: key) unless @lookup_caches_warm
+        return cache_magistrate!(reloaded, trust: true) if reloaded
       end
+
+      by_name = @magistrates_by_name[name_key(magistrate.first_name, magistrate.last_name)]
+      return by_name if by_name&.persisted?
+
+      return nil if @lookup_caches_warm
 
       reloaded = Magistrate.where(
         "LOWER(first_name) = ? AND LOWER(last_name) = ?",
         magistrate.first_name.to_s.strip.downcase,
         magistrate.last_name.to_s.strip.downcase
       ).first
-      cache_magistrate!(reloaded) if reloaded
+      cache_magistrate!(reloaded, trust: true) if reloaded
     end
 
     def import_key_for(parts)
       Digest::SHA256.hexdigest(parts.map { |p| p.to_s.strip.downcase }.join("|"))
-    end
-
-    def upsert_sitting!(magistrate:, courthouse:, sitting_type:, session_date:, session:, status:, source:, **attrs)
-      magistrate = ensure_magistrate_persisted!(magistrate)
-      unless magistrate
-        stats[:sittings_skipped_no_magistrate] += 1
-        return
-      end
-
-      unless courthouse&.persisted? && Courthouse.exists?(courthouse.id)
-        stats[:sittings_skipped_no_courthouse] += 1
-        return
-      end
-
-      unless sitting_type&.persisted? && SittingType.exists?(sitting_type.id)
-        stats[:sittings_skipped_no_sitting_type] += 1
-        return
-      end
-
-      key = import_key_for([
-        magistrate.email,
-        session_date,
-        session,
-        courthouse.name,
-        attrs[:venue_name],
-        sitting_type.name,
-        attrs[:panel],
-        attrs[:position],
-        status,
-        source
-      ])
-
-      sitting = Sitting.find_by(import_key: key)
-      if sitting
-        stats[:sittings_skipped] += 1
-        return
-      end
-
-      sitting = Sitting.new(
-        magistrate:,
-        courthouse:,
-        sitting_type:,
-        session_date:,
-        session:,
-        status:,
-        import_source: source,
-        import_key: key,
-        vacated: status == "vacated",
-        court_type: attrs[:court_type] || Domain.court_type_for_panel(attrs[:panel]),
-        sitting_position: attrs[:sitting_position] || Domain.normalize_position(attrs[:position]),
-        court_room: attrs[:court_room] || Domain.normalize_court_room(attrs[:venue_name]),
-        cancellation_category: attrs[:cancellation_category],
-        **attrs.except(:court_type, :sitting_position, :court_room, :cancellation_category)
-      )
-      sitting.save!
-      stats[:"sittings_#{status}"] += 1
-    rescue ActiveRecord::RecordNotUnique
-      stats[:sittings_skipped] += 1
     end
 
     def rows_after_header(sheet, header_first_cell)
@@ -626,150 +862,35 @@ module Orion
       end
 
       rows = surname_rows(sheet)
-      with_batched_rows(label, rows, phase_key:) do |row|
-        magistrate = resolve_magistrate_for_sitting_row!(row, format: :vacancy)
-        unless magistrate
-          stats[:sittings_skipped_no_magistrate] += 1
-          @progress.warn(
-            "completed sitting row skipped — no magistrate for #{row[0]} #{row[2]}"
-          )
-          next
-        end
-
-        courthouse = courthouse_for_existing!(row[12])
-        unless courthouse
-          stats[:sittings_skipped_no_courthouse] += 1
-          @progress.warn("completed sitting row skipped — missing courthouse for #{row[0]} #{row[2]}")
-          next
-        end
-
-        sitting_type = sitting_type_for!(row[8])
-        session_date = parse_date(row[5])
-        unless session_date
-          stats[:sittings_skipped_no_date] += 1
-          next
-        end
-
-        upsert_sitting!(
-          magistrate:,
-          courthouse:,
-          sitting_type:,
-          session_date:,
-          session: normalize_name(row[6]),
-          status: "completed",
-          source:,
-          venue_name: normalize_name(row[11]),
-          position: normalize_name(row[10]),
-          panel: normalize_name(row[9]),
-          business_type: normalize_name(row[8]),
-          justice_area: normalize_name(row[4]),
-          ad_hoc: normalize_name(row[13]) == "Y"
-        )
-      end
+      with_bulk_sitting_import(label, rows, phase_key:, status: "completed", source:, format: :vacancy)
     end
 
     def import_vacated_sittings!
       sheet = open_sheet(:vacated, "Report")
       rows = report_rows(sheet)
 
-      with_batched_rows("importing vacated sittings", rows, phase_key: "import_vacated_sittings") do |row|
-        magistrate = resolve_magistrate_for_sitting_row!(row, format: :report)
-        unless magistrate
-          stats[:sittings_skipped_no_magistrate] += 1
-          @progress.warn("vacated row skipped — no magistrate for #{row[1]} #{row[2]} (#{row[3]})")
-          next
-        end
-
-        courthouse = courthouse_for_existing!(row[7])
-        unless courthouse
-          stats[:sittings_skipped_no_courthouse] += 1
-          @progress.warn("vacated row skipped — missing courthouse for #{row[1]} #{row[2]}")
-          next
-        end
-
-        sitting_type = sitting_type_for!(row[16])
-        session_date = parse_date(row[4])
-        unless session_date
-          stats[:vacated_skipped_no_date] += 1
-          @progress.warn("vacated row skipped — invalid session date for #{row[1]} #{row[2]} on #{row[4].inspect}")
-          next
-        end
-
-        upsert_sitting!(
-          magistrate:,
-          courthouse:,
-          sitting_type:,
-          session_date:,
-          session: normalize_name(row[5]),
-          status: "vacated",
-          source: "vacated",
-          venue_name: normalize_name(row[6]),
-          position: normalize_name(row[15]),
-          panel: normalize_name(row[14]),
-          business_type: normalize_name(row[16]),
-          justice_area: normalize_name(row[8]),
-          event_at: parse_datetime(row[9]),
-          notice_days: row[10].to_i,
-          action_reason: normalize_name(row[11]),
-          action_by: normalize_name(row[12]),
-          cancellation_category: Domain.cancellation_category(
-            reason: normalize_name(row[11]),
-            action_by: normalize_name(row[12])
-          )
-        )
-      end
+      with_bulk_sitting_import(
+        "importing vacated sittings",
+        rows,
+        phase_key: "import_vacated_sittings",
+        status: "vacated",
+        source: "vacated",
+        format: :report
+      )
     end
 
     def import_cancelled_sittings!
       sheet = open_sheet(:cancelled, "Report")
       rows = report_rows(sheet)
 
-      with_batched_rows("importing cancelled sittings", rows, phase_key: "import_cancelled_sittings") do |row|
-        magistrate = resolve_magistrate_for_sitting_row!(row, format: :report)
-        unless magistrate
-          stats[:sittings_skipped_no_magistrate] += 1
-          @progress.warn("cancelled row skipped — no magistrate for #{row[1]} #{row[2]} (#{row[3]})")
-          next
-        end
-
-        courthouse = courthouse_for_existing!(row[10])
-        unless courthouse
-          stats[:sittings_skipped_no_courthouse] += 1
-          @progress.warn("cancelled row skipped — missing courthouse for #{row[1]} #{row[2]}")
-          next
-        end
-
-        sitting_type = sitting_type_for!(row[8])
-        session_date = parse_date(row[4])
-        unless session_date
-          stats[:cancelled_skipped_no_date] += 1
-          @progress.warn("cancelled row skipped — invalid session date for #{row[1]} #{row[2]} on #{row[4].inspect}")
-          next
-        end
-
-        upsert_sitting!(
-          magistrate:,
-          courthouse:,
-          sitting_type:,
-          session_date:,
-          session: normalize_name(row[5]),
-          status: "cancelled",
-          source: "cancelled",
-          venue_name: normalize_name(row[9]),
-          position: normalize_name(row[7]),
-          panel: normalize_name(row[6]),
-          business_type: normalize_name(row[8]),
-          justice_area: normalize_name(row[11]),
-          event_at: parse_datetime(row[12]),
-          notice_days: row[13].to_i,
-          action_reason: normalize_name(row[14]),
-          action_by: normalize_name(row[15]),
-          cancellation_category: Domain.cancellation_category(
-            reason: normalize_name(row[14]),
-            action_by: normalize_name(row[15])
-          )
-        )
-      end
+      with_bulk_sitting_import(
+        "importing cancelled sittings",
+        rows,
+        phase_key: "import_cancelled_sittings",
+        status: "cancelled",
+        source: "cancelled",
+        format: :report
+      )
     end
 
     def infer_email(first_name, surname)
@@ -816,8 +937,8 @@ module Orion
       return nil if email.blank?
 
       key = normalize_email(email)
-      existing = Magistrate.find_by(email: key)
-      return cache_magistrate!(existing) if existing
+      existing = @magistrates_by_email[key] || (@lookup_caches_warm ? nil : Magistrate.find_by(email: key))
+      return cache_magistrate!(existing, trust: true) if existing
 
       magistrate = magistrate_for!(
         email:,
@@ -851,7 +972,7 @@ module Orion
       key = normalize_email(email)
       return false if key.blank?
 
-      @magistrates_by_email.key?(key) || Magistrate.exists?(email: key)
+      @magistrates_by_email.key?(key) || (!@lookup_caches_warm && Magistrate.exists?(email: key))
     end
 
     def find_magistrate(email, first_name, surname)
@@ -861,8 +982,10 @@ module Orion
         verified = ensure_magistrate_persisted!(cached)
         return verified if verified
 
-        db_record = Magistrate.find_by(email: key)
-        return cache_magistrate!(db_record) if db_record
+        unless @lookup_caches_warm
+          db_record = Magistrate.find_by(email: key)
+          return cache_magistrate!(db_record, trust: true) if db_record
+        end
       end
 
       find_magistrate_by_name(first_name, surname)
@@ -873,18 +996,18 @@ module Orion
       sn = surname.to_s.strip
       return nil if fn.blank? || sn.blank?
 
-      cached = @magistrates_by_email.values.find do |m|
-        m.first_name.casecmp?(fn) && m.last_name.casecmp?(sn)
-      end
+      cached = @magistrates_by_name[name_key(fn, sn)]
       verified = ensure_magistrate_persisted!(cached)
       return verified if verified
+
+      return nil if @lookup_caches_warm
 
       db_record = Magistrate.where(
         "LOWER(first_name) = ? AND LOWER(last_name) = ?",
         fn.downcase,
         sn.downcase
       ).first
-      cache_magistrate!(db_record) if db_record
+      cache_magistrate!(db_record, trust: true) if db_record
     end
   end
 end
