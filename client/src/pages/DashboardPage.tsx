@@ -124,6 +124,9 @@ export function DashboardPage() {
         <p className="govuk-body">Loading sitting data…</p>
       ) : reports ? (
         <>
+          <p className="govuk-body govuk-!-margin-bottom-4">
+            Current fiscal year: <strong>{reports.fiscal_year.label}</strong> (Q{reports.fiscal_year.quarter})
+          </p>
           <div className="govuk-grid-row govuk-!-margin-bottom-6">
             <div className="govuk-grid-column-one-quarter">
               <p className="govuk-body govuk-!-font-weight-bold govuk-!-margin-bottom-1">Completed</p>

@@ -24,7 +24,7 @@ export function ComplianceViolations({ violations, heading = "Compliance issues"
                 {violation.actual != null && violation.required != null ? (
                   <span className="govuk-body-s govuk-!-display-block govuk-!-margin-top-1">
                     Recorded: {violation.actual} — required: {violation.required}
-                    {violation.year ? ` (${violation.year})` : ""}
+                    {violation.year ? ` (fiscal year ${violation.year})` : ""}
                   </span>
                 ) : null}
               </li>

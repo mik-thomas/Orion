@@ -52,7 +52,7 @@ export interface ComplianceViolation {
   message: string;
   actual: number | null;
   required: number | null;
-  year: number | null;
+  year: string | null;
 }
 
 export interface MagistrateSummary {
@@ -137,7 +137,15 @@ export interface MagistrateDetail extends MagistrateSummary {
   sittings: Sitting[];
 }
 
+export interface FiscalYearContext {
+  label: string;
+  quarter: number;
+  start_date: string;
+  end_date: string;
+}
+
 export interface ReportsOverview {
+  fiscal_year: FiscalYearContext;
   summary: {
     magistrates: number;
     active_magistrates: number;

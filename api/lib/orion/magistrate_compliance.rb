@@ -30,27 +30,28 @@ module Orion
         message: "Left before completing the expected #{Domain::MIN_TENURE_YEARS}-year term of service",
         actual: served_years,
         required: Domain::MIN_TENURE_YEARS,
-        year: magistrate.leaving_date.year
+        year: FiscalYear.fiscal_year_label_for(magistrate.leaving_date)
       )
     end
 
     def court_day_violations(magistrate, as_of:)
-      year = evaluation_year(magistrate, as_of:)
-      window = evaluation_window(magistrate, year, as_of:)
+      fiscal_year = evaluation_fiscal_year(magistrate, as_of:)
+      window = evaluation_window(magistrate, fiscal_year, as_of:)
       return [] if window.nil?
 
       start_date, end_date = window
+      year_label = FiscalYear.fiscal_year_label(fiscal_year)
       sittings = magistrate.sittings.completed.where(session_date: start_date..end_date)
       typed_sittings = sittings.where.not(court_type: nil)
       court_types = typed_sittings.distinct.pluck(:court_type).compact.sort
 
       if court_types.size > 1
-        multi_court_violations(typed_sittings, court_types, year, start_date, end_date)
+        multi_court_violations(typed_sittings, court_types, year_label, start_date, end_date)
       else
         relevant_sittings = court_types.empty? ? sittings : typed_sittings
         return [] if relevant_sittings.none? && !should_expect_court_days?(magistrate, start_date, end_date)
 
-        single_court_violations(relevant_sittings, year, start_date, end_date)
+        single_court_violations(relevant_sittings, year_label, start_date, end_date)
       end
     end
 
@@ -60,7 +61,7 @@ module Orion
       magistrate.active? || magistrate.leaving_date&.between?(start_date, end_date)
     end
 
-    def multi_court_violations(sittings, court_types, year, start_date, end_date)
+    def multi_court_violations(sittings, court_types, year_label, start_date, end_date)
       violations = []
       total_half_days = half_days_for_sittings(sittings)
       required_total = prorated_minimum(Domain::MULTI_COURT_MIN_HALF_DAYS_TOTAL, start_date, end_date)
@@ -69,10 +70,10 @@ module Orion
         violations << Violation.new(
           code: "insufficient_multi_court_days",
           severity: "red",
-          message: "Sitting in #{court_types.join(', ')} courts requires at least #{Domain::MULTI_COURT_MIN_HALF_DAYS_TOTAL} half days per year",
+          message: "Sitting in #{court_types.join(', ')} courts requires at least #{Domain::MULTI_COURT_MIN_HALF_DAYS_TOTAL} half days per fiscal year",
           actual: total_half_days,
           required: required_total,
-          year:
+          year: year_label
         )
       end
 
@@ -86,17 +87,17 @@ module Orion
         violations << Violation.new(
           code: "insufficient_court_type_days",
           severity: "red",
-          message: "Requires at least #{Domain::MULTI_COURT_MIN_HALF_DAYS_PER_TYPE} half days per year in #{court_type} court",
+          message: "Requires at least #{Domain::MULTI_COURT_MIN_HALF_DAYS_PER_TYPE} half days per fiscal year in #{court_type} court",
           actual: type_half_days,
           required: required_per_type,
-          year:
+          year: year_label
         )
       end
 
       violations
     end
 
-    def single_court_violations(sittings, year, start_date, end_date)
+    def single_court_violations(sittings, year_label, start_date, end_date)
       half_days = half_days_for_sittings(sittings)
       required_half_days = prorated_minimum(Domain::MIN_HALF_DAYS_PER_YEAR, start_date, end_date)
       return [] if half_days >= required_half_days
@@ -105,10 +106,10 @@ module Orion
         Violation.new(
           code: "insufficient_court_days",
           severity: "red",
-          message: "Requires at least #{Domain::MIN_FULL_DAYS_PER_YEAR} full days (#{Domain::MIN_HALF_DAYS_PER_YEAR} half days) per year in court",
+          message: "Requires at least #{Domain::MIN_FULL_DAYS_PER_YEAR} full days (#{Domain::MIN_HALF_DAYS_PER_YEAR} half days) per fiscal year in court",
           actual: half_days,
           required: required_half_days,
-          year:
+          year: year_label
         )
       ]
     end
@@ -127,30 +128,31 @@ module Orion
             message: "Requires about #{Domain::TRAINING_DAYS_FIRST_TWO_YEARS} days of training in the first #{Domain::INITIAL_TRAINING_YEARS} years",
             actual: training_days,
             required: Domain::TRAINING_DAYS_FIRST_TWO_YEARS,
-            year: first_two_years_end.year
+            year: FiscalYear.fiscal_year_label_for(first_two_years_end)
           )
         end
       end
 
-      year = evaluation_year(magistrate, as_of:)
-      annual_start_year = appointment.year + Domain::INITIAL_TRAINING_YEARS
-      return violations if year < annual_start_year
+      fiscal_year = evaluation_fiscal_year(magistrate, as_of:)
+      fy_start, fy_end = FiscalYear.fiscal_year_dates(fiscal_year)
+      return violations if fy_end < first_two_years_end
 
-      year_start = [Date.new(year, 1, 1), appointment].max
-      period_end = [Date.new(year, 12, 31), as_of, magistrate.leaving_date].compact.min
-      return violations if year_start > period_end
+      period_start = [fy_start, appointment].max
+      period_end = [fy_end, as_of, magistrate.leaving_date].compact.min
+      annual_period_start = [period_start, first_two_years_end].max
+      return violations if annual_period_start > period_end
 
-      days = training_days_in_range(magistrate, year_start, period_end)
-      required = prorated_minimum(Domain::MIN_TRAINING_DAYS_PER_YEAR_AFTER, year_start, period_end)
+      days = training_days_in_range(magistrate, annual_period_start, period_end)
+      required = prorated_minimum(Domain::MIN_TRAINING_DAYS_PER_YEAR_AFTER, annual_period_start, period_end)
       return violations if days >= required
 
       violations << Violation.new(
         code: "insufficient_annual_training",
         severity: "red",
-        message: "Requires about #{Domain::MIN_TRAINING_DAYS_PER_YEAR_AFTER}–#{Domain::MAX_TRAINING_DAYS_PER_YEAR_AFTER} days of training per year after the first #{Domain::INITIAL_TRAINING_YEARS} years",
+        message: "Requires about #{Domain::MIN_TRAINING_DAYS_PER_YEAR_AFTER}–#{Domain::MAX_TRAINING_DAYS_PER_YEAR_AFTER} days of training per fiscal year after the first #{Domain::INITIAL_TRAINING_YEARS} years",
         actual: days,
         required:,
-        year:
+        year: FiscalYear.fiscal_year_label(fiscal_year)
       )
 
       violations
@@ -190,30 +192,30 @@ module Orion
         .to_f
     end
 
-    def evaluation_year(magistrate, as_of:)
-      if magistrate.leaving_date.present? && magistrate.leaving_date < as_of
-        magistrate.leaving_date.year
-      else
-        as_of.year
-      end
+    def evaluation_fiscal_year(magistrate, as_of:)
+      eval_date = if magistrate.leaving_date.present? && magistrate.leaving_date < as_of
+                    magistrate.leaving_date
+                  else
+                    as_of
+                  end
+      FiscalYear.fiscal_year_for(eval_date)
     end
 
-    def evaluation_window(magistrate, year, as_of:)
-      start_date = Date.new(year, 1, 1)
-      end_date = [Date.new(year, 12, 31), as_of, magistrate.leaving_date].compact.min
-
-      start_date = [start_date, magistrate.date_of_appointment].max
+    def evaluation_window(magistrate, fiscal_year, as_of:)
+      fy_start, fy_end = FiscalYear.fiscal_year_dates(fiscal_year)
+      start_date = [fy_start, magistrate.date_of_appointment].max
+      end_date = [fy_end, as_of, magistrate.leaving_date].compact.min
       return nil if end_date < start_date
 
       [start_date, end_date]
     end
 
     def prorated_minimum(minimum, start_date, end_date)
-      return minimum if end_date >= Date.new(start_date.year, 12, 31)
+      fiscal_year = FiscalYear.fiscal_year_for(start_date)
+      fy_start, fy_end = FiscalYear.fiscal_year_dates(fiscal_year)
+      return minimum if end_date >= fy_end
 
-      year_start = Date.new(start_date.year, 1, 1)
-      year_end = Date.new(start_date.year, 12, 31)
-      total_days = (year_end - year_start + 1).to_f
+      total_days = (fy_end - fy_start + 1).to_f
       eligible_days = (end_date - start_date + 1).to_f
       [(minimum * eligible_days / total_days).ceil, 1].max
     end
