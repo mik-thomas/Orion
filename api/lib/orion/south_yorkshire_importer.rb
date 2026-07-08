@@ -411,7 +411,9 @@ module Orion
               last_name: row[3],
               active: true,
               cluster: CLUSTER,
-              bench: BENCH
+              bench: BENCH,
+              last_login_on: parse_date(row[5]),
+              days_since_login: row[6].present? ? row[6].to_i : nil
             )
             stats[:rota_magistrates] += 1
             @progress.tick

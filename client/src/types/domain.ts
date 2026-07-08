@@ -74,6 +74,8 @@ export interface MagistrateSummary {
   presiding_justice: boolean;
   last_appraisal_on: string | null;
   last_appraiser: string | null;
+  last_login_on: string | null;
+  days_since_login: number | null;
   violations: ComplianceViolation[];
   has_violations: boolean;
 }
@@ -131,5 +133,11 @@ export interface ReportsOverview {
   by_court_type: Array<{ court_type: string; sittings: number }>;
   away_from_home: Array<{ magistrate_id: number; magistrate: string; away_sittings: number }>;
   by_sitting_type: Array<{ sitting_type: string; sittings: number }>;
+  login_report: Array<{
+    magistrate_id: number;
+    magistrate: string;
+    last_login_on: string;
+    days_since_login: number | null;
+  }>;
   note: string;
 }

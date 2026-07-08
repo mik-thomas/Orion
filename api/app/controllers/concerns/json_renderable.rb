@@ -9,7 +9,7 @@ module JsonRenderable
 
       def magistrate_summary_json(magistrate)
         violations = magistrate.compliance_violations
-        magistrate.as_json(only: %i[id first_name last_name email date_of_appointment reasonable_adjustments title frequency sitting_pattern leaving_date leaving_reason active cluster bench bench_role appraisal_status appraisal_cycle_years presiding_justice last_appraisal_on last_appraiser]).merge(
+        magistrate.as_json(only: %i[id first_name last_name email date_of_appointment reasonable_adjustments title frequency sitting_pattern leaving_date leaving_reason active cluster bench bench_role appraisal_status appraisal_cycle_years presiding_justice last_appraisal_on last_appraiser last_login_on days_since_login]).merge(
           "full_name" => magistrate.full_name,
           "home_courthouse" => magistrate.home_courthouse && courthouse_json(magistrate.home_courthouse),
           "active_leave" => magistrate.active_leave?,

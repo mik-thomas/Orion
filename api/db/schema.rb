@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2026_07_09_010000) do
+ActiveRecord::Schema[7.1].define(version: 2026_07_09_020000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
 
@@ -80,6 +80,8 @@ ActiveRecord::Schema[7.1].define(version: 2026_07_09_010000) do
     t.boolean "presiding_justice", default: false, null: false
     t.date "last_appraisal_on"
     t.string "last_appraiser"
+    t.date "last_login_on"
+    t.integer "days_since_login"
     t.index ["email"], name: "index_magistrates_on_email"
     t.index ["home_courthouse_id"], name: "index_magistrates_on_home_courthouse_id"
     t.index ["last_name", "first_name"], name: "index_magistrates_on_last_name_and_first_name"

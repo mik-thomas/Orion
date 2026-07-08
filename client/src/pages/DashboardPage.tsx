@@ -3,6 +3,7 @@ import { listMagistrates } from "../api/magistrates";
 import { getReportsOverview } from "../api/reports";
 import { ApiError } from "../api/http";
 import { MagistrateLink } from "../components/MagistrateLink";
+import { LoginReportTable } from "../components/LoginReportTable";
 import type { MagistrateSummary, ReportsOverview } from "../types/domain";
 
 export function DashboardPage() {
@@ -273,6 +274,8 @@ export function DashboardPage() {
               </tbody>
             </table>
           )}
+
+          <LoginReportTable rows={reports.login_report} />
 
           <p className="govuk-body govuk-!-margin-top-6 govuk-hint">{reports.note}</p>
         </>

@@ -19,6 +19,7 @@ module Api
           by_court_type: court_type_counts,
           away_from_home: away_from_home_counts,
           by_sitting_type: sitting_type_counts,
+          login_report: login_report_rows,
           note: "South Yorkshire import: completed, vacated and cancelled sittings from April 2025 to March 2026."
         }
       end
@@ -55,6 +56,19 @@ module Api
         Sitting.group(:court_type).count
           .sort_by { |_, count| -count }
           .map { |name, count| { court_type: name || "Unknown", sittings: count } }
+      end
+
+      def login_report_rows
+        Magistrate.where.not(last_login_on: nil)
+          .order(days_since_login: :desc, last_login_on: :asc)
+          .map do |magistrate|
+            {
+              magistrate_id: magistrate.id,
+              magistrate: magistrate.full_name,
+              last_login_on: magistrate.last_login_on,
+              days_since_login: magistrate.days_since_login
+            }
+          end
       end
     end
   end

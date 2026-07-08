@@ -123,6 +123,26 @@ export function MagistrateProfilePage() {
             {magistrate.reasonable_adjustments ?? "None recorded"}
           </dd>
         </div>
+        <div className="govuk-summary-list__row">
+          <dt className="govuk-summary-list__key">Last rota login</dt>
+          <dd className="govuk-summary-list__value">{magistrate.last_login_on ?? "Not recorded"}</dd>
+        </div>
+        <div className="govuk-summary-list__row">
+          <dt className="govuk-summary-list__key">Days since login</dt>
+          <dd className="govuk-summary-list__value">
+            {magistrate.days_since_login != null ? (
+              magistrate.days_since_login >= 90 ? (
+                <strong className="govuk-tag govuk-tag--red">{magistrate.days_since_login}</strong>
+              ) : magistrate.days_since_login >= 30 ? (
+                <strong className="govuk-tag govuk-tag--yellow">{magistrate.days_since_login}</strong>
+              ) : (
+                magistrate.days_since_login
+              )
+            ) : (
+              "Not recorded"
+            )}
+          </dd>
+        </div>
       </dl>
 
       <h2 className="govuk-heading-l">Sittings</h2>
