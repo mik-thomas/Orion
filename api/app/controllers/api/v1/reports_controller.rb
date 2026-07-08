@@ -2,44 +2,63 @@ module Api
   module V1
     class ReportsController < ApplicationController
       include JsonRenderable
+      include PeriodFilterable
+
+      before_action :validate_period_filter!, only: :overview
 
       def overview
-        as_of = Date.current
-        fiscal_year_start = Orion::FiscalYear.current_fiscal_year(as_of:)
-        fiscal_year_start_date, fiscal_year_end_date = Orion::FiscalYear.fiscal_year_dates(fiscal_year_start)
-        fiscal_sittings = Sitting.where(session_date: fiscal_year_start_date..fiscal_year_end_date)
+        filter = period_filter
+        scoped_sittings = filtered_sittings
 
         render json: {
-          fiscal_year: {
-            label: Orion::FiscalYear.fiscal_year_label(fiscal_year_start),
-            quarter: Orion::FiscalYear.current_fiscal_quarter(as_of:),
-            start_date: fiscal_year_start_date,
-            end_date: fiscal_year_end_date
-          },
+          period: period_filter_json,
+          available_fiscal_years: available_fiscal_years_json,
+          fiscal_year: fiscal_year_context_json(filter),
           summary: {
             magistrates: Magistrate.count,
             active_magistrates: Magistrate.where(active: true).count,
             courthouses: Courthouse.count,
-            sittings: fiscal_sittings.count,
-            completed_sittings: fiscal_sittings.completed.count,
-            vacated_sittings: fiscal_sittings.vacated.count,
-            cancelled_sittings: fiscal_sittings.cancelled.count,
-            cancelled_by_dj: fiscal_sittings.cancelled.where(cancellation_category: "district_judge").count,
+            sittings: scoped_sittings.count,
+            completed_sittings: scoped_sittings.completed.count,
+            vacated_sittings: scoped_sittings.vacated.count,
+            cancelled_sittings: scoped_sittings.cancelled.count,
+            cancelled_by_dj: scoped_sittings.cancelled.where(cancellation_category: "district_judge").count,
             sitting_types: SittingType.count
           },
-          by_courthouse: courthouse_sitting_counts(fiscal_sittings),
-          by_court_type: court_type_counts(fiscal_sittings),
-          by_court_room: Orion::SittingReports.court_room_rows(fiscal_sittings),
-          away_from_home: away_from_home_counts(fiscal_sittings),
-          by_sitting_type: sitting_type_counts(fiscal_sittings),
-          dj_cancellations: Orion::SittingReports.dj_cancellation_report_for(fiscal_sittings),
-          home_court_movement: Orion::SittingReports.home_court_movement_report_for(fiscal_sittings),
+          by_courthouse: courthouse_sitting_counts(scoped_sittings),
+          by_court_type: court_type_counts(scoped_sittings),
+          by_court_room: Orion::SittingReports.court_room_rows(scoped_sittings),
+          away_from_home: away_from_home_counts(scoped_sittings),
+          by_sitting_type: sitting_type_counts(scoped_sittings),
+          dj_cancellations: Orion::SittingReports.dj_cancellation_report_for(scoped_sittings),
+          home_court_movement: Orion::SittingReports.home_court_movement_report_for(scoped_sittings),
           login_report: login_report_rows,
-          note: "South Yorkshire import: completed, vacated and cancelled sittings from April 2025 to March 2026 (fiscal year #{Orion::FiscalYear.fiscal_year_label(fiscal_year_start)})."
+          note: overview_note(filter)
         }
       end
 
       private
+
+      def fiscal_year_context_json(filter)
+        return nil if filter.all_time?
+
+        {
+          label: filter.fiscal_year_label,
+          quarter: filter.quarter,
+          start_date: filter.start_date,
+          end_date: filter.end_date
+        }
+      end
+
+      def overview_note(filter)
+        if filter.all_time?
+          "All imported sitting data (no date filter)."
+        elsif filter.quarter
+          "Sittings from #{filter.start_date} to #{filter.end_date} (#{filter.label})."
+        else
+          "Sittings for fiscal year #{filter.fiscal_year_label} (#{filter.start_date} to #{filter.end_date})."
+        end
+      end
 
       def courthouse_sitting_counts(scope)
         scope.joins(:courthouse).group("courthouses.name").count

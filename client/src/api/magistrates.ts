@@ -10,8 +10,9 @@ export function listMagistratesOnLeave() {
   return request<MagistrateSummary[]>("/api/v1/magistrates/on_leave");
 }
 
-export function getMagistrate(id: number) {
-  return request<MagistrateDetail>(`/api/v1/magistrates/${id}`);
+export function getMagistrate(id: number, query = "") {
+  const suffix = query ? (query.startsWith("?") ? query : `?${query}`) : "";
+  return request<MagistrateDetail>(`/api/v1/magistrates/${id}${suffix}`);
 }
 
 export function listCourthouses() {

@@ -19,18 +19,48 @@ module JsonRenderable
         )
       end
 
-      def magistrate_detail_json(magistrate)
-    magistrate_summary_json(magistrate).merge(
-      "sitting_locations" => magistrate.sitting_locations.map { |c| courthouse_json(c) },
-      "leaves_of_absence" => magistrate.leaves_of_absence.ordered.map { |leave| leave_json(leave) },
-      "cases" => magistrate.cases.order(updated_at: :desc).map { |kase| case_json(kase) },
-      "sitting_summary" => magistrate_sitting_summary_json(magistrate),
-      "sittings" => magistrate.sittings.ordered.map { |sitting| sitting_json(sitting) }
-    )
-  end
+      def magistrate_detail_json(magistrate, period: nil)
+        summary = magistrate_summary_json(magistrate)
+        if period
+          violations = compliance_violations_for_period(magistrate, period)
+          summary = summary.merge(
+            "violations" => violations,
+            "has_violations" => violations.any?
+          )
+        end
 
-  def magistrate_sitting_summary_json(magistrate)
-    sittings = magistrate.sittings
+        filtered_sittings = sittings_for_period(magistrate, period)
+
+        summary.merge(
+          "period" => period && period_filter_json,
+          "available_fiscal_years" => period ? available_fiscal_years_json : nil,
+          "sitting_locations" => magistrate.sitting_locations.map { |c| courthouse_json(c) },
+          "leaves_of_absence" => magistrate.leaves_of_absence.ordered.map { |leave| leave_json(leave) },
+          "cases" => magistrate.cases.order(updated_at: :desc).map { |kase| case_json(kase) },
+          "sitting_summary" => magistrate_sitting_summary_json(magistrate, sittings: filtered_sittings),
+          "sittings" => filtered_sittings.ordered.map { |sitting| sitting_json(sitting) }
+        )
+      end
+
+      def compliance_violations_for_period(magistrate, period)
+        if period.all_time?
+          magistrate.compliance_violations
+        elsif period.fiscal_year_label.present?
+          magistrate.compliance_violations(fiscal_year_label: period.fiscal_year_label)
+        else
+          magistrate.compliance_violations
+        end
+      end
+
+      def sittings_for_period(magistrate, period)
+        scope = magistrate.sittings
+        return scope unless period
+        return scope if period.all_time?
+
+        scope.where(session_date: period.start_date..period.end_date)
+      end
+
+  def magistrate_sitting_summary_json(magistrate, sittings: magistrate.sittings)
     {
       "totals" => {
         "completed" => sittings.completed.count,

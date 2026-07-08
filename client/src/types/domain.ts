@@ -177,6 +177,8 @@ export interface HomeCourtMovementReport {
 }
 
 export interface MagistrateDetail extends MagistrateSummary {
+  period?: PeriodFilterContext;
+  available_fiscal_years?: string[];
   sitting_locations: Courthouse[];
   leaves_of_absence: LeaveOfAbsence[];
   cases: CaseSummary[];
@@ -186,13 +188,24 @@ export interface MagistrateDetail extends MagistrateSummary {
 
 export interface FiscalYearContext {
   label: string;
-  quarter: number;
+  quarter: number | null;
   start_date: string;
   end_date: string;
 }
 
+export interface PeriodFilterContext {
+  mode: "all" | "fiscal_year";
+  fiscal_year: string | null;
+  quarter: string | null;
+  label: string;
+  start_date: string | null;
+  end_date: string | null;
+}
+
 export interface ReportsOverview {
-  fiscal_year?: FiscalYearContext;
+  period: PeriodFilterContext;
+  available_fiscal_years: string[];
+  fiscal_year?: FiscalYearContext | null;
   summary: {
     magistrates: number;
     active_magistrates: number;

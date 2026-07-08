@@ -6,13 +6,13 @@ module Orion
 
     module_function
 
-    def violations_for(magistrate, as_of: Date.current)
+    def violations_for(magistrate, as_of: Date.current, fiscal_year_label: nil)
       return [] unless magistrate.date_of_appointment.present?
 
       results = []
       results << tenure_violation(magistrate)
-      results.concat(court_day_violations(magistrate, as_of:))
-      results.concat(training_violations(magistrate, as_of:))
+      results.concat(court_day_violations(magistrate, as_of:, fiscal_year_label:))
+      results.concat(training_violations(magistrate, as_of:, fiscal_year_label:))
       results.compact.map { |violation| violation.to_h.transform_keys(&:to_s) }
     end
 
@@ -34,8 +34,12 @@ module Orion
       )
     end
 
-    def court_day_violations(magistrate, as_of:)
-      fiscal_year = evaluation_fiscal_year(magistrate, as_of:)
+    def court_day_violations(magistrate, as_of:, fiscal_year_label: nil)
+      fiscal_year = if fiscal_year_label.present?
+                      FiscalYear.parse_year_label(fiscal_year_label)
+                    else
+                      evaluation_fiscal_year(magistrate, as_of:)
+                    end
       window = evaluation_window(magistrate, fiscal_year, as_of:)
       return [] if window.nil?
 
@@ -114,12 +118,12 @@ module Orion
       ]
     end
 
-    def training_violations(magistrate, as_of:)
+    def training_violations(magistrate, as_of:, fiscal_year_label: nil)
       violations = []
       appointment = magistrate.date_of_appointment
       first_two_years_end = appointment + Domain::INITIAL_TRAINING_YEARS.years
 
-      if as_of >= first_two_years_end
+      if fiscal_year_label.blank? && as_of >= first_two_years_end
         training_days = training_days_in_range(magistrate, appointment, first_two_years_end - 1.day)
         if training_days < Domain::TRAINING_DAYS_FIRST_TWO_YEARS
           violations << Violation.new(
@@ -133,7 +137,11 @@ module Orion
         end
       end
 
-      fiscal_year = evaluation_fiscal_year(magistrate, as_of:)
+      fiscal_year = if fiscal_year_label.present?
+                      FiscalYear.parse_year_label(fiscal_year_label)
+                    else
+                      evaluation_fiscal_year(magistrate, as_of:)
+                    end
       fy_start, fy_end = FiscalYear.fiscal_year_dates(fiscal_year)
       return violations if fy_end < first_two_years_end
 

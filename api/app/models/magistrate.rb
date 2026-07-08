@@ -40,7 +40,7 @@ class Magistrate < ApplicationRecord
     active.sort_by(&:starts_on).reverse
   end
 
-  def compliance_violations(as_of: Date.current)
-    Orion::MagistrateCompliance.violations_for(self, as_of:)
+  def compliance_violations(as_of: Date.current, fiscal_year_label: nil)
+    Orion::MagistrateCompliance.violations_for(self, as_of:, fiscal_year_label:)
   end
 end

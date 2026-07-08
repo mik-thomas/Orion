@@ -2,8 +2,10 @@ module Api
   module V1
     class MagistratesController < ApplicationController
       include JsonRenderable
+      include PeriodFilterable
 
       before_action :set_magistrate, only: %i[show update destroy]
+      before_action :validate_period_filter!, only: :show
 
       def index
         magistrates = Magistrate.includes(:home_courthouse, :leaves_of_absence, :sitting_locations)
@@ -22,7 +24,7 @@ module Api
       end
 
       def show
-        render json: magistrate_detail_json(@magistrate)
+        render json: magistrate_detail_json(@magistrate, period: period_filter)
       end
 
       def create

@@ -5,6 +5,12 @@ import { ApiError } from "../api/http";
 import { ComplianceViolations } from "../components/ComplianceViolations";
 import { CourtRoomTable } from "../components/CourtRoomTable";
 import { DjCancellationSection } from "../components/DjCancellationSection";
+import { PeriodFilter } from "../components/PeriodFilter";
+import {
+  defaultPeriodFilter,
+  periodFilterQuery,
+  type PeriodFilterState,
+} from "../lib/periodFilter";
 import type { MagistrateDetail, Sitting } from "../types/domain";
 
 function sittingStatusLabel(sitting: Sitting) {
@@ -27,16 +33,24 @@ function sittingStatusLabel(sitting: Sitting) {
 export function MagistrateProfilePage() {
   const { id } = useParams();
   const [magistrate, setMagistrate] = useState<MagistrateDetail | null>(null);
+  const [periodFilter, setPeriodFilter] = useState<PeriodFilterState>(defaultPeriodFilter());
+  const [availableYears, setAvailableYears] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (!id) return;
-    getMagistrate(Number(id))
-      .then(setMagistrate)
+    setLoading(true);
+    getMagistrate(Number(id), periodFilterQuery(periodFilter))
+      .then((data) => {
+        setMagistrate(data);
+        if (data.available_fiscal_years) {
+          setAvailableYears(data.available_fiscal_years);
+        }
+      })
       .catch((err: unknown) => setError(err instanceof ApiError ? err.message : "Failed to load profile"))
       .finally(() => setLoading(false));
-  }, [id]);
+  }, [id, periodFilter]);
 
   if (loading) return <p className="govuk-body">Loading…</p>;
   if (error || !magistrate) {
@@ -148,6 +162,11 @@ export function MagistrateProfilePage() {
       </dl>
 
       <h2 className="govuk-heading-l">Sittings</h2>
+      <PeriodFilter
+        value={periodFilter}
+        onChange={setPeriodFilter}
+        availableYears={availableYears}
+      />
       <div className="govuk-grid-row govuk-!-margin-bottom-6">
         <div className="govuk-grid-column-one-quarter">
           <p className="govuk-body govuk-!-font-weight-bold govuk-!-margin-bottom-1">Completed</p>

@@ -7,24 +7,36 @@ import { MagistrateLink } from "../components/MagistrateLink";
 import { LoginReportTable } from "../components/LoginReportTable";
 import { CourtRoomTable } from "../components/CourtRoomTable";
 import { DjCancellationSection } from "../components/DjCancellationSection";
+import { PeriodFilter } from "../components/PeriodFilter";
+import {
+  defaultPeriodFilter,
+  periodFilterQuery,
+  type PeriodFilterState,
+} from "../lib/periodFilter";
 import type { MagistrateSummary, ReportsOverview } from "../types/domain";
 
 export function DashboardPage() {
   const [query, setQuery] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
+  const [periodFilter, setPeriodFilter] = useState<PeriodFilterState>(defaultPeriodFilter());
+  const [availableYears, setAvailableYears] = useState<string[]>([]);
   const [reports, setReports] = useState<ReportsOverview | null>(null);
   const [results, setResults] = useState<MagistrateSummary[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    getReportsOverview()
-      .then(setReports)
+    setLoading(true);
+    getReportsOverview(periodFilterQuery(periodFilter))
+      .then((data) => {
+        setReports(data);
+        setAvailableYears(data.available_fiscal_years);
+      })
       .catch((err: unknown) => {
         setError(err instanceof ApiError ? err.message : "Failed to load sitting data");
       })
       .finally(() => setLoading(false));
-  }, []);
+  }, [periodFilter]);
 
   useEffect(() => {
     if (!searchTerm) {
@@ -121,15 +133,15 @@ export function DashboardPage() {
       )}
 
       <h2 className="govuk-heading-l">Sitting overview</h2>
+      <PeriodFilter
+        value={periodFilter}
+        onChange={setPeriodFilter}
+        availableYears={availableYears}
+      />
       {loading ? (
         <p className="govuk-body">Loading sitting data…</p>
       ) : reports ? (
         <>
-          {reports.fiscal_year && (
-            <p className="govuk-body govuk-!-margin-bottom-4">
-              Current fiscal year: <strong>{reports.fiscal_year.label}</strong> (Q{reports.fiscal_year.quarter})
-            </p>
-          )}
           <div className="govuk-grid-row govuk-!-margin-bottom-6">
             <div className="govuk-grid-column-one-quarter">
               <p className="govuk-body govuk-!-font-weight-bold govuk-!-margin-bottom-1">Completed</p>
