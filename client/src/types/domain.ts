@@ -46,6 +46,15 @@ export interface CaseDetail extends CaseSummary {
   notes: Note[];
 }
 
+export interface ComplianceViolation {
+  code: string;
+  severity: "red";
+  message: string;
+  actual: number | null;
+  required: number | null;
+  year: number | null;
+}
+
 export interface MagistrateSummary {
   id: number;
   first_name: string;
@@ -64,6 +73,8 @@ export interface MagistrateSummary {
   presiding_justice: boolean;
   last_appraisal_on: string | null;
   last_appraiser: string | null;
+  violations: ComplianceViolation[];
+  has_violations: boolean;
 }
 
 export interface MagistrateDetail extends MagistrateSummary {

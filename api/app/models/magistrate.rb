@@ -6,6 +6,7 @@ class Magistrate < ApplicationRecord
   has_many :leaves_of_absence, class_name: "LeaveOfAbsence", dependent: :destroy
   has_many :cases, dependent: :destroy
   has_many :sittings, dependent: :destroy
+  has_many :training_records, dependent: :destroy
 
   validates :first_name, :last_name, presence: true
   validates :cluster, :bench, presence: true
@@ -20,5 +21,9 @@ class Magistrate < ApplicationRecord
 
   def active_leave?
     leaves_of_absence.active_on(Date.current).exists?
+  end
+
+  def compliance_violations(as_of: Date.current)
+    Orion::MagistrateCompliance.violations_for(self, as_of:)
   end
 end

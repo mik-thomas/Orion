@@ -48,6 +48,9 @@ export function MagistratesPage() {
               <th scope="col" className="govuk-table__header">
                 Leave
               </th>
+              <th scope="col" className="govuk-table__header">
+                Compliance
+              </th>
             </tr>
           </thead>
           <tbody className="govuk-table__body">
@@ -63,6 +66,15 @@ export function MagistratesPage() {
                 <td className="govuk-table__cell">
                   {magistrate.active_leave ? (
                     <strong className="govuk-tag govuk-tag--yellow">On leave</strong>
+                  ) : (
+                    "—"
+                  )}
+                </td>
+                <td className="govuk-table__cell">
+                  {magistrate.has_violations ? (
+                    <strong className="govuk-tag govuk-tag--red">
+                      {magistrate.violations.length} {magistrate.violations.length === 1 ? "issue" : "issues"}
+                    </strong>
                   ) : (
                     "—"
                   )}

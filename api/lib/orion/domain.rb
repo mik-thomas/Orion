@@ -42,6 +42,16 @@ module Orion
 
     CANCELLATION_CATEGORIES = %w[magistrate legal_admin district_judge other].freeze
 
+    MIN_TENURE_YEARS = 5
+    MIN_FULL_DAYS_PER_YEAR = 13
+    MIN_HALF_DAYS_PER_YEAR = 26
+    MULTI_COURT_MIN_HALF_DAYS_TOTAL = 30
+    MULTI_COURT_MIN_HALF_DAYS_PER_TYPE = 15
+    INITIAL_TRAINING_YEARS = 2
+    TRAINING_DAYS_FIRST_TWO_YEARS = 10
+    MIN_TRAINING_DAYS_PER_YEAR_AFTER = 1
+    MAX_TRAINING_DAYS_PER_YEAR_AFTER = 2
+
     def self.normalize_location(name)
       raw = name.to_s.strip
       return nil if raw.blank?

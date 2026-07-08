@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { getMagistrate } from "../api/magistrates";
 import { ApiError } from "../api/http";
+import { ComplianceViolations } from "../components/ComplianceViolations";
 import type { MagistrateDetail } from "../types/domain";
 
 export function MagistrateProfilePage() {
@@ -46,6 +47,8 @@ export function MagistrateProfilePage() {
       </nav>
 
       <h1 className="govuk-heading-xl">{magistrate.full_name}</h1>
+
+      <ComplianceViolations violations={magistrate.violations} />
 
       {magistrate.active_leave && (
         <div className="govuk-notification-banner govuk-notification-banner--warning" role="region">

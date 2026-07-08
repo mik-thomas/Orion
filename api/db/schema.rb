@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2026_07_08_250000) do
+ActiveRecord::Schema[7.1].define(version: 2026_07_09_010000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
 
@@ -144,6 +144,17 @@ ActiveRecord::Schema[7.1].define(version: 2026_07_08_250000) do
     t.index ["vacated"], name: "index_sittings_on_vacated"
   end
 
+  create_table "training_records", force: :cascade do |t|
+    t.bigint "magistrate_id", null: false
+    t.date "session_date", null: false
+    t.decimal "days", precision: 3, scale: 1, default: "1.0", null: false
+    t.string "description"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["magistrate_id", "session_date"], name: "index_training_records_on_magistrate_id_and_session_date"
+    t.index ["magistrate_id"], name: "index_training_records_on_magistrate_id"
+  end
+
   add_foreign_key "cases", "magistrates"
   add_foreign_key "leaves_of_absence", "magistrates"
   add_foreign_key "magistrate_sitting_locations", "courthouses"
@@ -153,4 +164,5 @@ ActiveRecord::Schema[7.1].define(version: 2026_07_08_250000) do
   add_foreign_key "sittings", "courthouses"
   add_foreign_key "sittings", "magistrates"
   add_foreign_key "sittings", "sitting_types"
+  add_foreign_key "training_records", "magistrates"
 end
