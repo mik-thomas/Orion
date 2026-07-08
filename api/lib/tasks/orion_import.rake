@@ -1,15 +1,24 @@
 # frozen_string_literal: true
 
 namespace :orion do
-  desc "Import South Yorkshire spreadsheet data from ORION_IMPORT_ROOT"
+  desc "Import South Yorkshire spreadsheet data from ORION_IMPORT_ROOT (RESUME=1 to continue after failure)"
   task import_south_yorkshire: :environment do
+    # Long bulk imports can hit PG prepared-statement cache errors when rows are
+    # created mid-run (e.g. magistrates from sitting sheets).
+    ActiveRecord::Base.establish_connection(
+      ActiveRecord::Base.connection_db_config.configuration_hash.merge(prepared_statements: false)
+    )
+
+    resume = %w[1 true yes].include?(ENV.fetch("RESUME", "0").downcase)
+
     started_at = Time.current
     puts "[Orion Import] ========================================"
     puts "[Orion Import] South Yorkshire import starting at #{started_at}"
     puts "[Orion Import] Data root: #{ENV.fetch('ORION_IMPORT_ROOT', '/Users/michaelthomas/Desktop/Courts')}"
+    puts "[Orion Import] Mode: #{resume ? 'resume' : 'full'}"
     puts "[Orion Import] ========================================"
 
-    stats = Orion::SouthYorkshireImporter.new.import!
+    stats = Orion::SouthYorkshireImporter.new(clear: !resume, resume: resume).import!
 
     elapsed = (Time.current - started_at).round(1)
     puts "[Orion Import] ========================================"

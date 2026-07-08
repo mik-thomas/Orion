@@ -18,36 +18,50 @@ module Orion
       rota: "Removed Magistrates/South Yorkshire-Rota Jul 26.xlsx"
     }.freeze
 
-    def initialize(root: DATA_ROOT, clear: true, progress: ImportProgressReporter.new)
+    def initialize(root: DATA_ROOT, clear: true, resume: false, progress: ImportProgressReporter.new)
       @root = Pathname(root)
-      @clear = clear
+      @resume = resume
+      @clear = clear && !resume
       @progress = progress
       @magistrates_by_email = {}
       @courthouses_by_name = {}
       @sitting_types_by_name = {}
       @stats = Hash.new(0)
+      @checkpoint = nil
     end
 
     attr_reader :stats
 
     def import!
       validate_files!
+      setup_checkpoint!
+
       @progress.message("Starting South Yorkshire import from #{@root}")
       @progress.message("Importer: #{importer_version}")
+      @progress.message("Mode: #{@resume ? 'resume' : (@clear ? 'full (clear existing)' : 'incremental')}")
 
-      with_connection_transaction("clearing existing data") { clear_existing! } if @clear
-      with_connection_transaction("seeding courthouses") { seed_canonical_courthouses! }
+      if @clear
+        run_transaction_phase("clear_existing", "clearing existing data") { clear_existing! }
+      elsif @resume
+        @progress.message("Skipping clear — resume mode preserves existing data")
+      end
+
+      run_transaction_phase("seed_canonical_courthouses", "seeding courthouses") do
+        seed_canonical_courthouses!
+      end
       import_magistrates_from_overview!
       enrich_from_rota!
-      warm_lookup_caches!
+      warm_lookup_caches!("warm_lookup_caches_1")
       import_home_courthouses_from_location_breakdown!
       import_leaves_from_appraisal!
-      warm_lookup_caches!
+      warm_lookup_caches!("warm_lookup_caches_2")
       import_completed_sittings!(:populated_by_ra)
       import_completed_sittings!(:accepted_by_magistrate)
+      warm_lookup_caches!("warm_lookup_caches_3")
       import_vacated_sittings!
       import_cancelled_sittings!
 
+      @checkpoint.clear!
       @progress.message("Import finished")
       stats
     end
@@ -83,7 +97,81 @@ module Orion
     end
 
     def importer_version
-      "2026-07-08c (row-resilient batches)"
+      "2026-07-09a (resume checkpoints)"
+    end
+
+    def setup_checkpoint!
+      @checkpoint = ImportCheckpoint.new(root: @root, importer_version: importer_version)
+
+      if @resume
+        @checkpoint.load!
+        completed = @checkpoint.completed_phase_keys
+        @progress.message(
+          "Resuming from checkpoint at #{@checkpoint.data['updated_at']} " \
+          "(#{completed.size} phases complete)"
+        )
+      else
+        @checkpoint.reset!
+      end
+    end
+
+    def phase_complete?(key)
+      @resume && @checkpoint.phase_complete?(key)
+    end
+
+    def skip_phase!(label)
+      @progress.message("Skipping completed phase: #{label}")
+    end
+
+    def run_transaction_phase(phase_key, label)
+      return skip_phase!(label) if phase_complete?(phase_key)
+
+      @checkpoint.start_phase!(phase_key)
+      with_connection_transaction(label) { yield }
+      @checkpoint.complete_phase!(phase_key)
+    end
+
+    def with_checkpointed_rows(label, rows, phase_key:)
+      total = rows.size
+      return skip_phase!(label) if phase_complete?(phase_key)
+
+      offset = @resume ? @checkpoint.rows_processed(phase_key) : 0
+      if offset.positive?
+        @progress.message("Resuming #{label} from row #{offset}/#{total}")
+      end
+
+      if offset >= total && total.positive?
+        @checkpoint.complete_phase!(phase_key)
+        @progress.phase(label, total)
+        offset.times { @progress.tick }
+        return @progress.finish_phase
+      end
+
+      rows = rows.drop(offset) if offset.positive?
+
+      @checkpoint.start_phase!(phase_key, total: total)
+      @progress.phase(label, total)
+      offset.times { @progress.tick } if offset.positive?
+      processed = offset
+
+      if total.zero?
+        @checkpoint.complete_phase!(phase_key)
+        return @progress.finish_phase
+      end
+
+      rows.each_slice(SITTING_BATCH_SIZE) do |batch|
+        ActiveRecord::Base.connection_pool.with_connection do
+          batch.each do |row|
+            ActiveRecord::Base.transaction(requires_new: true) { yield row }
+            processed += 1
+            @progress.tick
+          end
+        end
+        @checkpoint.save_progress!(phase_key, processed, total: total)
+      end
+
+      @checkpoint.complete_phase!(phase_key)
+      @progress.finish_phase
     end
 
     def path_for(key) = @root + FILES.fetch(key)
@@ -100,10 +188,33 @@ module Orion
       @progress.finish_phase
     end
 
-    def with_batched_rows(label, rows)
+    def with_batched_rows(label, rows, phase_key:)
       total = rows.size
+      return skip_phase!(label) if phase_complete?(phase_key)
+
+      offset = @resume ? @checkpoint.rows_processed(phase_key) : 0
+      if offset.positive?
+        @progress.message("Resuming #{label} from row #{offset}/#{total}")
+      end
+
+      if offset >= total && total.positive?
+        @checkpoint.complete_phase!(phase_key)
+        @progress.phase(label, total)
+        offset.times { @progress.tick }
+        return @progress.finish_phase
+      end
+
+      rows = rows.drop(offset) if offset.positive?
+
+      @checkpoint.start_phase!(phase_key, total: total)
       @progress.phase(label, total)
-      return @progress.finish_phase if total.zero?
+      offset.times { @progress.tick } if offset.positive?
+      processed = offset
+
+      if total.zero?
+        @checkpoint.complete_phase!(phase_key)
+        return @progress.finish_phase
+      end
 
       rows.each_slice(SITTING_BATCH_SIZE) do |batch|
         ActiveRecord::Base.connection_pool.with_connection do
@@ -116,10 +227,13 @@ module Orion
               stats[:rows_failed] += 1
               @progress.warn("#{label}: row skipped — #{e.class}: #{e.message}")
             end
+            processed += 1
             @progress.tick
           end
         end
+        @checkpoint.save_progress!(phase_key, processed, total: total)
       end
+      @checkpoint.complete_phase!(phase_key)
       @progress.finish_phase
     end
 
@@ -180,12 +294,16 @@ module Orion
       courthouse
     end
 
-    def warm_lookup_caches!
+    def warm_lookup_caches!(phase_key)
+      return skip_phase!("warming lookup caches") if phase_complete?(phase_key)
+
+      @checkpoint.start_phase!(phase_key)
       @progress.phase("warming lookup caches", 1)
       @magistrates_by_email = Magistrate.all.index_by { |m| m.email.to_s.downcase }
       @courthouses_by_name = Courthouse.all.index_by(&:name)
       @sitting_types_by_name = SittingType.all.index_by(&:name)
       @progress.finish_phase
+      @checkpoint.complete_phase!(phase_key)
     end
 
     def seed_canonical_courthouses!
@@ -222,17 +340,24 @@ module Orion
       cache_magistrate!(record)
     end
 
+    def db_lookup
+      yield
+    rescue ActiveRecord::PreparedStatementCacheExpired, PG::FeatureNotSupported
+      ActiveRecord::Base.connection_pool.disconnect!
+      yield
+    end
+
     def cache_magistrate!(magistrate)
       return nil unless magistrate
 
       key = normalize_email(magistrate.email)
       unless key.present?
-        return magistrate if magistrate.persisted? && Magistrate.exists?(magistrate.id)
+        return magistrate if magistrate.persisted? && db_lookup { Magistrate.exists?(magistrate.id) }
 
         return nil
       end
 
-      reloaded = Magistrate.find_by(email: key)
+      reloaded = db_lookup { Magistrate.find_by(email: key) }
       if reloaded
         @magistrates_by_email[key] = reloaded
         return reloaded
@@ -366,61 +491,47 @@ module Orion
     def import_magistrates_from_overview!
       sheet = open_sheet(:summary, "Overview")
       rows = overview_rows(sheet)
-      @progress.phase("importing magistrates from overview", rows.size)
 
-      ActiveRecord::Base.connection_pool.with_connection do
-        ActiveRecord::Base.transaction do
-          rows.each do |row|
-            magistrate_for!(
-              email: row[27],
-              title: row[1],
-              first_name: row[2],
-              last_name: row[0],
-              middle_name: normalize_name(row[3]),
-              frequency: normalize_name(row[4]),
-              sitting_pattern: normalize_name(row[26]) || normalize_name(row[5]),
-              date_of_appointment: parse_date(row[23]),
-              leaving_date: parse_date(row[25]),
-              active: row[25].blank?,
-              cluster: CLUSTER,
-              bench: BENCH,
-              presiding_justice: row[8].to_i.positive? || normalize_name(row[23]).present?,
-              appraisal_status: normalize_name(row[21]).present? ? "new" : "post_threshold",
-              appraisal_cycle_years: Domain.appraisal_cycle_years(presiding_justice: row[8].to_i.positive? || normalize_name(row[23]).present?)
-            )
-            stats[:magistrates] += 1
-            @progress.tick
-          end
-        end
+      with_checkpointed_rows("importing magistrates from overview", rows, phase_key: "import_magistrates_from_overview") do |row|
+        magistrate_for!(
+          email: row[27],
+          title: row[1],
+          first_name: row[2],
+          last_name: row[0],
+          middle_name: normalize_name(row[3]),
+          frequency: normalize_name(row[4]),
+          sitting_pattern: normalize_name(row[26]) || normalize_name(row[5]),
+          date_of_appointment: parse_date(row[23]),
+          leaving_date: parse_date(row[25]),
+          active: row[25].blank?,
+          cluster: CLUSTER,
+          bench: BENCH,
+          presiding_justice: row[8].to_i.positive? || normalize_name(row[23]).present?,
+          appraisal_status: normalize_name(row[21]).present? ? "new" : "post_threshold",
+          appraisal_cycle_years: Domain.appraisal_cycle_years(presiding_justice: row[8].to_i.positive? || normalize_name(row[23]).present?)
+        )
+        stats[:magistrates] += 1
       end
-      @progress.finish_phase
     end
 
     def enrich_from_rota!
       sheet = open_sheet(:rota, "Northeast Rota Last Login")
       rows = sheet.parse[1..].reject { |row| row.compact.blank? }
-      @progress.phase("enriching magistrates from rota", rows.size)
 
-      ActiveRecord::Base.connection_pool.with_connection do
-        ActiveRecord::Base.transaction do
-          rows.each do |row|
-            magistrate_for!(
-              email: row[4],
-              title: row[1],
-              first_name: row[2],
-              last_name: row[3],
-              active: true,
-              cluster: CLUSTER,
-              bench: BENCH,
-              last_login_on: parse_date(row[5]),
-              days_since_login: row[6].present? ? row[6].to_i : nil
-            )
-            stats[:rota_magistrates] += 1
-            @progress.tick
-          end
-        end
+      with_checkpointed_rows("enriching magistrates from rota", rows, phase_key: "enrich_from_rota") do |row|
+        magistrate_for!(
+          email: row[4],
+          title: row[1],
+          first_name: row[2],
+          last_name: row[3],
+          active: true,
+          cluster: CLUSTER,
+          bench: BENCH,
+          last_login_on: parse_date(row[5]),
+          days_since_login: row[6].present? ? row[6].to_i : nil
+        )
+        stats[:rota_magistrates] += 1
       end
-      @progress.finish_phase
     end
 
     def import_home_courthouses_from_location_breakdown!
@@ -435,83 +546,67 @@ module Orion
       }
 
       data_rows = rows[(header_index + 2)..].reject(&:blank?)
-      @progress.phase("assigning home courthouses", data_rows.size)
 
-      ActiveRecord::Base.connection_pool.with_connection do
-        ActiveRecord::Base.transaction do
-          data_rows.each do |row|
-            magistrate = ensure_magistrate_persisted!(find_magistrate_by_name(row[2], row[0]))
-            unless magistrate
-              stats[:home_courthouses_skipped_no_magistrate] += 1
-              @progress.tick
-              next
-            end
-
-            counts = location_columns.values.index_with { 0 }
-            location_columns.each { |idx, name| counts[name] += row[idx].to_i }
-            top_name, top_count = counts.max_by { |_, count| count }
-            next if top_count.zero?
-
-            magistrate.update!(home_courthouse: courthouse_for!(top_name))
-
-            counts.each do |name, count|
-              next if count.zero?
-
-              courthouse = courthouse_for!(name)
-              magistrate.magistrate_sitting_locations.find_or_create_by!(courthouse:)
-            end
-
-            stats[:home_courthouses] += 1
-            @progress.tick
-          end
+      with_checkpointed_rows("assigning home courthouses", data_rows, phase_key: "import_home_courthouses") do |row|
+        magistrate = ensure_magistrate_persisted!(find_magistrate_by_name(row[2], row[0]))
+        unless magistrate
+          stats[:home_courthouses_skipped_no_magistrate] += 1
+          next
         end
+
+        counts = location_columns.values.index_with { 0 }
+        location_columns.each { |idx, name| counts[name] += row[idx].to_i }
+        top_name, top_count = counts.max_by { |_, count| count }
+        next if top_count.zero?
+
+        magistrate.update!(home_courthouse: courthouse_for!(top_name))
+
+        counts.each do |name, count|
+          next if count.zero?
+
+          courthouse = courthouse_for!(name)
+          magistrate.magistrate_sitting_locations.find_or_create_by!(courthouse:)
+        end
+
+        stats[:home_courthouses] += 1
       end
-      @progress.finish_phase
     end
 
     def import_leaves_from_appraisal!
       sheet = open_sheet(:summary, "Appraisal & LoA")
       rows = appraisal_rows(sheet)
-      @progress.phase("importing leaves of absence", rows.size)
 
-      ActiveRecord::Base.connection_pool.with_connection do
-        ActiveRecord::Base.transaction do
-          rows.each do |row|
-            magistrate = ensure_magistrate_persisted!(find_magistrate(row[9], row[2], row[0]))
-            unless magistrate
-              stats[:leaves_skipped_no_magistrate] += 1
-              @progress.tick
-              next
-            end
+      with_checkpointed_rows("importing leaves of absence", rows, phase_key: "import_leaves") do |row|
+        magistrate = ensure_magistrate_persisted!(find_magistrate(row[9], row[2], row[0]))
+        unless magistrate
+          stats[:leaves_skipped_no_magistrate] += 1
+          next
+        end
 
-            if row[4].present? || row[5].present?
-              magistrate.update!(
-                leaving_date: parse_date(row[4]) || magistrate.leaving_date,
-                leaving_reason: normalize_name(row[5]),
-                active: row[4].blank?,
-                last_appraisal_on: parse_date(row[6]) || magistrate.last_appraisal_on,
-                last_appraiser: normalize_name(row[7]) || magistrate.last_appraiser,
-                appraisal_status: row[17].present? ? "post_threshold" : magistrate.appraisal_status
-              )
-            end
+        if row[4].present? || row[5].present?
+          magistrate.update!(
+            leaving_date: parse_date(row[4]) || magistrate.leaving_date,
+            leaving_reason: normalize_name(row[5]),
+            active: row[4].blank?,
+            last_appraisal_on: parse_date(row[6]) || magistrate.last_appraisal_on,
+            last_appraiser: normalize_name(row[7]) || magistrate.last_appraiser,
+            appraisal_status: row[17].present? ? "post_threshold" : magistrate.appraisal_status
+          )
+        end
 
-            starts_on = parse_date(row[18])
-            ends_on = parse_date(row[19])
-            if starts_on.present?
-              LeaveOfAbsence.create!(
-                magistrate:,
-                starts_on:,
-                ends_on:,
-                reason: normalize_name(row[20]),
-                notes: normalize_name(row[21])
-              )
-              stats[:leaves] += 1
-            end
-            @progress.tick
-          end
+        starts_on = parse_date(row[18])
+        ends_on = parse_date(row[19])
+        if starts_on.present?
+          LeaveOfAbsence.create!(
+            magistrate:,
+            starts_on:,
+            ends_on:,
+            reason: normalize_name(row[20]),
+            notes: normalize_name(row[21])
+          )
+          stats[:leaves] += 1
         end
       end
-      @progress.finish_phase
     end
 
     def import_completed_sittings!(kind)
@@ -520,16 +615,18 @@ module Orion
         sheet = open_sheet(:vacancy, "Populated by RA")
         source = "populated_by_ra"
         label = "importing completed sittings (populated by RA)"
+        phase_key = "import_completed_sittings_populated_by_ra"
       when :accepted_by_magistrate
         sheet = open_sheet(:vacancy, "Accepted by Magistrate - in LJA")
         source = "accepted_by_magistrate"
         label = "importing completed sittings (accepted by magistrate)"
+        phase_key = "import_completed_sittings_accepted_by_magistrate"
       else
         raise "Unknown sitting import kind: #{kind}"
       end
 
       rows = surname_rows(sheet)
-      with_batched_rows(label, rows) do |row|
+      with_batched_rows(label, rows, phase_key:) do |row|
         magistrate = resolve_magistrate_for_sitting_row!(row, format: :vacancy)
         unless magistrate
           stats[:sittings_skipped_no_magistrate] += 1
@@ -575,7 +672,7 @@ module Orion
       sheet = open_sheet(:vacated, "Report")
       rows = report_rows(sheet)
 
-      with_batched_rows("importing vacated sittings", rows) do |row|
+      with_batched_rows("importing vacated sittings", rows, phase_key: "import_vacated_sittings") do |row|
         magistrate = resolve_magistrate_for_sitting_row!(row, format: :report)
         unless magistrate
           stats[:sittings_skipped_no_magistrate] += 1
@@ -627,7 +724,7 @@ module Orion
       sheet = open_sheet(:cancelled, "Report")
       rows = report_rows(sheet)
 
-      with_batched_rows("importing cancelled sittings", rows) do |row|
+      with_batched_rows("importing cancelled sittings", rows, phase_key: "import_cancelled_sittings") do |row|
         magistrate = resolve_magistrate_for_sitting_row!(row, format: :report)
         unless magistrate
           stats[:sittings_skipped_no_magistrate] += 1
