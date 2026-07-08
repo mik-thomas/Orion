@@ -60,6 +60,20 @@ export function MagistrateProfilePage() {
 
       <dl className="govuk-summary-list">
         <div className="govuk-summary-list__row">
+          <dt className="govuk-summary-list__key">Cluster / bench</dt>
+          <dd className="govuk-summary-list__value">
+            {magistrate.cluster} / {magistrate.bench}
+          </dd>
+        </div>
+        <div className="govuk-summary-list__row">
+          <dt className="govuk-summary-list__key">Appraisal</dt>
+          <dd className="govuk-summary-list__value">
+            {magistrate.appraisal_status ?? "Not recorded"}
+            {magistrate.appraisal_cycle_years ? ` — every ${magistrate.appraisal_cycle_years} years` : ""}
+            {magistrate.presiding_justice ? " (Presiding Justice)" : " (Winger)"}
+          </dd>
+        </div>
+        <div className="govuk-summary-list__row">
           <dt className="govuk-summary-list__key">Date of appointment</dt>
           <dd className="govuk-summary-list__value">{magistrate.date_of_appointment ?? "Not recorded"}</dd>
         </div>

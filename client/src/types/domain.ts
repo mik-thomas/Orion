@@ -1,7 +1,8 @@
 export interface Courthouse {
   id: number;
   name: string;
-  borough: string | null;
+  cluster: string;
+  bench: string;
   code: string | null;
 }
 
@@ -55,6 +56,14 @@ export interface MagistrateSummary {
   reasonable_adjustments: string | null;
   home_courthouse: Courthouse | null;
   active_leave: boolean;
+  cluster: string;
+  bench: string;
+  bench_role: string | null;
+  appraisal_status: string | null;
+  appraisal_cycle_years: number | null;
+  presiding_justice: boolean;
+  last_appraisal_on: string | null;
+  last_appraiser: string | null;
 }
 
 export interface MagistrateDetail extends MagistrateSummary {
@@ -64,14 +73,18 @@ export interface MagistrateDetail extends MagistrateSummary {
 }
 
 export interface ReportsOverview {
-  summary: {
+    summary: {
     magistrates: number;
+    active_magistrates: number;
     courthouses: number;
     sittings: number;
+    completed_sittings: number;
     vacated_sittings: number;
+    cancelled_sittings: number;
     sitting_types: number;
   };
   by_courthouse: Array<{ courthouse: string; sittings: number }>;
+  by_court_type: Array<{ court_type: string; sittings: number }>;
   away_from_home: Array<{ magistrate: string; away_sittings: number }>;
   by_sitting_type: Array<{ sitting_type: string; sittings: number }>;
   note: string;

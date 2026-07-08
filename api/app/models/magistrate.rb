@@ -8,9 +8,14 @@ class Magistrate < ApplicationRecord
   has_many :sittings, dependent: :destroy
 
   validates :first_name, :last_name, presence: true
+  validates :cluster, :bench, presence: true
 
   def full_name
     "#{first_name} #{last_name}"
+  end
+
+  def appraisal_due_years
+    appraisal_cycle_years || (presiding_justice? ? 2 : 3)
   end
 
   def active_leave?

@@ -25,7 +25,7 @@ Production:
   Option B — fetch DATABASE_PUBLIC_URL via Railway CLI:
     npm run import:south-yorkshire -- --production
 
-Progress lines look like: [Orion Import] 42% (100/240) — step name
+Progress lines look like: [Orion Import] [████████░░░░░░░░░░░░] 42% (100/240) — step name
 EOF
 }
 
@@ -71,7 +71,7 @@ fi
 
 echo ""
 echo "Importing from: $ORION_IMPORT_ROOT"
-echo "Watch for progress: [Orion Import] X% (done/total) — step"
+echo "Watch for progress: [Orion Import] [████░░░░] X% (done/total) — step"
 echo ""
 
 cd api

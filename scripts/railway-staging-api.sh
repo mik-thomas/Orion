@@ -1,12 +1,15 @@
 #!/usr/bin/env bash
 # Set staging API env vars on Railway (run from repo root after linking orion API service).
+# Default database: Railway Postgres (DATABASE_URL set automatically when you add the plugin).
+# Only export DATABASE_URL manually if using optional AWS RDS — see docs/aws-database-setup.md
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
 
 if [[ -z "${DATABASE_URL:-}" ]]; then
-  echo "Export DATABASE_URL first (do not commit this value), e.g.:"
+  echo "Export DATABASE_URL first (only needed for optional AWS RDS — Railway Postgres sets this automatically)." >&2
+  echo "See docs/aws-database-setup.md" >&2
   echo '  export DATABASE_URL="postgresql://orion_admin:YOUR_PASSWORD@orion-staging-db.<id>.eu-north-1.rds.amazonaws.com:5432/orion_staging?sslmode=require"'
   exit 1
 fi

@@ -54,7 +54,7 @@ export function DashboardPage() {
             Search magistrates
           </label>
           <div id="search-hint" className="govuk-hint">
-            Search by name, email, home court, sitting location or borough.
+            Search by name, email, home court, sitting location or bench.
           </div>
           <input
             className="govuk-input govuk-!-width-two-thirds"
@@ -96,7 +96,7 @@ export function DashboardPage() {
                     Home court
                   </th>
                   <th scope="col" className="govuk-table__header">
-                    Borough
+                    Bench
                   </th>
                 </tr>
               </thead>
@@ -108,8 +108,8 @@ export function DashboardPage() {
                         {magistrate.full_name}
                       </Link>
                     </td>
-                    <td className="govuk-table__cell">{magistrate.home_courthouse?.name ?? "—"}</td>
-                    <td className="govuk-table__cell">{magistrate.home_courthouse?.borough ?? "—"}</td>
+                <td className="govuk-table__cell">{magistrate.home_courthouse?.name ?? "—"}</td>
+                <td className="govuk-table__cell">{magistrate.home_courthouse?.bench ?? "—"}</td>
                   </tr>
                 ))}
               </tbody>
@@ -125,20 +125,39 @@ export function DashboardPage() {
         <>
           <div className="govuk-grid-row govuk-!-margin-bottom-6">
             <div className="govuk-grid-column-one-quarter">
-              <p className="govuk-body govuk-!-font-weight-bold govuk-!-margin-bottom-1">Total sittings</p>
-              <p className="govuk-heading-m govuk-!-margin-top-0">{reports.summary.sittings}</p>
+              <p className="govuk-body govuk-!-font-weight-bold govuk-!-margin-bottom-1">Completed</p>
+              <p className="govuk-heading-m govuk-!-margin-top-0">{reports.summary.completed_sittings}</p>
             </div>
             <div className="govuk-grid-column-one-quarter">
               <p className="govuk-body govuk-!-font-weight-bold govuk-!-margin-bottom-1">Vacated</p>
               <p className="govuk-heading-m govuk-!-margin-top-0">{reports.summary.vacated_sittings}</p>
             </div>
             <div className="govuk-grid-column-one-quarter">
+              <p className="govuk-body govuk-!-font-weight-bold govuk-!-margin-bottom-1">Cancelled</p>
+              <p className="govuk-heading-m govuk-!-margin-top-0">{reports.summary.cancelled_sittings}</p>
+            </div>
+            <div className="govuk-grid-column-one-quarter">
               <p className="govuk-body govuk-!-font-weight-bold govuk-!-margin-bottom-1">Magistrates</p>
               <p className="govuk-heading-m govuk-!-margin-top-0">{reports.summary.magistrates}</p>
+            </div>
+          </div>
+
+          <div className="govuk-grid-row govuk-!-margin-bottom-6">
+            <div className="govuk-grid-column-one-quarter">
+              <p className="govuk-body govuk-!-font-weight-bold govuk-!-margin-bottom-1">Total sittings</p>
+              <p className="govuk-heading-m govuk-!-margin-top-0">{reports.summary.sittings}</p>
             </div>
             <div className="govuk-grid-column-one-quarter">
               <p className="govuk-body govuk-!-font-weight-bold govuk-!-margin-bottom-1">Courthouses</p>
               <p className="govuk-heading-m govuk-!-margin-top-0">{reports.summary.courthouses}</p>
+            </div>
+            <div className="govuk-grid-column-one-quarter">
+              <p className="govuk-body govuk-!-font-weight-bold govuk-!-margin-bottom-1">Active magistrates</p>
+              <p className="govuk-heading-m govuk-!-margin-top-0">{reports.summary.active_magistrates}</p>
+            </div>
+            <div className="govuk-grid-column-one-quarter">
+              <p className="govuk-body govuk-!-font-weight-bold govuk-!-margin-bottom-1">Sitting types</p>
+              <p className="govuk-heading-m govuk-!-margin-top-0">{reports.summary.sitting_types}</p>
             </div>
           </div>
 
@@ -171,7 +190,37 @@ export function DashboardPage() {
               )}
             </div>
             <div className="govuk-grid-column-one-half">
-              <h3 className="govuk-heading-m">Sittings by type</h3>
+              <h3 className="govuk-heading-m">Sittings by court type</h3>
+              {reports.by_court_type.length === 0 ? (
+                <p className="govuk-body">No court type data yet.</p>
+              ) : (
+                <table className="govuk-table">
+                  <thead className="govuk-table__head">
+                    <tr className="govuk-table__row">
+                      <th scope="col" className="govuk-table__header">
+                        Court type
+                      </th>
+                      <th scope="col" className="govuk-table__header">
+                        Sittings
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="govuk-table__body">
+                    {reports.by_court_type.map((row) => (
+                      <tr key={row.court_type} className="govuk-table__row">
+                        <td className="govuk-table__cell">{row.court_type}</td>
+                        <td className="govuk-table__cell">{row.sittings}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+            </div>
+          </div>
+
+          <div className="govuk-grid-row govuk-!-margin-top-6">
+            <div className="govuk-grid-column-one-half">
+              <h3 className="govuk-heading-m">Business types (Remands, Trials, etc.)</h3>
               {reports.by_sitting_type.length === 0 ? (
                 <p className="govuk-body">No sitting types recorded yet.</p>
               ) : (

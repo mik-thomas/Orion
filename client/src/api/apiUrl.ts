@@ -7,11 +7,14 @@ export function apiUrl(): string {
 
   if (typeof window !== "undefined") {
     const host = window.location.hostname;
-    if (host.includes("railway.app") || host.includes("staging")) {
-      const apiHost = host.replace(/^([^.]*?)client/, "$1");
+    if (host.includes("railway.app")) {
+      if (host.includes("orion-client")) {
+        return "https://orion-production-7f9f.up.railway.app";
+      }
+      const apiHost = host.replace("-client", "");
       return `${window.location.protocol}//${apiHost}`;
     }
   }
 
-  return "https://orion-staging.up.railway.app";
+  return "https://orion-production-7f9f.up.railway.app";
 }

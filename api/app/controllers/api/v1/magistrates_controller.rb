@@ -69,7 +69,7 @@ module Api
         return scope if q.blank?
 
         pattern = "%#{ActiveRecord::Base.sanitize_sql_like(q)}%"
-        courthouse_ids = Courthouse.where("name ILIKE :q OR borough ILIKE :q", q: pattern).pluck(:id)
+        courthouse_ids = Courthouse.where("name ILIKE :q OR cluster ILIKE :q OR bench ILIKE :q", q: pattern).pluck(:id)
         sitting_magistrate_ids = Magistrate.joins(:magistrate_sitting_locations)
           .where(magistrate_sitting_locations: { courthouse_id: courthouse_ids })
           .pluck(:id)
