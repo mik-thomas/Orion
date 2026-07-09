@@ -145,14 +145,14 @@ class MagistrateSittingScoreTest < ActiveSupport::TestCase
     )
   end
 
-  def assert_breakdown_factor(score, factor, matcher, expected = nil)
+  def assert_breakdown_factor(score, factor, expected_or_matcher, compare_to = nil)
     item = score["breakdown"].find { |row| row["factor"] == factor }
     assert item, "Expected breakdown factor #{factor}"
     points = item["points"]
-    if expected.is_a?(Symbol)
-      assert_operator points, matcher, 0
+    if expected_or_matcher.is_a?(Symbol)
+      assert_operator points, expected_or_matcher, compare_to || 0
     else
-      assert_equal expected, points
+      assert_equal expected_or_matcher, points
     end
   end
 end
