@@ -52,6 +52,10 @@ class Magistrate < ApplicationRecord
     Orion::MagistrateCompliance.sitting_commitment_for(self, as_of:)
   end
 
+  def sitting_forecast(as_of: Date.current)
+    Orion::SittingForecaster.forecast_for(self, as_of:)
+  end
+
   def ensure_reference_code!
     return if reference_code.present?
 

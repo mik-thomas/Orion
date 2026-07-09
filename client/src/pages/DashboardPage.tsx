@@ -484,6 +484,69 @@ export function DashboardPage() {
 
           <LoginReportTable rows={reports.login_report} />
 
+          {reports.commitment_forecast.length > 0 ? (
+            <DashboardSection
+              title="Commitment forecast"
+              tag={`${reports.commitment_forecast.length} at risk`}
+              tagColour="yellow"
+              description="Magistrates projected to miss their sitting commitment based on current completion rates."
+            >
+              <table className="govuk-table">
+                <thead className="govuk-table__head">
+                  <tr className="govuk-table__row">
+                    <th scope="col" className="govuk-table__header">
+                      Magistrate
+                    </th>
+                    <th scope="col" className="govuk-table__header">
+                      Risk
+                    </th>
+                    <th scope="col" className="govuk-table__header">
+                      Projected
+                    </th>
+                    <th scope="col" className="govuk-table__header">
+                      Completion rate
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="govuk-table__body">
+                  {reports.commitment_forecast.map((row) => {
+                    const tagColour =
+                      row.risk_level === "unlikely_to_meet"
+                        ? "red"
+                        : row.risk_level === "at_risk"
+                          ? "yellow"
+                          : "green";
+                    const tagLabel =
+                      row.risk_level === "unlikely_to_meet"
+                        ? "Unlikely to meet"
+                        : row.risk_level === "at_risk"
+                          ? "At risk"
+                          : "On track";
+
+                    return (
+                      <tr key={row.magistrate_id} className="govuk-table__row">
+                        <td className="govuk-table__cell">
+                          <MagistrateLink id={row.magistrate_id} name={row.display_name} />
+                        </td>
+                        <td className="govuk-table__cell">
+                          <strong className={`govuk-tag govuk-tag--${tagColour}`}>{tagLabel}</strong>
+                        </td>
+                        <td className="govuk-table__cell">
+                          {row.projected_full_days_end_of_year}/{row.full_days_required} full days
+                        </td>
+                        <td className="govuk-table__cell">
+                          {row.completion_rate != null
+                            ? `${(row.completion_rate * 100).toFixed(1)}%`
+                            : "—"}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </DashboardSection>
+          ) : null}
+
           <p className="govuk-body govuk-hint">{reports.note}</p>
         </>
       ) : null}

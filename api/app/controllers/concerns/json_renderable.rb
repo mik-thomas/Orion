@@ -20,7 +20,8 @@ module JsonRenderable
           "current_leaves" => magistrate.current_leaves.map { |leave| leave_json(leave) },
           "violations" => violations,
           "has_violations" => violations.any?,
-          "sitting_commitment" => magistrate.sitting_commitment
+          "sitting_commitment" => magistrate.sitting_commitment,
+          "sitting_forecast" => magistrate.sitting_forecast
         )
 
         if names_visible?

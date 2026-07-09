@@ -3,6 +3,7 @@ import { Link, useParams } from "react-router-dom";
 import { getMagistrate } from "../api/magistrates";
 import { ApiError } from "../api/http";
 import { ComplianceViolations } from "../components/ComplianceViolations";
+import { SittingForecastPanel } from "../components/SittingForecastPanel";
 import { NextLoaReviewTag } from "../lib/loaReview";
 import { CourtRoomTable } from "../components/CourtRoomTable";
 import { DjCancellationSection } from "../components/DjCancellationSection";
@@ -78,6 +79,8 @@ export function MagistrateProfilePage() {
         violations={magistrate.violations}
         sittingCommitment={magistrate.sitting_commitment}
       />
+
+      <SittingForecastPanel forecast={magistrate.sitting_forecast} />
 
       {magistrate.active_leave && (
         <div className="govuk-notification-banner govuk-notification-banner--warning" role="region">

@@ -35,6 +35,7 @@ module Api
           dj_cancellations: Orion::SittingReports.dj_cancellation_report_for(scoped_sittings),
           home_court_movement: Orion::SittingReports.home_court_movement_report_for(scoped_sittings, role: current_role),
           login_report: login_report_rows,
+          commitment_forecast: commitment_forecast_rows,
           note: overview_note(filter)
         }
       end
@@ -92,6 +93,16 @@ module Api
         scope.group(:court_type).count
           .sort_by { |_, count| -count }
           .map { |name, count| { court_type: name || "Unknown", sittings: count } }
+      end
+
+      def commitment_forecast_rows
+        forecasts = Orion::SittingForecaster.at_risk_forecasts
+        magistrates = Magistrate.where(id: forecasts.map { |row| row["magistrate_id"] }).index_by(&:id)
+
+        forecasts.map do |row|
+          magistrate = magistrates.fetch(row["magistrate_id"])
+          row.merge("display_name" => magistrate_display_name(magistrate))
+        end
       end
 
       def login_report_rows

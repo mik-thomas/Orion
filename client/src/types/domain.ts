@@ -67,6 +67,46 @@ export interface SittingCommitment {
   multi_court: boolean;
 }
 
+export type SittingForecastRiskLevel = "on_track" | "at_risk" | "unlikely_to_meet";
+
+export interface SittingForecast {
+  fiscal_year_label: string;
+  multi_court: boolean;
+  fiscal_year_progress_pct: number;
+  half_days_completed: number;
+  half_days_required: number;
+  full_days_completed: number;
+  full_days_required: number;
+  projected_half_days_end_of_year: number;
+  projected_full_days_end_of_year: number;
+  projected_shortfall_full_days: number;
+  counts: {
+    completed: number;
+    vacated: number;
+    cancelled: number;
+    cancelled_by_dj: number;
+    loss: number;
+    scheduled_total: number;
+  };
+  rates: {
+    completed_pct: number;
+    vacated_pct: number;
+    cancelled_pct: number;
+    cancelled_by_dj_pct: number;
+    loss_pct: number;
+    completion_rate: number | null;
+  };
+  completion_rate: number | null;
+  risk_level: SittingForecastRiskLevel;
+  early_warning: boolean;
+  message: string;
+}
+
+export interface CommitmentForecastRow extends SittingForecast {
+  magistrate_id: number;
+  display_name: string;
+}
+
 export type Role = "HMCTS-SLM" | "Developer" | "Bench Chair" | "Deputy";
 
 export interface MagistrateSummary {
@@ -95,6 +135,7 @@ export interface MagistrateSummary {
   violations: ComplianceViolation[];
   has_violations: boolean;
   sitting_commitment: SittingCommitment | null;
+  sitting_forecast: SittingForecast | null;
 }
 
 export interface Sitting {
@@ -301,6 +342,7 @@ export interface ReportsOverview {
     last_login_on: string;
     days_since_login: number | null;
   }>;
+  commitment_forecast: CommitmentForecastRow[];
   note: string;
 }
 
