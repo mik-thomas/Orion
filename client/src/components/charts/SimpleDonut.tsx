@@ -5,8 +5,10 @@ import {
   CHART_COLOURS,
   formatSegmentSummary,
   segmentTotal,
+  visibleSegments,
   type ChartSegment,
 } from "./chartUtils";
+import { useChartFilter } from "./useChartFilter";
 
 type SimpleDonutProps = {
   segments: ChartSegment[];
@@ -57,9 +59,17 @@ export function SimpleDonut({
   summaryContext,
   summaryId,
 }: SimpleDonutProps) {
-  const active = useMemo(() => activeSegments(segments), [segments]);
+  const legendSegments = useMemo(() => activeSegments(segments), [segments]);
+  const filterKeys = useMemo(() => legendSegments.map((segment) => segment.key), [legendSegments]);
+  const { toggle, showAll, isVisible } = useChartFilter(filterKeys);
+
+  const visible = useMemo(
+    () => activeSegments(visibleSegments(segments, isVisible)),
+    [segments, isVisible]
+  );
   const total = segmentTotal(segments);
-  const summaryText = formatSegmentSummary(segments, summaryContext);
+  const visibleTotal = segmentTotal(visible);
+  const summaryText = formatSegmentSummary(segments, summaryContext, isVisible);
 
   const size = 220;
   const cx = size / 2;
@@ -73,16 +83,21 @@ export function SimpleDonut({
   }
 
   let currentAngle = 0;
-  const arcs = active.map((segment) => {
-    const sweep = (segment.value / total) * 360;
+  const arcs = segments.map((segment, index) => {
+    const segmentVisible = isVisible(segment.key) && segment.value > 0;
+    const sweep = segmentVisible && visibleTotal > 0 ? (segment.value / visibleTotal) * 360 : 0;
     const startAngle = currentAngle;
     const endAngle = currentAngle + sweep;
-    currentAngle = endAngle;
+    if (segmentVisible) {
+      currentAngle = endAngle;
+    }
 
     return {
       segment,
       path: describeArc(cx, cy, (outerRadius + innerRadius) / 2, startAngle, endAngle),
       sweep,
+      segmentVisible,
+      index,
     };
   });
 
@@ -98,8 +113,17 @@ export function SimpleDonut({
           preserveAspectRatio="xMidYMid meet"
           aria-hidden="true"
         >
-          {arcs.map(({ segment, path, sweep }) =>
-            sweep >= 359.99 ? (
+          {arcs.map(({ segment, path, sweep, segmentVisible, index }) =>
+            !segmentVisible ? (
+              <path
+                key={segment.key}
+                d={path}
+                fill="none"
+                stroke={segment.colour}
+                strokeWidth={strokeWidth}
+                className="orion-chart__donut-segment orion-chart__donut-segment--hidden"
+              />
+            ) : sweep >= 359.99 ? (
               <circle
                 key={segment.key}
                 cx={cx}
@@ -108,6 +132,11 @@ export function SimpleDonut({
                 fill="none"
                 stroke={segment.colour}
                 strokeWidth={strokeWidth}
+                className={[
+                  "orion-chart__donut-segment",
+                  "orion-chart__donut-segment--enter",
+                ].join(" ")}
+                style={{ animationDelay: `${index * 70}ms` }}
               >
                 <title>{`${segment.label}: ${segment.value}`}</title>
               </circle>
@@ -119,6 +148,11 @@ export function SimpleDonut({
                 stroke={segment.colour}
                 strokeWidth={strokeWidth}
                 strokeLinecap="butt"
+                className={[
+                  "orion-chart__donut-segment",
+                  "orion-chart__donut-segment--enter",
+                ].join(" ")}
+                style={{ animationDelay: `${index * 70}ms` }}
               >
                 <title>{`${segment.label}: ${segment.value}`}</title>
               </path>
@@ -138,7 +172,13 @@ export function SimpleDonut({
         </svg>
         <figcaption className="govuk-body-s govuk-!-margin-top-2">{summaryText}</figcaption>
       </figure>
-      <ChartLegend segments={active} />
+      <ChartLegend
+        segments={legendSegments}
+        isVisible={isVisible}
+        onToggle={toggle}
+        onShowAll={showAll}
+        interactive
+      />
     </>
   );
 }

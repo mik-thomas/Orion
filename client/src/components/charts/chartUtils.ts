@@ -27,21 +27,37 @@ export function activeSegments(segments: ChartSegment[]): ChartSegment[] {
   return segments.filter((segment) => segment.value > 0);
 }
 
-export function formatSegmentSummary(segments: ChartSegment[], context?: string): string {
-  const active = activeSegments(segments);
+export function visibleSegments(
+  segments: ChartSegment[],
+  isVisible: (key: string) => boolean
+): ChartSegment[] {
+  return segments.filter((segment) => isVisible(segment.key));
+}
+
+export function formatSegmentSummary(
+  segments: ChartSegment[],
+  context?: string,
+  isVisible?: (key: string) => boolean
+): string {
+  const scoped = isVisible ? visibleSegments(segments, isVisible) : segments;
+  const active = activeSegments(scoped);
   if (active.length === 0) {
+    if (isVisible && segments.some((segment) => segment.value > 0)) {
+      return context ? `No categories selected for ${context}.` : "No categories selected.";
+    }
     return context ? `No data for ${context}.` : "No data recorded.";
   }
 
   const parts = active.map((segment) => `${segment.value} ${segment.label.toLowerCase()}`);
-  const total = segmentTotal(segments);
+  const total = segmentTotal(scoped);
   const summary = parts.join(", ");
+  const filteredNote = isVisible && visibleSegments(segments, isVisible).length < segments.length ? " (filtered)" : "";
 
   if (context) {
-    return `${summary} (${total} total in ${context}).`;
+    return `${summary} (${total} total in ${context})${filteredNote}.`;
   }
 
-  return `${summary} (${total} total).`;
+  return `${summary} (${total} total)${filteredNote}.`;
 }
 
 export function barColourByIndex(index: number): string {

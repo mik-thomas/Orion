@@ -8,6 +8,7 @@ import {
   segmentTotal,
   type ChartSegment,
 } from "./chartUtils";
+import { useChartFilter } from "./useChartFilter";
 
 export type HorizontalBarRow = {
   key: string;
@@ -33,8 +34,7 @@ export function HorizontalBarChart({
 }: HorizontalBarChartProps) {
   const chartRows = useMemo(() => {
     const sorted = [...rows].sort((a, b) => b.value - a.value).slice(0, maxBars);
-    const maxValue = sorted.reduce((max, row) => Math.max(max, row.value), 0);
-    return { sorted, maxValue };
+    return { sorted };
   }, [rows, maxBars]);
 
   const segments: ChartSegment[] = chartRows.sorted.map((row, index) => ({
@@ -44,9 +44,23 @@ export function HorizontalBarChart({
     colour: row.colour ?? barColourByIndex(index),
   }));
 
-  const summaryText = formatSegmentSummary(segments, summaryContext);
+  const legendSegments = useMemo(() => activeSegments(segments), [segments]);
+  const filterKeys = useMemo(() => legendSegments.map((segment) => segment.key), [legendSegments]);
+  const { toggle, showAll, isVisible } = useChartFilter(filterKeys);
+
+  const visibleRows = useMemo(
+    () => chartRows.sorted.filter((row) => isVisible(row.key)),
+    [chartRows.sorted, isVisible]
+  );
+
+  const maxValue = useMemo(
+    () => visibleRows.reduce((max, row) => Math.max(max, row.value), 0),
+    [visibleRows]
+  );
+
+  const summaryText = formatSegmentSummary(segments, summaryContext, isVisible);
   const chartWidth = 640;
-  const chartHeight = Math.max(120, chartRows.sorted.length * 36 + 24);
+  const chartHeight = Math.max(120, visibleRows.length * 36 + 24);
   const marginLeft = 140;
   const marginRight = 48;
   const marginTop = 8;
@@ -70,14 +84,14 @@ export function HorizontalBarChart({
           preserveAspectRatio="xMidYMid meet"
           aria-hidden="true"
         >
-          {chartRows.sorted.map((row, index) => {
-            const y = marginTop + index * (barHeight + barGap);
-            const barWidth =
-              chartRows.maxValue > 0 ? (row.value / chartRows.maxValue) * plotWidth : 0;
-            const colour = row.colour ?? barColourByIndex(index);
+          {visibleRows.map((row, displayIndex) => {
+            const sourceIndex = chartRows.sorted.findIndex((sortedRow) => sortedRow.key === row.key);
+            const y = marginTop + displayIndex * (barHeight + barGap);
+            const barWidth = maxValue > 0 ? (row.value / maxValue) * plotWidth : 0;
+            const colour = row.colour ?? barColourByIndex(sourceIndex);
 
             return (
-              <g key={row.key}>
+              <g key={row.key} className="orion-chart__bar-row">
                 <text
                   x={marginLeft - 8}
                   y={y + barHeight / 2 + 4}
@@ -101,7 +115,8 @@ export function HorizontalBarChart({
                   width={barWidth}
                   height={barHeight}
                   fill={colour}
-                  className="orion-chart__bar"
+                  className={["orion-chart__bar", "orion-chart__bar--enter"].join(" ")}
+                  style={{ animationDelay: `${displayIndex * 50}ms` }}
                 >
                   <title>{`${row.label}: ${row.value}`}</title>
                 </rect>
@@ -118,7 +133,13 @@ export function HorizontalBarChart({
         </svg>
         <figcaption className="govuk-body-s govuk-!-margin-top-2">{summaryText}</figcaption>
       </figure>
-      <ChartLegend segments={activeSegments(segments)} />
+      <ChartLegend
+        segments={legendSegments}
+        isVisible={isVisible}
+        onToggle={toggle}
+        onShowAll={showAll}
+        interactive
+      />
     </>
   );
 }

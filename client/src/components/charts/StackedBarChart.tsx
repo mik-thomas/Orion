@@ -5,8 +5,10 @@ import {
   CHART_COLOURS,
   formatSegmentSummary,
   segmentTotal,
+  visibleSegments,
   type ChartSegment,
 } from "./chartUtils";
+import { useChartFilter } from "./useChartFilter";
 
 export type StackedBarRow = {
   key: string;
@@ -45,6 +47,10 @@ export function courtRoomStackRow(
   };
 }
 
+function visibleRowTotal(row: StackedBarRow, isVisible: (key: string) => boolean): number {
+  return segmentTotal(visibleSegments(row.segments, isVisible));
+}
+
 export function StackedBarChart({
   rows,
   emptyMessage = "No data recorded.",
@@ -56,7 +62,6 @@ export function StackedBarChart({
     const sorted = [...rows]
       .sort((a, b) => segmentTotal(b.segments) - segmentTotal(a.segments))
       .slice(0, maxRows);
-    const maxTotal = sorted.reduce((max, row) => Math.max(max, segmentTotal(row.segments)), 0);
 
     const legendTotals = new Map<string, ChartSegment>();
     for (const row of sorted) {
@@ -75,10 +80,25 @@ export function StackedBarChart({
       return segment ?? { ...template, value: 0 };
     });
 
-    return { sorted, maxTotal, legend: activeSegments(legend) };
+    return { sorted, legend: activeSegments(legend) };
   }, [rows, maxRows]);
 
-  const summaryText = formatSegmentSummary(chartData.legend, summaryContext);
+  const filterKeys = useMemo(
+    () => chartData.legend.map((segment) => segment.key),
+    [chartData.legend]
+  );
+  const { toggle, showAll, isVisible } = useChartFilter(filterKeys);
+
+  const maxTotal = useMemo(
+    () =>
+      chartData.sorted.reduce(
+        (max, row) => Math.max(max, visibleRowTotal(row, isVisible)),
+        0
+      ),
+    [chartData.sorted, isVisible]
+  );
+
+  const summaryText = formatSegmentSummary(chartData.legend, summaryContext, isVisible);
 
   const chartWidth = 640;
   const chartHeight = Math.max(120, chartData.sorted.length * 36 + 24);
@@ -105,11 +125,12 @@ export function StackedBarChart({
           preserveAspectRatio="xMidYMid meet"
           aria-hidden="true"
         >
-          {chartData.sorted.map((row, index) => {
-            const y = marginTop + index * (barHeight + barGap);
-            const rowTotal = segmentTotal(row.segments);
-            let xOffset = marginLeft;
+          {chartData.sorted.map((row, rowIndex) => {
+            const y = marginTop + rowIndex * (barHeight + barGap);
+            const rowTotal = visibleRowTotal(row, isVisible);
+            const barWidth = maxTotal > 0 ? (rowTotal / maxTotal) * plotWidth : 0;
             const displayLabel = row.label.length > 22 ? `${row.label.slice(0, 20)}…` : row.label;
+            let xOffset = marginLeft;
 
             return (
               <g key={row.key}>
@@ -130,34 +151,39 @@ export function StackedBarChart({
                   stroke={CHART_COLOURS.grid}
                   strokeWidth={1}
                 />
-                {(() => {
-                  const barWidth =
-                    chartData.maxTotal > 0 ? (rowTotal / chartData.maxTotal) * plotWidth : 0;
-                  return activeSegments(row.segments).map((segment) => {
-                    const width = rowTotal > 0 ? (segment.value / rowTotal) * barWidth : 0;
-                    const rect = (
-                      <rect
-                        key={segment.key}
-                        x={xOffset}
-                        y={y}
-                        width={width}
-                        height={barHeight}
-                        fill={segment.colour}
-                        className="orion-chart__bar"
-                      >
-                        <title>{`${row.label}: ${segment.value} ${segment.label.toLowerCase()}`}</title>
-                      </rect>
-                    );
+                {row.segments.map((segment, segmentIndex) => {
+                  const segmentVisible = isVisible(segment.key) && segment.value > 0;
+                  const width =
+                    segmentVisible && rowTotal > 0 ? (segment.value / rowTotal) * barWidth : 0;
+                  const rect = (
+                    <rect
+                      key={segment.key}
+                      x={xOffset}
+                      y={y}
+                      width={width}
+                      height={barHeight}
+                      fill={segment.colour}
+                      className={[
+                        "orion-chart__bar",
+                        segmentVisible ? "orion-chart__bar--enter" : "",
+                      ]
+                        .filter(Boolean)
+                        .join(" ")}
+                      style={{
+                        animationDelay: `${rowIndex * 40 + segmentIndex * 30}ms`,
+                        opacity: segmentVisible ? 1 : 0,
+                      }}
+                    >
+                      <title>{`${row.label}: ${segment.value} ${segment.label.toLowerCase()}`}</title>
+                    </rect>
+                  );
+                  if (segmentVisible) {
                     xOffset += width;
-                    return rect;
-                  });
-                })()}
-                <text
-                  x={
-                    marginLeft +
-                    (chartData.maxTotal > 0 ? (rowTotal / chartData.maxTotal) * plotWidth : 0) +
-                    6
                   }
+                  return rect;
+                })}
+                <text
+                  x={marginLeft + barWidth + 6}
                   y={y + barHeight / 2 + 4}
                   className="orion-chart__axis-label"
                 >
@@ -169,7 +195,13 @@ export function StackedBarChart({
         </svg>
         <figcaption className="govuk-body-s govuk-!-margin-top-2">{summaryText}</figcaption>
       </figure>
-      <ChartLegend segments={chartData.legend} />
+      <ChartLegend
+        segments={chartData.legend}
+        isVisible={isVisible}
+        onToggle={toggle}
+        onShowAll={showAll}
+        interactive
+      />
     </>
   );
 }

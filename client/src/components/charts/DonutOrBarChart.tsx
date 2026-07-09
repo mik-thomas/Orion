@@ -5,8 +5,10 @@ import {
   CHART_COLOURS,
   formatSegmentSummary,
   segmentTotal,
+  visibleSegments,
   type ChartSegment,
 } from "./chartUtils";
+import { useChartFilter } from "./useChartFilter";
 
 type SittingStatusTotals = {
   completed: number;
@@ -43,9 +45,17 @@ export function DonutOrBarChart({
   variant = "bar",
 }: DonutOrBarChartProps) {
   const segments = useMemo(() => sittingStatusSegments(totals), [totals]);
-  const active = activeSegments(segments);
+  const legendSegments = useMemo(() => activeSegments(segments), [segments]);
+  const filterKeys = useMemo(() => legendSegments.map((segment) => segment.key), [legendSegments]);
+  const { toggle, showAll, isVisible } = useChartFilter(filterKeys);
+
+  const visible = useMemo(
+    () => activeSegments(visibleSegments(segments, isVisible)),
+    [segments, isVisible]
+  );
   const total = segmentTotal(segments);
-  const summaryText = formatSegmentSummary(segments, summaryContext);
+  const visibleTotal = segmentTotal(visible);
+  const summaryText = formatSegmentSummary(segments, summaryContext, isVisible);
 
   if (total === 0) {
     return <p className="govuk-body">No sittings recorded for this period.</p>;
@@ -55,9 +65,13 @@ export function DonutOrBarChart({
     return (
       <DonutChart
         segments={segments}
+        visibleTotal={visibleTotal}
         summaryText={summaryText}
         summaryId={summaryId}
-        active={active}
+        legendSegments={legendSegments}
+        isVisible={isVisible}
+        onToggle={toggle}
+        onShowAll={showAll}
       />
     );
   }
@@ -82,8 +96,10 @@ export function DonutOrBarChart({
           preserveAspectRatio="xMidYMid meet"
           aria-hidden="true"
         >
-          {active.map((segment) => {
-            const width = (segment.value / total) * plotWidth;
+          {segments.map((segment, index) => {
+            const segmentVisible = isVisible(segment.key) && segment.value > 0;
+            const width =
+              segmentVisible && visibleTotal > 0 ? (segment.value / visibleTotal) * plotWidth : 0;
             const rect = (
               <rect
                 key={segment.key}
@@ -92,34 +108,55 @@ export function DonutOrBarChart({
                 width={width}
                 height={barHeight}
                 fill={segment.colour}
-                className="orion-chart__bar"
+                className={[
+                  "orion-chart__bar",
+                  segmentVisible ? "orion-chart__bar--enter" : "",
+                ]
+                  .filter(Boolean)
+                  .join(" ")}
+                style={{ animationDelay: `${index * 60}ms`, opacity: segmentVisible ? 1 : 0 }}
               >
                 <title>{`${segment.label}: ${segment.value}`}</title>
               </rect>
             );
-            xOffset += width;
+            if (segmentVisible) {
+              xOffset += width;
+            }
             return rect;
           })}
         </svg>
         <figcaption className="govuk-body-s govuk-!-margin-top-2">{summaryText}</figcaption>
       </figure>
-      <ChartLegend segments={active} />
+      <ChartLegend
+        segments={legendSegments}
+        isVisible={isVisible}
+        onToggle={toggle}
+        onShowAll={showAll}
+        interactive
+      />
     </>
   );
 }
 
 function DonutChart({
   segments,
+  visibleTotal,
   summaryText,
   summaryId,
-  active,
+  legendSegments,
+  isVisible,
+  onToggle,
+  onShowAll,
 }: {
   segments: ChartSegment[];
+  visibleTotal: number;
   summaryText: string;
   summaryId?: string;
-  active: ChartSegment[];
+  legendSegments: ChartSegment[];
+  isVisible: (key: string) => boolean;
+  onToggle: (key: string) => void;
+  onShowAll: () => void;
 }) {
-  const total = segmentTotal(segments);
   const size = 220;
   const cx = size / 2;
   const cy = size / 2;
@@ -128,18 +165,33 @@ function DonutChart({
   const strokeWidth = outerRadius - innerRadius;
 
   let currentAngle = 0;
-  const arcs = active.map((segment) => {
-    const sweep = (segment.value / total) * 360;
+  const arcs = segments.map((segment, index) => {
+    const segmentVisible = isVisible(segment.key) && segment.value > 0;
+    const sweep = segmentVisible && visibleTotal > 0 ? (segment.value / visibleTotal) * 360 : 0;
     const startAngle = currentAngle;
     const endAngle = currentAngle + sweep;
-    currentAngle = endAngle;
+    if (segmentVisible) {
+      currentAngle = endAngle;
+    }
 
     const start = polarToCartesian(cx, cy, (outerRadius + innerRadius) / 2, endAngle);
     const end = polarToCartesian(cx, cy, (outerRadius + innerRadius) / 2, startAngle);
     const largeArcFlag = endAngle - startAngle <= 180 ? 0 : 1;
-    const path = ["M", start.x, start.y, "A", (outerRadius + innerRadius) / 2, (outerRadius + innerRadius) / 2, 0, largeArcFlag, 0, end.x, end.y].join(" ");
+    const path = [
+      "M",
+      start.x,
+      start.y,
+      "A",
+      (outerRadius + innerRadius) / 2,
+      (outerRadius + innerRadius) / 2,
+      0,
+      largeArcFlag,
+      0,
+      end.x,
+      end.y,
+    ].join(" ");
 
-    return { segment, path, sweep };
+    return { segment, path, sweep, segmentVisible, index };
   });
 
   return (
@@ -154,8 +206,17 @@ function DonutChart({
           preserveAspectRatio="xMidYMid meet"
           aria-hidden="true"
         >
-          {arcs.map(({ segment, path, sweep }) =>
-            sweep >= 359.99 ? (
+          {arcs.map(({ segment, path, sweep, segmentVisible, index }) =>
+            !segmentVisible ? (
+              <path
+                key={segment.key}
+                d={path}
+                fill="none"
+                stroke={segment.colour}
+                strokeWidth={strokeWidth}
+                className="orion-chart__donut-segment orion-chart__donut-segment--hidden"
+              />
+            ) : sweep >= 359.99 ? (
               <circle
                 key={segment.key}
                 cx={cx}
@@ -164,6 +225,11 @@ function DonutChart({
                 fill="none"
                 stroke={segment.colour}
                 strokeWidth={strokeWidth}
+                className={[
+                  "orion-chart__donut-segment",
+                  "orion-chart__donut-segment--enter",
+                ].join(" ")}
+                style={{ animationDelay: `${index * 70}ms` }}
               >
                 <title>{`${segment.label}: ${segment.value}`}</title>
               </circle>
@@ -174,6 +240,11 @@ function DonutChart({
                 fill="none"
                 stroke={segment.colour}
                 strokeWidth={strokeWidth}
+                className={[
+                  "orion-chart__donut-segment",
+                  "orion-chart__donut-segment--enter",
+                ].join(" ")}
+                style={{ animationDelay: `${index * 70}ms` }}
               >
                 <title>{`${segment.label}: ${segment.value}`}</title>
               </path>
@@ -186,12 +257,18 @@ function DonutChart({
             dominantBaseline="middle"
             className="orion-chart__donut-centre"
           >
-            {total}
+            {visibleTotal}
           </text>
         </svg>
         <figcaption className="govuk-body-s govuk-!-margin-top-2">{summaryText}</figcaption>
       </figure>
-      <ChartLegend segments={active} />
+      <ChartLegend
+        segments={legendSegments}
+        isVisible={isVisible}
+        onToggle={onToggle}
+        onShowAll={onShowAll}
+        interactive
+      />
     </>
   );
 }
