@@ -1,4 +1,4 @@
-import { periodFilterQuery, defaultPeriodFilter, type PeriodFilterState } from "./periodFilter";
+import { periodFilterQuery, parsePeriodFilterSearch, type PeriodFilterState } from "./periodFilter";
 import {
   cancellationCategoryHeading,
   isCancellationCategory,
@@ -48,16 +48,7 @@ export function sittingsDrillDownPath(
 export function parseSittingsDrillDownSearch(search: string): SittingsDrillDownFilters & PeriodFilterState {
   const params = new URLSearchParams(search.startsWith("?") ? search.slice(1) : search);
 
-  const period: PeriodFilterState =
-    params.get("period") === "all"
-      ? { mode: "all", fiscalYear: null, quarter: null }
-      : params.has("period") || params.has("fiscal_year") || params.has("quarter")
-        ? {
-            mode: "fiscal_year",
-            fiscalYear: params.get("fiscal_year"),
-            quarter: params.get("quarter"),
-          }
-        : defaultPeriodFilter();
+  const period: PeriodFilterState = parsePeriodFilterSearch(search);
 
   const status = params.get("status");
   const page = params.get("page");

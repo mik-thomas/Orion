@@ -1,5 +1,5 @@
-import { useEffect, useId, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { useEffect, useId, useMemo, useState } from "react";
+import { Link, useParams, useSearchParams } from "react-router-dom";
 import { getMagistrate } from "../api/magistrates";
 import { ApiError } from "../api/http";
 import { ComplianceViolations } from "../components/ComplianceViolations";
@@ -18,7 +18,8 @@ import { homeAwaySegments, SimpleDonut } from "../components/charts/SimpleDonut"
 import { courtRoomStackRow, StackedBarChart } from "../components/charts/StackedBarChart";
 import { useRole } from "../context/RoleContext";
 import {
-  defaultPeriodFilter,
+  defaultProfilePeriodFilter,
+  parsePeriodFilterSearch,
   periodFilterLabel,
   periodFilterQuery,
   type PeriodFilterState,
@@ -30,9 +31,13 @@ import type { LeaveOfAbsence, MagistrateDetail } from "../types/domain";
 
 export function MagistrateProfilePage() {
   const { id } = useParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { role, canViewNames } = useRole();
   const [magistrate, setMagistrate] = useState<MagistrateDetail | null>(null);
-  const [periodFilter, setPeriodFilter] = useState<PeriodFilterState>(defaultPeriodFilter());
+  const periodFilter = useMemo(
+    () => parsePeriodFilterSearch(searchParams.toString(), defaultProfilePeriodFilter()),
+    [searchParams]
+  );
   const [availableYears, setAvailableYears] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -43,6 +48,10 @@ export function MagistrateProfilePage() {
   const courtTypeSummaryId = useId();
   const sittingTypeSummaryId = useId();
   const courtRoomSummaryId = useId();
+
+  function handlePeriodChange(next: PeriodFilterState) {
+    setSearchParams(new URLSearchParams(periodFilterQuery(next)), { replace: true });
+  }
 
   useEffect(() => {
     if (!id) return;
@@ -234,7 +243,7 @@ export function MagistrateProfilePage() {
       <h2 className="govuk-heading-l">Sittings</h2>
       <PeriodFilter
         value={periodFilter}
-        onChange={setPeriodFilter}
+        onChange={handlePeriodChange}
         availableYears={availableYears}
       />
 

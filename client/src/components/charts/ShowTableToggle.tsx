@@ -1,4 +1,5 @@
-import { useId, useState, type ReactNode } from "react";
+import { type ReactNode } from "react";
+import { ChartTableToggle } from "./ChartTableToggle";
 
 type ShowTableToggleProps = {
   children: ReactNode;
@@ -7,41 +8,20 @@ type ShowTableToggleProps = {
   hasData?: boolean;
 };
 
+/** Chart-first view with Chart | Table | Both selector (default Chart). */
 export function ShowTableToggle({
   children,
   table,
   tableCaption,
   hasData = true,
 }: ShowTableToggleProps) {
-  const [showTable, setShowTable] = useState(false);
-  const panelId = useId();
-
-  if (!hasData) {
-    return <>{children}</>;
-  }
-
   return (
-    <>
-      {children}
-      <p className="govuk-!-margin-top-3 govuk-!-margin-bottom-0">
-        <button
-          type="button"
-          className="govuk-link"
-          aria-expanded={showTable}
-          aria-controls={panelId}
-          onClick={() => setShowTable((current) => !current)}
-        >
-          {showTable ? "Hide table" : "Show table"}
-        </button>
-      </p>
-      {showTable ? (
-        <div id={panelId} className="govuk-!-margin-top-3">
-          <table className="govuk-table">
-            <caption className="govuk-table__caption govuk-table__caption--m">{tableCaption}</caption>
-            {table}
-          </table>
-        </div>
-      ) : null}
-    </>
+    <ChartTableToggle
+      chart={children}
+      table={table}
+      tableCaption={tableCaption}
+      hasData={hasData}
+      defaultMode="chart"
+    />
   );
 }

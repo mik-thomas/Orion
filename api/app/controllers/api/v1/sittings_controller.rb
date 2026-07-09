@@ -30,6 +30,7 @@ module Api
           period: period_filter_json,
           available_fiscal_years: available_fiscal_years_json,
           filters: drill_down_filters_json,
+          summary: drill_down_summary(sittings),
           pagination: {
             page: page,
             per_page: per_page,
@@ -91,6 +92,29 @@ module Api
           magistrate_id: params[:magistrate_id]&.to_i,
           away_from_home: params[:away_from_home] == "1"
         }.compact
+      end
+
+      def drill_down_summary(scope)
+        completed = scope.where(status: "completed").count
+        vacated = scope.where(status: "vacated").count
+        cancelled_by_dj = scope.where(status: "cancelled", cancellation_category: "district_judge").count
+        cancelled = scope.where(status: "cancelled").where.not(cancellation_category: "district_judge").count
+
+        by_courthouse = scope.joins(:courthouse)
+          .group("courthouses.name")
+          .order(Arel.sql("count_all DESC"))
+          .count
+          .map { |courthouse, sittings| { courthouse: courthouse, sittings: sittings } }
+
+        {
+          totals: {
+            completed: completed,
+            vacated: vacated,
+            cancelled: cancelled,
+            cancelled_by_dj: cancelled_by_dj
+          },
+          by_courthouse: by_courthouse
+        }
       end
 
       def drill_down_sitting_json(sitting)

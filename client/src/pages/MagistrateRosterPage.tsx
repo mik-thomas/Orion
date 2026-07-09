@@ -3,6 +3,7 @@ import { Link, Navigate } from "react-router-dom";
 import { listMagistrateRoster } from "../api/magistrates";
 import { ApiError } from "../api/http";
 import { useRole } from "../context/RoleContext";
+import { magistrateProfilePath } from "../lib/periodFilter";
 import type { MagistrateRosterEntry } from "../types/domain";
 
 export function MagistrateRosterPage() {
@@ -81,7 +82,7 @@ export function MagistrateRosterPage() {
             {entries.map((entry) => (
               <tr key={entry.id} className="govuk-table__row">
                 <td className="govuk-table__cell">
-                  <Link to={`/magistrates/${entry.id}`} className="govuk-link">
+                  <Link to={magistrateProfilePath(entry.id)} className="govuk-link">
                     {entry.reference_code}
                   </Link>
                 </td>

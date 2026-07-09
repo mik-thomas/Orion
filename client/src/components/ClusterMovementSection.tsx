@@ -34,7 +34,7 @@ export function ClusterMovementSection({ report }: ClusterMovementSectionProps) 
       tagColour={summary.away_pct >= 30 ? "yellow" : "grey"}
       description="Completed sittings in the current fiscal year, grouped by magistrate home court and actual sitting location. Diagonal cells are sittings at home; off-diagonal cells are away sittings."
     >
-      <div className="orion-dashboard-stats orion-dashboard-stats--primary">
+      <div className="orion-dashboard-stats orion-dashboard-stats--primary orion-dashboard-stats--cols-4">
         <DashboardStat label="Completed sittings">{summary.total_completed_sittings}</DashboardStat>
         <DashboardStat label="At home court" variant="green">
           {summary.completed_at_home}

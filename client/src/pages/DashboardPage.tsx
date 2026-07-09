@@ -1,8 +1,9 @@
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useId, useState, type FormEvent } from "react";
 import { listMagistrates } from "../api/magistrates";
 import { getReportsOverview } from "../api/reports";
 import { ApiError } from "../api/http";
 import { ClusterMovementSection } from "../components/ClusterMovementSection";
+import { DashboardBreakdownPanel } from "../components/DashboardBreakdownPanel";
 import { DashboardSection } from "../components/DashboardSection";
 import { DashboardStat } from "../components/DashboardStat";
 import { DrillDownLink } from "../components/DrillDownLink";
@@ -12,6 +13,10 @@ import { CourtRoomTable } from "../components/CourtRoomTable";
 import { DjCancellationSection } from "../components/DjCancellationSection";
 import { PeriodFilter } from "../components/PeriodFilter";
 import { RetiringSoonSection } from "../components/RetiringSoonSection";
+import { ChartTableToggle } from "../components/charts/ChartTableToggle";
+import { DonutOrBarChart } from "../components/charts/DonutOrBarChart";
+import { HorizontalBarChart } from "../components/charts/HorizontalBarChart";
+import { commitmentRiskRows } from "../components/charts/chartAggregations";
 import { useRole } from "../context/RoleContext";
 import {
   defaultPeriodFilter,
@@ -95,6 +100,9 @@ export function DashboardPage() {
 
   const periodTag = periodFilterLabel(periodFilter);
   const periodTagColour = periodFilter.mode === "all" ? "grey" : "blue";
+  const sittingOverviewSummaryId = useId();
+  const awayFromHomeSummaryId = useId();
+  const commitmentRiskSummaryId = useId();
 
   return (
     <>
@@ -202,7 +210,7 @@ export function DashboardPage() {
               Click a figure to view matching sittings.
             </p>
 
-            <div className="orion-dashboard-stats orion-dashboard-stats--primary">
+            <div className="orion-dashboard-stats orion-dashboard-stats--primary orion-dashboard-stats--cols-3">
               <DashboardStat label="Completed" tone="green">
                 <SittingStatLink
                   count={reports.summary.completed_sittings}
@@ -275,6 +283,21 @@ export function DashboardPage() {
                 <dd className="orion-dashboard-context-stats__value">{reports.summary.sitting_types}</dd>
               </div>
             </dl>
+
+            <div className="orion-dashboard-subsection govuk-!-margin-top-6">
+              <h3 className="govuk-heading-s orion-dashboard-subsection__title">Status breakdown</h3>
+              <DonutOrBarChart
+                totals={{
+                  completed: reports.summary.completed_sittings,
+                  vacated: reports.summary.vacated_sittings,
+                  cancelled: reports.summary.cancelled_sittings - reports.summary.cancelled_by_dj,
+                  cancelled_by_dj: reports.summary.cancelled_by_dj,
+                }}
+                summaryContext={periodTag}
+                summaryId={sittingOverviewSummaryId}
+                variant="donut"
+              />
+            </div>
           </>
         ) : null}
       </DashboardSection>
@@ -296,142 +319,50 @@ export function DashboardPage() {
 
             <div className="govuk-grid-row">
               <div className="govuk-grid-column-one-half">
-                <div className="orion-dashboard-subsection">
-                  <h3 className="govuk-heading-s orion-dashboard-subsection__title">Sittings by courthouse</h3>
-                  {reports.by_courthouse.length === 0 ? (
-                    <p className="govuk-body">No sitting data yet.</p>
-                  ) : (
-                    <table className="govuk-table">
-                      <thead className="govuk-table__head">
-                        <tr className="govuk-table__row">
-                          <th scope="col" className="govuk-table__header">
-                            Courthouse
-                          </th>
-                          <th scope="col" className="govuk-table__header">
-                            Sittings
-                          </th>
-                        </tr>
-                      </thead>
-                      <tbody className="govuk-table__body">
-                        {reports.by_courthouse.map((row) => (
-                          <tr key={row.courthouse} className="govuk-table__row">
-                            <td className="govuk-table__cell">
-                              <DrillDownLink
-                                filters={{ courthouse: row.courthouse }}
-                                period={periodFilter}
-                                ariaLabel={`View sittings at ${row.courthouse}`}
-                              >
-                                {row.courthouse}
-                              </DrillDownLink>
-                            </td>
-                            <td className="govuk-table__cell">
-                              <DrillDownLink
-                                filters={{ courthouse: row.courthouse }}
-                                period={periodFilter}
-                                ariaLabel={`View ${row.sittings} sittings at ${row.courthouse}`}
-                              >
-                                {row.sittings}
-                              </DrillDownLink>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  )}
-                </div>
+                <DashboardBreakdownPanel
+                  title="Sittings by courthouse"
+                  labelHeader="Courthouse"
+                  rows={reports.by_courthouse.map((row) => ({
+                    key: row.courthouse,
+                    label: row.courthouse,
+                    value: row.sittings,
+                  }))}
+                  periodFilter={periodFilter}
+                  periodLabel={periodTag}
+                  filterForRow={(row) => ({ courthouse: row.label })}
+                  emptyMessage="No sitting data yet."
+                />
               </div>
               <div className="govuk-grid-column-one-half">
-                <div className="orion-dashboard-subsection">
-                  <h3 className="govuk-heading-s orion-dashboard-subsection__title">Sittings by court type</h3>
-                  {reports.by_court_type.length === 0 ? (
-                    <p className="govuk-body">No court type data yet.</p>
-                  ) : (
-                    <table className="govuk-table">
-                      <thead className="govuk-table__head">
-                        <tr className="govuk-table__row">
-                          <th scope="col" className="govuk-table__header">
-                            Court type
-                          </th>
-                          <th scope="col" className="govuk-table__header">
-                            Sittings
-                          </th>
-                        </tr>
-                      </thead>
-                      <tbody className="govuk-table__body">
-                        {reports.by_court_type.map((row) => (
-                          <tr key={row.court_type} className="govuk-table__row">
-                            <td className="govuk-table__cell">
-                              <DrillDownLink
-                                filters={{ court_type: row.court_type }}
-                                period={periodFilter}
-                                ariaLabel={`View sittings for court type ${row.court_type}`}
-                              >
-                                {row.court_type}
-                              </DrillDownLink>
-                            </td>
-                            <td className="govuk-table__cell">
-                              <DrillDownLink
-                                filters={{ court_type: row.court_type }}
-                                period={periodFilter}
-                                ariaLabel={`View ${row.sittings} sittings for court type ${row.court_type}`}
-                              >
-                                {row.sittings}
-                              </DrillDownLink>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  )}
-                </div>
+                <DashboardBreakdownPanel
+                  title="Sittings by court type"
+                  labelHeader="Court type"
+                  rows={reports.by_court_type.map((row) => ({
+                    key: row.court_type,
+                    label: row.court_type,
+                    value: row.sittings,
+                  }))}
+                  periodFilter={periodFilter}
+                  periodLabel={periodTag}
+                  filterForRow={(row) => ({ court_type: row.label })}
+                  emptyMessage="No court type data yet."
+                />
               </div>
             </div>
 
-            <div className="orion-dashboard-subsection">
-              <h3 className="govuk-heading-s orion-dashboard-subsection__title">
-                Business types (Remands, Trials, etc.)
-              </h3>
-              {reports.by_sitting_type.length === 0 ? (
-                <p className="govuk-body">No sitting types recorded yet.</p>
-              ) : (
-                <table className="govuk-table">
-                  <thead className="govuk-table__head">
-                    <tr className="govuk-table__row">
-                      <th scope="col" className="govuk-table__header">
-                        Type
-                      </th>
-                      <th scope="col" className="govuk-table__header">
-                        Sittings
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="govuk-table__body">
-                    {reports.by_sitting_type.map((row) => (
-                      <tr key={row.sitting_type} className="govuk-table__row">
-                        <td className="govuk-table__cell">
-                          <DrillDownLink
-                            filters={{ sitting_type: row.sitting_type }}
-                            period={periodFilter}
-                            ariaLabel={`View sittings for business type ${row.sitting_type}`}
-                          >
-                            {row.sitting_type}
-                          </DrillDownLink>
-                        </td>
-                        <td className="govuk-table__cell">
-                          <DrillDownLink
-                            filters={{ sitting_type: row.sitting_type }}
-                            period={periodFilter}
-                            ariaLabel={`View ${row.sittings} sittings for business type ${row.sitting_type}`}
-                          >
-                            {row.sittings}
-                          </DrillDownLink>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              )}
-            </div>
+            <DashboardBreakdownPanel
+              title="Business types (Remands, Trials, etc.)"
+              labelHeader="Type"
+              rows={reports.by_sitting_type.map((row) => ({
+                key: row.sitting_type,
+                label: row.sitting_type,
+                value: row.sittings,
+              }))}
+              periodFilter={periodFilter}
+              periodLabel={periodTag}
+              filterForRow={(row) => ({ sitting_type: row.label })}
+              emptyMessage="No sitting types recorded yet."
+            />
 
             <CourtRoomTable rows={reports.by_court_room} periodFilter={periodFilter} embedded />
           </DashboardSection>
@@ -453,37 +384,61 @@ export function DashboardPage() {
             {reports.away_from_home.length === 0 ? (
               <p className="govuk-body">No cross-court movement recorded yet.</p>
             ) : (
-              <table className="govuk-table">
-                <thead className="govuk-table__head">
-                  <tr className="govuk-table__row">
-                    <th scope="col" className="govuk-table__header">
-                      Magistrate
-                    </th>
-                    <th scope="col" className="govuk-table__header">
-                      Away sittings
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="govuk-table__body">
-                  {reports.away_from_home.map((row) => {
-                    const tag = awaySittingsTag(row.away_sittings);
-                    return (
-                      <tr key={row.magistrate_id} className="govuk-table__row">
-                        <td className="govuk-table__cell">
-                          <MagistrateLink id={row.magistrate_id} name={row.magistrate} />
-                        </td>
-                        <td className="govuk-table__cell">
-                          {tag ? (
-                            <strong className={`govuk-tag govuk-tag--${tag.colour}`}>{tag.text}</strong>
-                          ) : (
-                            row.away_sittings
-                          )}
-                        </td>
+              <ChartTableToggle
+                tableCaption="Away from home court"
+                hasData={reports.away_from_home.length > 0}
+                chart={
+                  <HorizontalBarChart
+                    rows={reports.away_from_home.map((row) => ({
+                      key: String(row.magistrate_id),
+                      label: row.magistrate,
+                      value: row.away_sittings,
+                      colour:
+                        row.away_sittings >= 10
+                          ? "#d4351c"
+                          : row.away_sittings >= 5
+                            ? "#f47738"
+                            : undefined,
+                    }))}
+                    emptyMessage="No cross-court movement recorded yet."
+                    summaryContext="away sittings by magistrate"
+                    summaryId={awayFromHomeSummaryId}
+                  />
+                }
+                table={
+                  <>
+                    <thead className="govuk-table__head">
+                      <tr className="govuk-table__row">
+                        <th scope="col" className="govuk-table__header">
+                          Magistrate
+                        </th>
+                        <th scope="col" className="govuk-table__header">
+                          Away sittings
+                        </th>
                       </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
+                    </thead>
+                    <tbody className="govuk-table__body">
+                      {reports.away_from_home.map((row) => {
+                        const tag = awaySittingsTag(row.away_sittings);
+                        return (
+                          <tr key={row.magistrate_id} className="govuk-table__row">
+                            <td className="govuk-table__cell">
+                              <MagistrateLink id={row.magistrate_id} name={row.magistrate} />
+                            </td>
+                            <td className="govuk-table__cell">
+                              {tag ? (
+                                <strong className={`govuk-tag govuk-tag--${tag.colour}`}>{tag.text}</strong>
+                              ) : (
+                                row.away_sittings
+                              )}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </>
+                }
+              />
             )}
           </DashboardSection>
 
@@ -496,59 +451,73 @@ export function DashboardPage() {
               tagColour="yellow"
               description="Magistrates projected to miss their sitting commitment based on current completion rates."
             >
-              <table className="govuk-table">
-                <thead className="govuk-table__head">
-                  <tr className="govuk-table__row">
-                    <th scope="col" className="govuk-table__header">
-                      Magistrate
-                    </th>
-                    <th scope="col" className="govuk-table__header">
-                      Risk
-                    </th>
-                    <th scope="col" className="govuk-table__header">
-                      Projected
-                    </th>
-                    <th scope="col" className="govuk-table__header">
-                      Completion rate
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="govuk-table__body">
-                  {reports.commitment_forecast.map((row) => {
-                    const tagColour =
-                      row.risk_level === "unlikely_to_meet"
-                        ? "red"
-                        : row.risk_level === "at_risk"
-                          ? "yellow"
-                          : "green";
-                    const tagLabel =
-                      row.risk_level === "unlikely_to_meet"
-                        ? "Unlikely to meet"
-                        : row.risk_level === "at_risk"
-                          ? "At risk"
-                          : "On track";
-
-                    return (
-                      <tr key={row.magistrate_id} className="govuk-table__row">
-                        <td className="govuk-table__cell">
-                          <MagistrateLink id={row.magistrate_id} name={row.display_name} />
-                        </td>
-                        <td className="govuk-table__cell">
-                          <strong className={`govuk-tag govuk-tag--${tagColour}`}>{tagLabel}</strong>
-                        </td>
-                        <td className="govuk-table__cell">
-                          {row.projected_full_days_end_of_year}/{row.full_days_required} full days
-                        </td>
-                        <td className="govuk-table__cell">
-                          {row.completion_rate != null
-                            ? `${(row.completion_rate * 100).toFixed(1)}%`
-                            : "—"}
-                        </td>
+              <ChartTableToggle
+                tableCaption="Commitment forecast"
+                hasData={reports.commitment_forecast.length > 0}
+                chart={
+                  <HorizontalBarChart
+                    rows={commitmentRiskRows(reports.commitment_forecast)}
+                    emptyMessage="No commitment forecast data."
+                    summaryContext="commitment risk levels"
+                    summaryId={commitmentRiskSummaryId}
+                  />
+                }
+                table={
+                  <>
+                    <thead className="govuk-table__head">
+                      <tr className="govuk-table__row">
+                        <th scope="col" className="govuk-table__header">
+                          Magistrate
+                        </th>
+                        <th scope="col" className="govuk-table__header">
+                          Risk
+                        </th>
+                        <th scope="col" className="govuk-table__header">
+                          Projected
+                        </th>
+                        <th scope="col" className="govuk-table__header">
+                          Completion rate
+                        </th>
                       </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
+                    </thead>
+                    <tbody className="govuk-table__body">
+                      {reports.commitment_forecast.map((row) => {
+                        const tagColour =
+                          row.risk_level === "unlikely_to_meet"
+                            ? "red"
+                            : row.risk_level === "at_risk"
+                              ? "yellow"
+                              : "green";
+                        const tagLabel =
+                          row.risk_level === "unlikely_to_meet"
+                            ? "Unlikely to meet"
+                            : row.risk_level === "at_risk"
+                              ? "At risk"
+                              : "On track";
+
+                        return (
+                          <tr key={row.magistrate_id} className="govuk-table__row">
+                            <td className="govuk-table__cell">
+                              <MagistrateLink id={row.magistrate_id} name={row.display_name} />
+                            </td>
+                            <td className="govuk-table__cell">
+                              <strong className={`govuk-tag govuk-tag--${tagColour}`}>{tagLabel}</strong>
+                            </td>
+                            <td className="govuk-table__cell">
+                              {row.projected_full_days_end_of_year}/{row.full_days_required} full days
+                            </td>
+                            <td className="govuk-table__cell">
+                              {row.completion_rate != null
+                                ? `${(row.completion_rate * 100).toFixed(1)}%`
+                                : "—"}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </>
+                }
+              />
             </DashboardSection>
           ) : null}
 

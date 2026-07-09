@@ -190,6 +190,15 @@ export interface SittingsDrillDownResponse {
   period: PeriodFilterContext;
   available_fiscal_years: string[];
   filters: Partial<SittingsDrillDownFilters>;
+  summary: {
+    totals: {
+      completed: number;
+      vacated: number;
+      cancelled: number;
+      cancelled_by_dj: number;
+    };
+    by_courthouse: Array<{ courthouse: string; sittings: number }>;
+  };
   pagination: {
     page: number;
     per_page: number;
