@@ -826,6 +826,11 @@
   .orion-chart__donut-segment--enter {
     animation: none;
   }
+
+  .orion-sitting-score__needle-group--animate,
+  .orion-sitting-score__value {
+    animation: none;
+  }
 }
 
 .orion-profile-charts-grid {
@@ -954,21 +959,43 @@
   margin-bottom: 0;
 }
 
-/* Sitting score meter — credit-score style gauge on magistrate profile */
+/* Sitting score meter — flat GDS gauge on magistrate profile */
+
+.orion-sitting-score__header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem 1rem;
+  margin-bottom: 0.5rem;
+}
+
+.orion-sitting-score__title {
+  margin-bottom: 0;
+}
+
+.orion-sitting-score__year {
+  flex-shrink: 0;
+}
+
+.orion-sitting-score__intro {
+  margin-bottom: 1rem;
+}
 
 .orion-sitting-score__panel {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 1.5rem 2rem;
-  padding: 1.25rem 1.5rem;
+  gap: 1.5rem 2.5rem;
+  padding: 1.5rem 1.75rem;
   border: 1px solid #b1b4b6;
   background: #f3f2f1;
 }
 
 .orion-sitting-score__gauge {
-  position: relative;
-  width: min(100%, 14rem);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: min(100%, 12.5rem);
   flex-shrink: 0;
 }
 
@@ -978,16 +1005,16 @@
   height: auto;
 }
 
-.orion-sitting-score__arc-track {
+.orion-sitting-score__arc-bg {
   fill: none;
-  stroke: #b1b4b6;
-  stroke-width: 10;
-  stroke-linecap: round;
+  stroke: #dee0e2;
+  stroke-width: 6;
+  stroke-linecap: butt;
 }
 
 .orion-sitting-score__arc-zone {
   fill: none;
-  stroke-width: 10;
+  stroke-width: 6;
   stroke-linecap: butt;
 }
 
@@ -1007,9 +1034,35 @@
   stroke: #00703c;
 }
 
+.orion-sitting-score__arc-label {
+  fill: #505a5f;
+  font-family: "GDS Transport", arial, sans-serif;
+  font-size: 10px;
+  font-weight: 400;
+}
+
+.orion-sitting-score__needle-group {
+  transform-origin: 100px 96px;
+  transform: rotate(calc(-90deg + var(--needle-angle, 0deg)));
+}
+
+.orion-sitting-score__needle-group--animate {
+  animation: orion-sitting-score-needle 0.9s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+@keyframes orion-sitting-score-needle {
+  from {
+    transform: rotate(-90deg);
+  }
+
+  to {
+    transform: rotate(calc(-90deg + var(--needle-angle, 0deg)));
+  }
+}
+
 .orion-sitting-score__needle {
   stroke: #0b0c0c;
-  stroke-width: 3;
+  stroke-width: 2;
   stroke-linecap: round;
 }
 
@@ -1018,29 +1071,45 @@
 }
 
 .orion-sitting-score__value {
-  position: absolute;
-  left: 50%;
-  bottom: 0.35rem;
-  transform: translateX(-50%);
-  margin: 0;
-  font-size: 2rem;
-  font-weight: 700;
+  margin: -0.25rem 0 0;
+  text-align: center;
   line-height: 1;
   color: #0b0c0c;
+  animation: orion-sitting-score-value 0.5s ease 0.25s both;
+}
+
+@keyframes orion-sitting-score-value {
+  from {
+    opacity: 0;
+    transform: translateY(0.25rem);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .orion-sitting-score__summary {
-  flex: 1 1 12rem;
+  flex: 1 1 14rem;
   min-width: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
 }
 
-.orion-sitting-score__toggle {
-  margin-top: 0.75rem;
-  padding: 0;
-  border: none;
-  background: none;
-  cursor: pointer;
-  text-align: left;
+.orion-sitting-score__description {
+  color: #505a5f;
+  max-width: 28rem;
+}
+
+.orion-sitting-score__details {
+  margin-top: 1rem;
+  margin-bottom: 0;
+}
+
+.orion-sitting-score__details .govuk-table {
+  margin-bottom: 0;
 }
 
 .orion-sitting-score__points--positive {
