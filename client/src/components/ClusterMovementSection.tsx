@@ -1,10 +1,12 @@
 import { useId, useMemo } from "react";
 import { MagistrateLink } from "./MagistrateLink";
 import { DashboardSection } from "./DashboardSection";
-import { DashboardStat } from "./DashboardStat";
+import { DashboardStatPanel, dashboardStatValue } from "./DashboardStatPanel";
 import { SortableTableHeader } from "./SortableTableHeader";
 import { ChartTableToggle } from "./charts/ChartTableToggle";
 import { HorizontalBarChart } from "./charts/HorizontalBarChart";
+import { SimpleBreakdownTable } from "./charts/SimpleBreakdownTable";
+import { ViewChartButton } from "./charts/ViewChartButton";
 import { SimpleDonut, homeAwaySegments } from "./charts/SimpleDonut";
 import { useTableSort } from "../lib/useTableSort";
 import type { HomeCourtMovementReport } from "../types/domain";
@@ -134,16 +136,23 @@ export function ClusterMovementSection({ report }: ClusterMovementSectionProps) 
       tagColour={summary.away_pct >= 30 ? "yellow" : "grey"}
       description="Fiscal-year completed sittings by home court and sitting location (off-diagonal cells are away sittings)."
     >
-      <div className="orion-dashboard-stats orion-dashboard-stats--primary orion-dashboard-stats--cols-4">
-        <DashboardStat label="Completed sittings">{summary.total_completed_sittings}</DashboardStat>
-        <DashboardStat label="At home court" variant="green">
-          {summary.completed_at_home}
-        </DashboardStat>
-        <DashboardStat label="Away from home" variant="yellow">
-          {summary.completed_away}
-        </DashboardStat>
-        <DashboardStat label="Away %">{summary.away_pct}%</DashboardStat>
-      </div>
+      <DashboardStatPanel
+        cols={4}
+        items={[
+          { label: "Completed sittings", value: dashboardStatValue(summary.total_completed_sittings) },
+          { label: "At home court", tone: "green", value: dashboardStatValue(summary.completed_at_home) },
+          { label: "Away from home", tone: "yellow", value: dashboardStatValue(summary.completed_away) },
+          {
+            label: "Away %",
+            value:
+              summary.away_pct === 0 ? (
+                <span className="orion-dashboard-stat__zero">0%</span>
+              ) : (
+                `${summary.away_pct}%`
+              ),
+          },
+        ]}
+      />
 
       {summary.magistrates_missing_home_court > 0 && (
         <p className="orion-dashboard-footnote">
@@ -153,33 +162,69 @@ export function ClusterMovementSection({ report }: ClusterMovementSectionProps) 
         </p>
       )}
 
-      <div className="orion-profile-charts-grid orion-profile-charts-grid--two govuk-!-margin-bottom-4">
-        <div className="orion-dashboard-subsection">
-          <h3 className="govuk-heading-s orion-dashboard-subsection__title">At home vs away</h3>
-          <SimpleDonut
-            segments={homeAwaySegments(summary.completed_at_home, summary.completed_away)}
-            centreLabel={`${summary.away_pct}% away`}
-            summaryContext="completed sittings"
-            summaryId={homeAwaySummaryId}
-            emptyMessage="No completed sittings recorded."
-          />
-        </div>
-        <div className="orion-dashboard-subsection">
-          <h3 className="govuk-heading-s orion-dashboard-subsection__title">Away sittings by home court</h3>
-          {by_home_court.length === 0 ? (
-            <p className="govuk-body">No movement data yet.</p>
-          ) : (
-            <HorizontalBarChart
-              rows={by_home_court.map((row) => ({
-                key: row.home_courthouse,
-                label: row.home_courthouse,
-                value: row.completed_away,
-              }))}
-              emptyMessage="No movement data yet."
-              summaryContext="away sittings by home court"
-              summaryId={awayByHomeCourtSummaryId}
+      <div className="govuk-grid-row govuk-!-margin-bottom-4">
+        <div className="govuk-grid-column-one-half">
+          <div className="orion-dashboard-subsection">
+            <h3 className="govuk-heading-s orion-dashboard-subsection__title">At home vs away</h3>
+            <ViewChartButton
+              title="At home vs away"
+              chart={
+                <SimpleDonut
+                  segments={homeAwaySegments(summary.completed_at_home, summary.completed_away)}
+                  centreLabel={`${summary.away_pct}% away`}
+                  summaryContext="completed sittings"
+                  summaryId={homeAwaySummaryId}
+                  emptyMessage="No completed sittings recorded."
+                />
+              }
             />
-          )}
+            <SimpleBreakdownTable
+              caption="At home vs away"
+              labelHeader="Location"
+              valueHeader="Completed sittings"
+              rows={[
+                { label: "At home court", value: summary.completed_at_home },
+                { label: "Away from home", value: summary.completed_away },
+              ]}
+              emptyMessage="No completed sittings recorded."
+            />
+          </div>
+        </div>
+        <div className="govuk-grid-column-one-half">
+          <div className="orion-dashboard-subsection">
+            <h3 className="govuk-heading-s orion-dashboard-subsection__title">Away sittings by home court</h3>
+            {by_home_court.length === 0 ? (
+              <p className="govuk-body">No movement data yet.</p>
+            ) : (
+              <>
+                <ViewChartButton
+                  title="Away sittings by home court"
+                  chart={
+                    <HorizontalBarChart
+                      rows={by_home_court.map((row) => ({
+                        key: row.home_courthouse,
+                        label: row.home_courthouse,
+                        value: row.completed_away,
+                      }))}
+                      emptyMessage="No movement data yet."
+                      summaryContext="away sittings by home court"
+                      summaryId={awayByHomeCourtSummaryId}
+                    />
+                  }
+                />
+                <SimpleBreakdownTable
+                  caption="Away sittings by home court"
+                  labelHeader="Home court"
+                  valueHeader="Away sittings"
+                  rows={by_home_court.map((row) => ({
+                    label: row.home_courthouse,
+                    value: row.completed_away,
+                  }))}
+                  emptyMessage="No movement data yet."
+                />
+              </>
+            )}
+          </div>
         </div>
       </div>
 

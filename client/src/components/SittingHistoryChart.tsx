@@ -1,5 +1,6 @@
 import { useMemo } from "react";
 import { ChartLegend } from "./charts/ChartLegend";
+import { ViewChartButton } from "./charts/ViewChartButton";
 import { type ChartSegment as SharedChartSegment } from "./charts/chartUtils";
 import { useChartFilter } from "./charts/useChartFilter";
 import { isCancellationCategory } from "../lib/cancellationCategory";
@@ -96,46 +97,49 @@ function formatSummary(
   return `${summary} (${total} sittings in ${periodLabel})${filteredNote}.`;
 }
 
+function buildChartData(sittings: Sitting[]) {
+  const totals: Record<ChartSegment, number> = Object.fromEntries(
+    SEGMENTS.map((segment) => [segment.key, 0])
+  ) as Record<ChartSegment, number>;
+
+  const byMonth = new Map<string, Record<ChartSegment, number>>();
+
+  for (const sitting of sittings) {
+    const segment = sittingChartSegment(sitting);
+    totals[segment] += 1;
+
+    const month = monthKey(sitting.session_date);
+    if (!byMonth.has(month)) {
+      byMonth.set(
+        month,
+        Object.fromEntries(SEGMENTS.map((s) => [s.key, 0])) as Record<ChartSegment, number>
+      );
+    }
+    byMonth.get(month)![segment] += 1;
+  }
+
+  const months = [...byMonth.keys()].sort();
+  const monthRows = months.map((month) => ({
+    month,
+    label: monthLabel(month),
+    counts: byMonth.get(month)!,
+    total: SEGMENTS.reduce((sum, segment) => sum + byMonth.get(month)![segment.key], 0),
+  }));
+
+  const maxTotal = monthRows.reduce((max, row) => Math.max(max, row.total), 0);
+
+  return { totals, monthRows, maxTotal };
+}
+
 type SittingHistoryChartProps = {
   sittings: Sitting[];
   periodLabel: string;
 };
 
-export function SittingHistoryChart({ sittings, periodLabel }: SittingHistoryChartProps) {
-  const chartData = useMemo(() => {
-    const totals: Record<ChartSegment, number> = Object.fromEntries(
-      SEGMENTS.map((segment) => [segment.key, 0])
-    ) as Record<ChartSegment, number>;
-
-    const byMonth = new Map<string, Record<ChartSegment, number>>();
-
-    for (const sitting of sittings) {
-      const segment = sittingChartSegment(sitting);
-      totals[segment] += 1;
-
-      const month = monthKey(sitting.session_date);
-      if (!byMonth.has(month)) {
-        byMonth.set(
-          month,
-          Object.fromEntries(SEGMENTS.map((s) => [s.key, 0])) as Record<ChartSegment, number>
-        );
-      }
-      byMonth.get(month)![segment] += 1;
-    }
-
-    const months = [...byMonth.keys()].sort();
-    const monthRows = months.map((month) => ({
-      month,
-      label: monthLabel(month),
-      counts: byMonth.get(month)!,
-      total: SEGMENTS.reduce((sum, segment) => sum + byMonth.get(month)![segment.key], 0),
-    }));
-
-    const maxTotal = monthRows.reduce((max, row) => Math.max(max, row.total), 0);
-
-    return { totals, monthRows, maxTotal };
-  }, [sittings]);
-
+function SittingHistoryChartVisual({
+  periodLabel,
+  chartData,
+}: Omit<SittingHistoryChartProps, "sittings"> & { chartData: ReturnType<typeof buildChartData> }) {
   const legendSegments: SharedChartSegment[] = useMemo(
     () =>
       SEGMENTS.filter((segment) => chartData.totals[segment.key] > 0).map((segment) => ({
@@ -177,131 +181,165 @@ export function SittingHistoryChart({ sittings, periodLabel }: SittingHistoryCha
       : 0;
 
   return (
+    <>
+      <p className="govuk-visually-hidden" id="sitting-history-summary">
+        {summaryText}
+      </p>
+
+      <figure aria-labelledby="sitting-history-summary" role="img">
+        <svg
+          className="orion-sitting-history-chart__svg"
+          viewBox={`0 0 ${chartWidth} ${chartHeight}`}
+          preserveAspectRatio="xMidYMid meet"
+          aria-hidden="true"
+        >
+          {[0, 0.25, 0.5, 0.75, 1].map((fraction) => {
+            const value = Math.round(visibleMaxTotal * (1 - fraction));
+            const y = marginTop + plotHeight * fraction;
+            return (
+              <g key={fraction}>
+                <line
+                  x1={marginLeft}
+                  y1={y}
+                  x2={chartWidth - marginRight}
+                  y2={y}
+                  stroke="#b1b4b6"
+                  strokeWidth={1}
+                />
+                <text
+                  x={marginLeft - 6}
+                  y={y + 4}
+                  textAnchor="end"
+                  className="orion-sitting-history-chart__axis-label"
+                >
+                  {value}
+                </text>
+              </g>
+            );
+          })}
+
+          {chartData.monthRows.map((row, monthIndex) => {
+            const x = marginLeft + monthIndex * (barWidth + barGap);
+            let yOffset = marginTop + plotHeight;
+
+            return (
+              <g key={row.month}>
+                {SEGMENTS.map((segment, segmentIndex) => {
+                  const count = row.counts[segment.key];
+                  const segmentVisible = isVisible(segment.key);
+                  if (count <= 0) return null;
+
+                  const barHeight =
+                    segmentVisible && visibleMaxTotal > 0
+                      ? (count / visibleMaxTotal) * plotHeight
+                      : 0;
+                  yOffset -= barHeight;
+
+                  return (
+                    <rect
+                      key={segment.key}
+                      x={x}
+                      y={yOffset}
+                      width={barWidth}
+                      height={barHeight}
+                      fill={segment.colour}
+                      className={[
+                        "orion-sitting-history-chart__bar",
+                        "orion-chart__bar--vertical",
+                        segmentVisible ? "orion-sitting-history-chart__bar--enter" : "",
+                      ]
+                        .filter(Boolean)
+                        .join(" ")}
+                      style={{
+                        animationDelay: `${monthIndex * 35 + segmentIndex * 20}ms`,
+                        opacity: segmentVisible ? 1 : 0,
+                      }}
+                    >
+                      <title>{`${row.label}: ${count} ${segment.label}`}</title>
+                    </rect>
+                  );
+                })}
+                <text
+                  x={x + barWidth / 2}
+                  y={chartHeight - 8}
+                  textAnchor="middle"
+                  className="orion-sitting-history-chart__axis-label"
+                >
+                  {row.label}
+                </text>
+              </g>
+            );
+          })}
+
+          <text
+            x={marginLeft + plotWidth / 2}
+            y={chartHeight - 2}
+            textAnchor="middle"
+            className="orion-sitting-history-chart__axis-title"
+          >
+            Month
+          </text>
+          <text
+            transform={`translate(12 ${marginTop + plotHeight / 2}) rotate(-90)`}
+            textAnchor="middle"
+            className="orion-sitting-history-chart__axis-title"
+          >
+            Sittings
+          </text>
+        </svg>
+        <figcaption className="govuk-body-s govuk-!-margin-top-2">{summaryText}</figcaption>
+      </figure>
+
+      <ChartLegend
+        segments={legendSegments}
+        isVisible={isVisible}
+        onToggle={toggle}
+        onShowAll={showAll}
+        interactive
+      />
+    </>
+  );
+}
+
+export function SittingHistoryChart({ sittings, periodLabel }: SittingHistoryChartProps) {
+  const chartData = useMemo(() => buildChartData(sittings), [sittings]);
+
+  return (
     <DashboardSection
       title="Sitting history"
       headingLevel={3}
       description={`Monthly sittings by outcome for ${periodLabel}.`}
       className="orion-sitting-history-chart"
     >
-      <p className="govuk-visually-hidden" id="sitting-history-summary">
-        {summaryText}
-      </p>
-
       {sittings.length === 0 ? (
         <p className="govuk-body">No sittings recorded for this period.</p>
       ) : (
         <>
-          <figure aria-labelledby="sitting-history-summary" role="img">
-            <svg
-              className="orion-sitting-history-chart__svg"
-              viewBox={`0 0 ${chartWidth} ${chartHeight}`}
-              preserveAspectRatio="xMidYMid meet"
-              aria-hidden="true"
-            >
-              {[0, 0.25, 0.5, 0.75, 1].map((fraction) => {
-                const value = Math.round(visibleMaxTotal * (1 - fraction));
-                const y = marginTop + plotHeight * fraction;
-                return (
-                  <g key={fraction}>
-                    <line
-                      x1={marginLeft}
-                      y1={y}
-                      x2={chartWidth - marginRight}
-                      y2={y}
-                      stroke="#b1b4b6"
-                      strokeWidth={1}
-                    />
-                    <text
-                      x={marginLeft - 6}
-                      y={y + 4}
-                      textAnchor="end"
-                      className="orion-sitting-history-chart__axis-label"
-                    >
-                      {value}
-                    </text>
-                  </g>
-                );
-              })}
-
-              {chartData.monthRows.map((row, monthIndex) => {
-                const x = marginLeft + monthIndex * (barWidth + barGap);
-                let yOffset = marginTop + plotHeight;
-
-                return (
-                  <g key={row.month}>
-                    {SEGMENTS.map((segment, segmentIndex) => {
-                      const count = row.counts[segment.key];
-                      const segmentVisible = isVisible(segment.key);
-                      if (count <= 0) return null;
-
-                      const barHeight =
-                        segmentVisible && visibleMaxTotal > 0
-                          ? (count / visibleMaxTotal) * plotHeight
-                          : 0;
-                      yOffset -= barHeight;
-
-                      return (
-                        <rect
-                          key={segment.key}
-                          x={x}
-                          y={yOffset}
-                          width={barWidth}
-                          height={barHeight}
-                          fill={segment.colour}
-                          className={[
-                            "orion-sitting-history-chart__bar",
-                            "orion-chart__bar--vertical",
-                            segmentVisible ? "orion-sitting-history-chart__bar--enter" : "",
-                          ]
-                            .filter(Boolean)
-                            .join(" ")}
-                          style={{
-                            animationDelay: `${monthIndex * 35 + segmentIndex * 20}ms`,
-                            opacity: segmentVisible ? 1 : 0,
-                          }}
-                        >
-                          <title>{`${row.label}: ${count} ${segment.label}`}</title>
-                        </rect>
-                      );
-                    })}
-                    <text
-                      x={x + barWidth / 2}
-                      y={chartHeight - 8}
-                      textAnchor="middle"
-                      className="orion-sitting-history-chart__axis-label"
-                    >
-                      {row.label}
-                    </text>
-                  </g>
-                );
-              })}
-
-              <text
-                x={marginLeft + plotWidth / 2}
-                y={chartHeight - 2}
-                textAnchor="middle"
-                className="orion-sitting-history-chart__axis-title"
-              >
-                Month
-              </text>
-              <text
-                transform={`translate(12 ${marginTop + plotHeight / 2}) rotate(-90)`}
-                textAnchor="middle"
-                className="orion-sitting-history-chart__axis-title"
-              >
-                Sittings
-              </text>
-            </svg>
-            <figcaption className="govuk-body-s govuk-!-margin-top-2">{summaryText}</figcaption>
-          </figure>
-
-          <ChartLegend
-            segments={legendSegments}
-            isVisible={isVisible}
-            onToggle={toggle}
-            onShowAll={showAll}
-            interactive
+          <ViewChartButton
+            title="Sitting history"
+            chart={<SittingHistoryChartVisual periodLabel={periodLabel} chartData={chartData} />}
           />
+          <table className="govuk-table">
+            <caption className="govuk-table__caption govuk-table__caption--m">Sitting history by month</caption>
+            <thead className="govuk-table__head">
+              <tr className="govuk-table__row">
+                <th scope="col" className="govuk-table__header">
+                  Month
+                </th>
+                <th scope="col" className="govuk-table__header">
+                  Sittings
+                </th>
+              </tr>
+            </thead>
+            <tbody className="govuk-table__body">
+              {chartData.monthRows.map((row) => (
+                <tr key={row.month} className="govuk-table__row">
+                  <td className="govuk-table__cell">{row.label}</td>
+                  <td className="govuk-table__cell">{row.total}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </>
       )}
     </DashboardSection>

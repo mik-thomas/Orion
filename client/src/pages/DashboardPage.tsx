@@ -5,8 +5,7 @@ import { ApiError } from "../api/http";
 import { ClusterMovementSection } from "../components/ClusterMovementSection";
 import { DashboardBreakdownPanel } from "../components/DashboardBreakdownPanel";
 import { DashboardSection } from "../components/DashboardSection";
-import { DashboardStat } from "../components/DashboardStat";
-import { DrillDownLink } from "../components/DrillDownLink";
+import { DashboardDrillDownValue, DashboardStatPanel, dashboardStatValue } from "../components/DashboardStatPanel";
 import { MagistrateLink } from "../components/MagistrateLink";
 import { LoginReportTable } from "../components/LoginReportTable";
 import { CourtRoomTable } from "../components/CourtRoomTable";
@@ -17,6 +16,8 @@ import { SortableTableHeader } from "../components/SortableTableHeader";
 import { ChartTableToggle } from "../components/charts/ChartTableToggle";
 import { DonutOrBarChart } from "../components/charts/DonutOrBarChart";
 import { HorizontalBarChart } from "../components/charts/HorizontalBarChart";
+import { SittingStatusTable } from "../components/charts/SittingStatusTable";
+import { ViewChartButton } from "../components/charts/ViewChartButton";
 import { commitmentRiskRows } from "../components/charts/chartAggregations";
 import { useRole } from "../context/RoleContext";
 import {
@@ -26,7 +27,6 @@ import {
   type PeriodFilterState,
 } from "../lib/periodFilter";
 import type { MagistrateSummary, ReportsOverview } from "../types/domain";
-import type { SittingsDrillDownFilters } from "../lib/sittingsDrillDown";
 import { useTableSort } from "../lib/useTableSort";
 
 const RISK_SORT_ORDER = {
@@ -34,28 +34,6 @@ const RISK_SORT_ORDER = {
   at_risk: 1,
   on_track: 2,
 } as const;
-
-function SittingStatLink({
-  count,
-  filters,
-  period,
-  ariaLabel,
-}: {
-  count: number;
-  filters: SittingsDrillDownFilters;
-  period: PeriodFilterState;
-  ariaLabel: string;
-}) {
-  if (count === 0) {
-    return <span className="orion-dashboard-stat__zero">0</span>;
-  }
-
-  return (
-    <DrillDownLink filters={filters} period={period} ariaLabel={ariaLabel}>
-      {count}
-    </DrillDownLink>
-  );
-}
 
 function awaySittingsTag(count: number) {
   if (count >= 10) return { text: String(count), colour: "red" as const };
@@ -274,92 +252,121 @@ export function DashboardPage() {
               Click a figure to view matching sittings.
             </p>
 
-            <div className="orion-dashboard-stats orion-dashboard-stats--primary orion-dashboard-stats--cols-3">
-              <DashboardStat label="Completed" tone="green">
-                <SittingStatLink
-                  count={reports.summary.completed_sittings}
-                  filters={{ status: "completed" }}
-                  period={periodFilter}
-                  ariaLabel={`View ${reports.summary.completed_sittings} completed sittings`}
-                />
-              </DashboardStat>
-              <DashboardStat label="Vacated" tone="yellow">
-                <SittingStatLink
-                  count={reports.summary.vacated_sittings}
-                  filters={{ status: "vacated" }}
-                  period={periodFilter}
-                  ariaLabel={`View ${reports.summary.vacated_sittings} vacated sittings`}
-                />
-              </DashboardStat>
-              <DashboardStat label="Cancelled" tone="red">
-                <SittingStatLink
-                  count={reports.summary.cancelled_sittings}
-                  filters={{ status: "cancelled" }}
-                  period={periodFilter}
-                  ariaLabel={`View ${reports.summary.cancelled_sittings} cancelled sittings`}
-                />
-              </DashboardStat>
-              <DashboardStat label="Cancelled by DJ" tone="red">
-                <SittingStatLink
-                  count={reports.summary.cancelled_by_dj}
-                  filters={{ status: "cancelled", cancellation_category: "district_judge" }}
-                  period={periodFilter}
-                  ariaLabel={`View ${reports.summary.cancelled_by_dj} sittings cancelled by District Judge`}
-                />
-              </DashboardStat>
-              <DashboardStat label="Cancelled by HMCTS" tone="red">
-                <SittingStatLink
-                  count={reports.summary.cancelled_by_hmcts}
-                  filters={{ status: "cancelled", cancellation_category: "hmcts" }}
-                  period={periodFilter}
-                  ariaLabel={`View ${reports.summary.cancelled_by_hmcts} sittings cancelled by HMCTS`}
-                />
-              </DashboardStat>
-              <DashboardStat label="Cancelled by magistrate" tone="red">
-                <SittingStatLink
-                  count={reports.summary.cancelled_by_magistrate}
-                  filters={{ status: "cancelled", cancellation_category: "magistrate" }}
-                  period={periodFilter}
-                  ariaLabel={`View ${reports.summary.cancelled_by_magistrate} sittings cancelled by magistrate`}
-                />
-              </DashboardStat>
-            </div>
+            <DashboardStatPanel
+              cols={3}
+              items={[
+                {
+                  label: "Completed",
+                  tone: "green",
+                  value: (
+                    <DashboardDrillDownValue
+                      count={reports.summary.completed_sittings}
+                      filters={{ status: "completed" }}
+                      period={periodFilter}
+                      ariaLabel={`View ${reports.summary.completed_sittings} completed sittings`}
+                    />
+                  ),
+                },
+                {
+                  label: "Vacated",
+                  tone: "yellow",
+                  value: (
+                    <DashboardDrillDownValue
+                      count={reports.summary.vacated_sittings}
+                      filters={{ status: "vacated" }}
+                      period={periodFilter}
+                      ariaLabel={`View ${reports.summary.vacated_sittings} vacated sittings`}
+                    />
+                  ),
+                },
+                {
+                  label: "Cancelled",
+                  tone: "red",
+                  value: (
+                    <DashboardDrillDownValue
+                      count={reports.summary.cancelled_sittings}
+                      filters={{ status: "cancelled" }}
+                      period={periodFilter}
+                      ariaLabel={`View ${reports.summary.cancelled_sittings} cancelled sittings`}
+                    />
+                  ),
+                },
+                {
+                  label: "Cancelled by DJ",
+                  tone: "red",
+                  value: (
+                    <DashboardDrillDownValue
+                      count={reports.summary.cancelled_by_dj}
+                      filters={{ status: "cancelled", cancellation_category: "district_judge" }}
+                      period={periodFilter}
+                      ariaLabel={`View ${reports.summary.cancelled_by_dj} sittings cancelled by District Judge`}
+                    />
+                  ),
+                },
+                {
+                  label: "Cancelled by HMCTS",
+                  tone: "red",
+                  value: (
+                    <DashboardDrillDownValue
+                      count={reports.summary.cancelled_by_hmcts}
+                      filters={{ status: "cancelled", cancellation_category: "hmcts" }}
+                      period={periodFilter}
+                      ariaLabel={`View ${reports.summary.cancelled_by_hmcts} sittings cancelled by HMCTS`}
+                    />
+                  ),
+                },
+                {
+                  label: "Cancelled by magistrate",
+                  tone: "red",
+                  value: (
+                    <DashboardDrillDownValue
+                      count={reports.summary.cancelled_by_magistrate}
+                      filters={{ status: "cancelled", cancellation_category: "magistrate" }}
+                      period={periodFilter}
+                      ariaLabel={`View ${reports.summary.cancelled_by_magistrate} sittings cancelled by magistrate`}
+                    />
+                  ),
+                },
+              ]}
+            />
 
-            <dl className="orion-dashboard-context-stats">
-              <div className="orion-dashboard-context-stats__item">
-                <dt className="orion-dashboard-context-stats__label">Magistrates</dt>
-                <dd className="orion-dashboard-context-stats__value">{reports.summary.magistrates}</dd>
-              </div>
-              <div className="orion-dashboard-context-stats__item">
-                <dt className="orion-dashboard-context-stats__label">Total sittings</dt>
-                <dd className="orion-dashboard-context-stats__value">{reports.summary.sittings}</dd>
-              </div>
-              <div className="orion-dashboard-context-stats__item">
-                <dt className="orion-dashboard-context-stats__label">Courthouses</dt>
-                <dd className="orion-dashboard-context-stats__value">{reports.summary.courthouses}</dd>
-              </div>
-              <div className="orion-dashboard-context-stats__item">
-                <dt className="orion-dashboard-context-stats__label">Active magistrates</dt>
-                <dd className="orion-dashboard-context-stats__value">{reports.summary.active_magistrates}</dd>
-              </div>
-              <div className="orion-dashboard-context-stats__item">
-                <dt className="orion-dashboard-context-stats__label">Sitting types</dt>
-                <dd className="orion-dashboard-context-stats__value">{reports.summary.sitting_types}</dd>
-              </div>
-            </dl>
+            <DashboardStatPanel
+              cols={5}
+              items={[
+                { label: "Magistrates", value: dashboardStatValue(reports.summary.magistrates) },
+                { label: "Total sittings", value: dashboardStatValue(reports.summary.sittings) },
+                { label: "Courthouses", value: dashboardStatValue(reports.summary.courthouses) },
+                { label: "Active magistrates", value: dashboardStatValue(reports.summary.active_magistrates) },
+                { label: "Sitting types", value: dashboardStatValue(reports.summary.sitting_types) },
+              ]}
+            />
 
             <div className="orion-dashboard-subsection govuk-!-margin-top-6">
               <h3 className="govuk-heading-s orion-dashboard-subsection__title">Status breakdown</h3>
-              <DonutOrBarChart
+              <ViewChartButton
+                title="Status breakdown"
+                chart={
+                  <DonutOrBarChart
+                    totals={{
+                      completed: reports.summary.completed_sittings,
+                      vacated: reports.summary.vacated_sittings,
+                      cancelled: reports.summary.cancelled_sittings - reports.summary.cancelled_by_dj,
+                      cancelled_by_dj: reports.summary.cancelled_by_dj,
+                    }}
+                    summaryContext={periodTag}
+                    summaryId={sittingOverviewSummaryId}
+                    variant="donut"
+                  />
+                }
+              />
+              <SittingStatusTable
+                caption="Status breakdown"
                 totals={{
                   completed: reports.summary.completed_sittings,
                   vacated: reports.summary.vacated_sittings,
                   cancelled: reports.summary.cancelled_sittings - reports.summary.cancelled_by_dj,
                   cancelled_by_dj: reports.summary.cancelled_by_dj,
                 }}
-                summaryContext={periodTag}
-                summaryId={sittingOverviewSummaryId}
-                variant="donut"
               />
             </div>
           </>

@@ -8,7 +8,7 @@ type ShowTableToggleProps = {
   hasData?: boolean;
 };
 
-/** Chart-first view with Chart | Table | Both selector (default Chart). */
+/** Table-first view with chart available in a modal dialog. */
 export function ShowTableToggle({
   children,
   table,
@@ -21,7 +21,6 @@ export function ShowTableToggle({
       table={table}
       tableCaption={tableCaption}
       hasData={hasData}
-      defaultMode="chart"
     />
   );
 }

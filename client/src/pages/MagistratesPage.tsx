@@ -6,6 +6,8 @@ import { MagistrateLink } from "../components/MagistrateLink";
 import { DashboardSection } from "../components/DashboardSection";
 import { SortableTableHeader } from "../components/SortableTableHeader";
 import { HorizontalBarChart } from "../components/charts/HorizontalBarChart";
+import { SimpleBreakdownTable } from "../components/charts/SimpleBreakdownTable";
+import { ViewChartButton } from "../components/charts/ViewChartButton";
 import { magistrateComplianceRows } from "../components/charts/chartAggregations";
 import { useRole } from "../context/RoleContext";
 import { useTableSort } from "../lib/useTableSort";
@@ -73,21 +75,7 @@ export function MagistratesPage() {
         <p className="govuk-body">Loading…</p>
       ) : (
         <>
-          {magistrates.length > 0 ? (
-            <DashboardSection
-              title="Compliance overview"
-              description="Sitting commitment and compliance status across all magistrates."
-            >
-              <HorizontalBarChart
-                rows={magistrateComplianceRows(magistrates)}
-                emptyMessage="No magistrate data."
-                summaryContext="magistrates"
-                summaryId={complianceSummaryId}
-              />
-            </DashboardSection>
-          ) : null}
-
-          <table className="govuk-table">
+          <table className="govuk-table govuk-!-margin-bottom-6">
             <thead className="govuk-table__head">
               <tr className="govuk-table__row">
                 <SortableTableHeader columnKey="display_name" sort={sort} onSort={toggleSort}>
@@ -143,6 +131,34 @@ export function MagistratesPage() {
               ))}
             </tbody>
           </table>
+
+          {magistrates.length > 0 ? (
+            <DashboardSection
+              title="Compliance overview"
+              description="Sitting commitment and compliance status across all magistrates."
+            >
+              <ViewChartButton
+                title="Compliance overview"
+                chart={
+                  <HorizontalBarChart
+                    rows={magistrateComplianceRows(magistrates)}
+                    emptyMessage="No magistrate data."
+                    summaryContext="magistrates"
+                    summaryId={complianceSummaryId}
+                  />
+                }
+              />
+              <SimpleBreakdownTable
+                caption="Compliance overview"
+                labelHeader="Status"
+                rows={magistrateComplianceRows(magistrates).map((row) => ({
+                  label: row.label,
+                  value: row.value,
+                }))}
+                emptyMessage="No magistrate data."
+              />
+            </DashboardSection>
+          ) : null}
         </>
       )}
     </>

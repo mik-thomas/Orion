@@ -411,6 +411,10 @@
   align-items: stretch;
 }
 
+.orion-dashboard-stats--cols-1 {
+  grid-template-columns: 1fr;
+}
+
 .orion-dashboard-stats--cols-3 {
   grid-template-columns: repeat(3, 1fr);
 }
@@ -419,9 +423,18 @@
   grid-template-columns: repeat(4, 1fr);
 }
 
+.orion-dashboard-stats--cols-5 {
+  grid-template-columns: repeat(5, 1fr);
+}
+
 .orion-dashboard-stats--primary .orion-dashboard-stat {
   border-right: 1px solid #b1b4b6;
   border-bottom: 1px solid #b1b4b6;
+}
+
+.orion-dashboard-stats--cols-1 .orion-dashboard-stat {
+  border-right: none;
+  border-bottom: none;
 }
 
 .orion-dashboard-stats--cols-3 .orion-dashboard-stat:nth-child(3n) {
@@ -440,9 +453,18 @@
   border-bottom: none;
 }
 
+.orion-dashboard-stats--cols-5 .orion-dashboard-stat:nth-child(5n) {
+  border-right: none;
+}
+
+.orion-dashboard-stats--cols-5 .orion-dashboard-stat:nth-last-child(-n + 5) {
+  border-bottom: none;
+}
+
 @media (max-width: 48.0625em) {
   .orion-dashboard-stats--cols-3,
-  .orion-dashboard-stats--cols-4 {
+  .orion-dashboard-stats--cols-4,
+  .orion-dashboard-stats--cols-5 {
     grid-template-columns: repeat(2, 1fr);
   }
 
@@ -452,29 +474,34 @@
   }
 
   .orion-dashboard-stats--cols-3 .orion-dashboard-stat:nth-child(3n),
-  .orion-dashboard-stats--cols-4 .orion-dashboard-stat:nth-child(4n) {
+  .orion-dashboard-stats--cols-4 .orion-dashboard-stat:nth-child(4n),
+  .orion-dashboard-stats--cols-5 .orion-dashboard-stat:nth-child(5n) {
     border-right: 1px solid #b1b4b6;
   }
 
   .orion-dashboard-stats--cols-3 .orion-dashboard-stat:nth-child(2n),
-  .orion-dashboard-stats--cols-4 .orion-dashboard-stat:nth-child(2n) {
+  .orion-dashboard-stats--cols-4 .orion-dashboard-stat:nth-child(2n),
+  .orion-dashboard-stats--cols-5 .orion-dashboard-stat:nth-child(2n) {
     border-right: none;
   }
 
   .orion-dashboard-stats--cols-3 .orion-dashboard-stat:nth-last-child(-n + 3),
-  .orion-dashboard-stats--cols-4 .orion-dashboard-stat:nth-last-child(-n + 4) {
+  .orion-dashboard-stats--cols-4 .orion-dashboard-stat:nth-last-child(-n + 4),
+  .orion-dashboard-stats--cols-5 .orion-dashboard-stat:nth-last-child(-n + 5) {
     border-bottom: 1px solid #b1b4b6;
   }
 
   .orion-dashboard-stats--cols-3 .orion-dashboard-stat:nth-last-child(-n + 2),
-  .orion-dashboard-stats--cols-4 .orion-dashboard-stat:nth-last-child(-n + 2) {
+  .orion-dashboard-stats--cols-4 .orion-dashboard-stat:nth-last-child(-n + 2),
+  .orion-dashboard-stats--cols-5 .orion-dashboard-stat:nth-last-child(-n + 2) {
     border-bottom: none;
   }
 }
 
 @media (max-width: 28.125em) {
   .orion-dashboard-stats--cols-3,
-  .orion-dashboard-stats--cols-4 {
+  .orion-dashboard-stats--cols-4,
+  .orion-dashboard-stats--cols-5 {
     grid-template-columns: 1fr;
   }
 
@@ -554,69 +581,6 @@
   font-size: 1rem;
   line-height: 1.25;
   color: #505a5f;
-}
-
-.orion-dashboard-context-stats {
-  display: grid;
-  grid-template-columns: repeat(5, 1fr);
-  gap: 0;
-  margin: 0;
-  padding: 0;
-  border-top: 1px solid #b1b4b6;
-}
-
-.orion-dashboard-context-stats__item {
-  margin: 0;
-  padding: 1rem 1.25rem 1rem 0;
-}
-
-.orion-dashboard-context-stats__item:not(:last-child) {
-  border-right: 1px solid #b1b4b6;
-  padding-right: 1.25rem;
-  margin-right: 1.25rem;
-}
-
-.orion-dashboard-context-stats__label {
-  margin: 0 0 0.25rem;
-  font-family: "GDS Transport", arial, sans-serif;
-  font-size: 1rem;
-  font-weight: 400;
-  line-height: 1.25;
-  color: #505a5f;
-}
-
-.orion-dashboard-context-stats__value {
-  margin: 0;
-  font-family: "GDS Transport", arial, sans-serif;
-  font-size: 1.5rem;
-  font-weight: 700;
-  line-height: 1.2;
-  color: #0b0c0c;
-}
-
-@media (max-width: 48.0625em) {
-  .orion-dashboard-context-stats {
-    grid-template-columns: repeat(2, 1fr);
-    gap: 1rem 1.25rem;
-    border-top: none;
-    padding-top: 0.5rem;
-  }
-
-  .orion-dashboard-context-stats__item {
-    padding: 0;
-  }
-
-  .orion-dashboard-context-stats__item:not(:last-child) {
-    border-right: none;
-    padding-right: 0;
-    margin-right: 0;
-  }
-}
-
-@media (max-width: 28.125em) {
-  .orion-dashboard-context-stats {
-    grid-template-columns: 1fr;
-  }
 }
 
 .orion-period-filter.govuk-form-group {
@@ -899,6 +863,40 @@
   max-width: 40rem;
   width: calc(100% - 2rem);
   background: transparent;
+}
+
+.orion-dialog--chart {
+  max-width: 52rem;
+}
+
+.orion-dialog__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.orion-dialog__close {
+  background: none;
+  border: none;
+  cursor: pointer;
+  flex-shrink: 0;
+  padding: 0;
+  text-decoration: underline;
+}
+
+.orion-dialog__body {
+  max-height: calc(100vh - 8rem);
+  overflow: auto;
+}
+
+.orion-view-chart-button__icon {
+  display: inline-block;
+  font-size: 0.85em;
+  line-height: 1;
+  margin-right: 0.15rem;
+  vertical-align: baseline;
 }
 
 .orion-dialog::backdrop {

@@ -7,6 +7,8 @@ import { MagistrateLink } from "../components/MagistrateLink";
 import { DashboardSection } from "../components/DashboardSection";
 import { SortableTableHeader } from "../components/SortableTableHeader";
 import { HorizontalBarChart } from "../components/charts/HorizontalBarChart";
+import { SimpleBreakdownTable } from "../components/charts/SimpleBreakdownTable";
+import { ViewChartButton } from "../components/charts/ViewChartButton";
 import {
   loaReasonRows,
   loaReviewStatusRows,
@@ -136,34 +138,7 @@ export function OnLeavePage() {
         <p className="govuk-body">No magistrates are currently on leave.</p>
       ) : (
         <>
-          <div className="orion-profile-charts-grid orion-profile-charts-grid--three govuk-!-margin-bottom-6">
-            <DashboardSection title="Leave reasons" headingLevel={2}>
-              <HorizontalBarChart
-                rows={loaReasonRows(allLeaves)}
-                emptyMessage="No leave reasons recorded."
-                summaryContext="leave reasons"
-                summaryId={reasonSummaryId}
-              />
-            </DashboardSection>
-            <DashboardSection title="LOA review status" headingLevel={2}>
-              <HorizontalBarChart
-                rows={loaReviewStatusRows(allLeaves)}
-                emptyMessage="No review dates to show."
-                summaryContext="LOA review status"
-                summaryId={reviewSummaryId}
-              />
-            </DashboardSection>
-            <DashboardSection title="Leave start timeline" headingLevel={2}>
-              <HorizontalBarChart
-                rows={loaTimelineRows(allLeaves)}
-                emptyMessage="No leave start dates recorded."
-                summaryContext="leave starts by month"
-                summaryId={timelineSummaryId}
-              />
-            </DashboardSection>
-          </div>
-
-          <table className="govuk-table">
+          <table className="govuk-table govuk-!-margin-bottom-6">
             <caption className="govuk-table__caption govuk-table__caption--m">Magistrates on leave</caption>
             <thead className="govuk-table__head">
                   <tr className="govuk-table__row">
@@ -209,6 +184,81 @@ export function OnLeavePage() {
                   ))}
                 </tbody>
           </table>
+
+          <div className="govuk-grid-row">
+            <div className="govuk-grid-column-one-third">
+              <DashboardSection title="Leave reasons" headingLevel={2}>
+                <ViewChartButton
+                  title="Leave reasons"
+                  chart={
+                    <HorizontalBarChart
+                      rows={loaReasonRows(allLeaves)}
+                      emptyMessage="No leave reasons recorded."
+                      summaryContext="leave reasons"
+                      summaryId={reasonSummaryId}
+                    />
+                  }
+                />
+                <SimpleBreakdownTable
+                  caption="Leave reasons"
+                  labelHeader="Reason"
+                  rows={loaReasonRows(allLeaves).map((row) => ({
+                    label: row.label,
+                    value: row.value,
+                  }))}
+                  emptyMessage="No leave reasons recorded."
+                />
+              </DashboardSection>
+            </div>
+            <div className="govuk-grid-column-one-third">
+              <DashboardSection title="LOA review status" headingLevel={2}>
+                <ViewChartButton
+                  title="LOA review status"
+                  chart={
+                    <HorizontalBarChart
+                      rows={loaReviewStatusRows(allLeaves)}
+                      emptyMessage="No review dates to show."
+                      summaryContext="LOA review status"
+                      summaryId={reviewSummaryId}
+                    />
+                  }
+                />
+                <SimpleBreakdownTable
+                  caption="LOA review status"
+                  labelHeader="Status"
+                  rows={loaReviewStatusRows(allLeaves).map((row) => ({
+                    label: row.label,
+                    value: row.value,
+                  }))}
+                  emptyMessage="No review dates to show."
+                />
+              </DashboardSection>
+            </div>
+            <div className="govuk-grid-column-one-third">
+              <DashboardSection title="Leave start timeline" headingLevel={2}>
+                <ViewChartButton
+                  title="Leave start timeline"
+                  chart={
+                    <HorizontalBarChart
+                      rows={loaTimelineRows(allLeaves)}
+                      emptyMessage="No leave start dates recorded."
+                      summaryContext="leave starts by month"
+                      summaryId={timelineSummaryId}
+                    />
+                  }
+                />
+                <SimpleBreakdownTable
+                  caption="Leave start timeline"
+                  labelHeader="Month"
+                  rows={loaTimelineRows(allLeaves).map((row) => ({
+                    label: row.label,
+                    value: row.value,
+                  }))}
+                  emptyMessage="No leave start dates recorded."
+                />
+              </DashboardSection>
+            </div>
+          </div>
         </>
       )}
     </>

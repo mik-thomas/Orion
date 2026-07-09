@@ -8,6 +8,9 @@ import { DashboardSection } from "../components/DashboardSection";
 import { SortableTableHeader } from "../components/SortableTableHeader";
 import { DonutOrBarChart } from "../components/charts/DonutOrBarChart";
 import { HorizontalBarChart } from "../components/charts/HorizontalBarChart";
+import { SimpleBreakdownTable } from "../components/charts/SimpleBreakdownTable";
+import { SittingStatusTable } from "../components/charts/SittingStatusTable";
+import { ViewChartButton } from "../components/charts/ViewChartButton";
 import { SittingPositionCell } from "../lib/sittingPosition";
 import { SittingStatusCell } from "../lib/sittingStatus";
 import { useRole } from "../context/RoleContext";
@@ -129,27 +132,52 @@ export function SittingsDrillDownPage() {
       ) : data ? (
         <>
           {data.summary ? (
-            <div className="orion-profile-charts-grid orion-profile-charts-grid--two govuk-!-margin-bottom-6">
-              <DashboardSection title="Status breakdown" headingLevel={2}>
-                <DonutOrBarChart
-                  totals={data.summary.totals}
-                  summaryContext={periodLabel}
-                  summaryId={statusSummaryId}
-                  variant="donut"
-                />
-              </DashboardSection>
-              <DashboardSection title="By location" headingLevel={2}>
-                <HorizontalBarChart
-                  rows={data.summary.by_courthouse.map((row) => ({
-                    key: row.courthouse,
-                    label: row.courthouse,
-                    value: row.sittings,
-                  }))}
-                  emptyMessage="No location data for these filters."
-                  summaryContext={periodLabel}
-                  summaryId={locationSummaryId}
-                />
-              </DashboardSection>
+            <div className="govuk-grid-row govuk-!-margin-bottom-6">
+              <div className="govuk-grid-column-one-half">
+                <DashboardSection title="Status breakdown" headingLevel={2}>
+                  <ViewChartButton
+                    title="Status breakdown"
+                    chart={
+                      <DonutOrBarChart
+                        totals={data.summary.totals}
+                        summaryContext={periodLabel}
+                        summaryId={statusSummaryId}
+                        variant="donut"
+                      />
+                    }
+                  />
+                  <SittingStatusTable caption="Status breakdown" totals={data.summary.totals} />
+                </DashboardSection>
+              </div>
+              <div className="govuk-grid-column-one-half">
+                <DashboardSection title="By location" headingLevel={2}>
+                  <ViewChartButton
+                    title="By location"
+                    chart={
+                      <HorizontalBarChart
+                        rows={data.summary.by_courthouse.map((row) => ({
+                          key: row.courthouse,
+                          label: row.courthouse,
+                          value: row.sittings,
+                        }))}
+                        emptyMessage="No location data for these filters."
+                        summaryContext={periodLabel}
+                        summaryId={locationSummaryId}
+                      />
+                    }
+                  />
+                  <SimpleBreakdownTable
+                    caption="By location"
+                    labelHeader="Courthouse"
+                    valueHeader="Sittings"
+                    rows={data.summary.by_courthouse.map((row) => ({
+                      label: row.courthouse,
+                      value: row.sittings,
+                    }))}
+                    emptyMessage="No location data for these filters."
+                  />
+                </DashboardSection>
+              </div>
             </div>
           ) : null}
 

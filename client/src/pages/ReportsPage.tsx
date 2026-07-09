@@ -4,6 +4,9 @@ import { ApiError } from "../api/http";
 import { DashboardSection } from "../components/DashboardSection";
 import { DonutOrBarChart } from "../components/charts/DonutOrBarChart";
 import { HorizontalBarChart } from "../components/charts/HorizontalBarChart";
+import { SimpleBreakdownTable } from "../components/charts/SimpleBreakdownTable";
+import { SittingStatusTable } from "../components/charts/SittingStatusTable";
+import { ViewChartButton } from "../components/charts/ViewChartButton";
 import type { ReportsOverview } from "../types/domain";
 
 export function ReportsPage() {
@@ -42,33 +45,66 @@ export function ReportsPage() {
             {reports.summary.sittings} sittings recorded across {reports.summary.courthouses} courthouses.
           </p>
 
-          <div className="orion-profile-charts-grid orion-profile-charts-grid--two">
-            <DashboardSection title="Sitting status" description={reports.period.label}>
-              <DonutOrBarChart
-                totals={{
-                  completed: reports.summary.completed_sittings,
-                  vacated: reports.summary.vacated_sittings,
-                  cancelled: reports.summary.cancelled_sittings - reports.summary.cancelled_by_dj,
-                  cancelled_by_dj: reports.summary.cancelled_by_dj,
-                }}
-                summaryContext={reports.period.label}
-                summaryId={statusSummaryId}
-                variant="donut"
-              />
-            </DashboardSection>
+          <div className="govuk-grid-row">
+            <div className="govuk-grid-column-one-half">
+              <DashboardSection title="Sitting status" description={reports.period.label}>
+                <ViewChartButton
+                  title="Sitting status"
+                  chart={
+                    <DonutOrBarChart
+                      totals={{
+                        completed: reports.summary.completed_sittings,
+                        vacated: reports.summary.vacated_sittings,
+                        cancelled: reports.summary.cancelled_sittings - reports.summary.cancelled_by_dj,
+                        cancelled_by_dj: reports.summary.cancelled_by_dj,
+                      }}
+                      summaryContext={reports.period.label}
+                      summaryId={statusSummaryId}
+                      variant="donut"
+                    />
+                  }
+                />
+                <SittingStatusTable
+                  caption="Sitting status"
+                  totals={{
+                    completed: reports.summary.completed_sittings,
+                    vacated: reports.summary.vacated_sittings,
+                    cancelled: reports.summary.cancelled_sittings - reports.summary.cancelled_by_dj,
+                    cancelled_by_dj: reports.summary.cancelled_by_dj,
+                  }}
+                />
+              </DashboardSection>
+            </div>
 
-            <DashboardSection title="Sittings by courthouse" description={reports.period.label}>
-              <HorizontalBarChart
-                rows={reports.by_courthouse.map((row) => ({
-                  key: row.courthouse,
-                  label: row.courthouse,
-                  value: row.sittings,
-                }))}
-                emptyMessage="No sitting data yet."
-                summaryContext={reports.period.label}
-                summaryId={locationSummaryId}
-              />
-            </DashboardSection>
+            <div className="govuk-grid-column-one-half">
+              <DashboardSection title="Sittings by courthouse" description={reports.period.label}>
+                <ViewChartButton
+                  title="Sittings by courthouse"
+                  chart={
+                    <HorizontalBarChart
+                      rows={reports.by_courthouse.map((row) => ({
+                        key: row.courthouse,
+                        label: row.courthouse,
+                        value: row.sittings,
+                      }))}
+                      emptyMessage="No sitting data yet."
+                      summaryContext={reports.period.label}
+                      summaryId={locationSummaryId}
+                    />
+                  }
+                />
+                <SimpleBreakdownTable
+                  caption="Sittings by courthouse"
+                  labelHeader="Courthouse"
+                  valueHeader="Sittings"
+                  rows={reports.by_courthouse.map((row) => ({
+                    label: row.courthouse,
+                    value: row.sittings,
+                  }))}
+                  emptyMessage="No sitting data yet."
+                />
+              </DashboardSection>
+            </div>
           </div>
         </>
       ) : null}

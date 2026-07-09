@@ -3,6 +3,7 @@ import type { DjCancellations } from "../types/domain";
 import type { PeriodFilterState } from "../lib/periodFilter";
 import { useTableSort } from "../lib/useTableSort";
 import { DashboardSection } from "./DashboardSection";
+import { DashboardDrillDownValue, DashboardStatPanel, dashboardStatValue } from "./DashboardStatPanel";
 import { DrillDownLink } from "./DrillDownLink";
 import { SortableTableHeader } from "./SortableTableHeader";
 import { ChartTableToggle } from "./charts/ChartTableToggle";
@@ -162,21 +163,25 @@ export function DjCancellationSection({
       tagColour="red"
       description="Sittings cancelled because a District Judge took the bench."
     >
-      <p className="govuk-body govuk-!-margin-bottom-4">
-        {periodFilter ? (
-          <DrillDownLink
-            filters={djFilters}
-            period={periodFilter}
-            ariaLabel={`View all ${report.total} sittings cancelled by District Judge`}
-          >
-            View all <strong className="govuk-tag govuk-tag--red">{report.total}</strong> cancellations
-          </DrillDownLink>
-        ) : (
-          <>
-            Total: <strong className="govuk-tag govuk-tag--red">{report.total}</strong>
-          </>
-        )}
-      </p>
+      <DashboardStatPanel
+        cols={1}
+        items={[
+          {
+            label: "Total cancellations",
+            tone: "red",
+            value: periodFilter ? (
+              <DashboardDrillDownValue
+                count={report.total}
+                filters={djFilters}
+                period={periodFilter}
+                ariaLabel={`View all ${report.total} sittings cancelled by District Judge`}
+              />
+            ) : (
+              dashboardStatValue(report.total)
+            ),
+          },
+        ]}
+      />
 
       <div className="govuk-grid-row">
         <div className="govuk-grid-column-one-third">

@@ -15,6 +15,9 @@ import { DashboardSection } from "../components/DashboardSection";
 import { DonutOrBarChart } from "../components/charts/DonutOrBarChart";
 import { HorizontalBarChart } from "../components/charts/HorizontalBarChart";
 import { ShowTableToggle } from "../components/charts/ShowTableToggle";
+import { SimpleBreakdownTable } from "../components/charts/SimpleBreakdownTable";
+import { SittingStatusTable } from "../components/charts/SittingStatusTable";
+import { ViewChartButton } from "../components/charts/ViewChartButton";
 import { homeAwaySegments, SimpleDonut } from "../components/charts/SimpleDonut";
 import { courtRoomStackRow, StackedBarChart } from "../components/charts/StackedBarChart";
 import { SortableTableHeader } from "../components/SortableTableHeader";
@@ -382,11 +385,17 @@ export function MagistrateProfilePage() {
                 headingLevel={3}
                 description={`Outcome breakdown for ${periodLabel}.`}
               >
-                <DonutOrBarChart
-                  totals={summary.totals}
-                  summaryContext={periodLabel}
-                  summaryId={statusSummaryId}
+                <ViewChartButton
+                  title="Sitting status"
+                  chart={
+                    <DonutOrBarChart
+                      totals={summary.totals}
+                      summaryContext={periodLabel}
+                      summaryId={statusSummaryId}
+                    />
+                  }
                 />
+                <SittingStatusTable caption="Sitting status" totals={summary.totals} />
               </DashboardSection>
 
               {summary.home_away ? (
@@ -395,11 +404,26 @@ export function MagistrateProfilePage() {
                   headingLevel={3}
                   description={`Completed sittings at home court vs away for ${periodLabel}.`}
                 >
-                  <SimpleDonut
-                    segments={homeAwaySegments(summary.home_away.at_home, summary.home_away.away)}
-                    centreLabel={`${summary.home_away.away_pct}% away`}
-                    summaryContext={periodLabel}
-                    summaryId={homeAwaySummaryId}
+                  <ViewChartButton
+                    title="Home / away"
+                    chart={
+                      <SimpleDonut
+                        segments={homeAwaySegments(summary.home_away.at_home, summary.home_away.away)}
+                        centreLabel={`${summary.home_away.away_pct}% away`}
+                        summaryContext={periodLabel}
+                        summaryId={homeAwaySummaryId}
+                        emptyMessage="No completed sittings recorded."
+                      />
+                    }
+                  />
+                  <SimpleBreakdownTable
+                    caption="Home / away"
+                    labelHeader="Location"
+                    valueHeader="Completed sittings"
+                    rows={[
+                      { label: "At home court", value: summary.home_away.at_home },
+                      { label: "Away from home", value: summary.home_away.away },
+                    ]}
                     emptyMessage="No completed sittings recorded."
                   />
                 </DashboardSection>

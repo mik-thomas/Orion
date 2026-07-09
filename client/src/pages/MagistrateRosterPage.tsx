@@ -5,6 +5,8 @@ import { ApiError } from "../api/http";
 import { DashboardSection } from "../components/DashboardSection";
 import { SortableTableHeader } from "../components/SortableTableHeader";
 import { HorizontalBarChart } from "../components/charts/HorizontalBarChart";
+import { SimpleBreakdownTable } from "../components/charts/SimpleBreakdownTable";
+import { ViewChartButton } from "../components/charts/ViewChartButton";
 import { rosterHomeCourtRows } from "../components/charts/chartAggregations";
 import { useRole } from "../context/RoleContext";
 import { useTableSort } from "../lib/useTableSort";
@@ -81,18 +83,7 @@ export function MagistrateRosterPage() {
         <p className="govuk-body">Loading…</p>
       ) : (
         <>
-          {entries.length > 0 ? (
-            <DashboardSection title="Roster by home court" description="Distribution of magistrates across home courts.">
-              <HorizontalBarChart
-                rows={rosterHomeCourtRows(entries)}
-                emptyMessage="No roster data."
-                summaryContext="roster"
-                summaryId={homeCourtSummaryId}
-              />
-            </DashboardSection>
-          ) : null}
-
-          <table className="govuk-table">
+          <table className="govuk-table govuk-!-margin-bottom-6">
             <thead className="govuk-table__head">
               <tr className="govuk-table__row">
                 <SortableTableHeader columnKey="reference_code" sort={sort} onSort={toggleSort}>
@@ -124,6 +115,32 @@ export function MagistrateRosterPage() {
               ))}
             </tbody>
           </table>
+
+          {entries.length > 0 ? (
+            <DashboardSection title="Roster by home court" description="Distribution of magistrates across home courts.">
+              <ViewChartButton
+                title="Roster by home court"
+                chart={
+                  <HorizontalBarChart
+                    rows={rosterHomeCourtRows(entries)}
+                    emptyMessage="No roster data."
+                    summaryContext="roster"
+                    summaryId={homeCourtSummaryId}
+                  />
+                }
+              />
+              <SimpleBreakdownTable
+                caption="Roster by home court"
+                labelHeader="Home court"
+                valueHeader="Magistrates"
+                rows={rosterHomeCourtRows(entries).map((row) => ({
+                  label: row.label,
+                  value: row.value,
+                }))}
+                emptyMessage="No roster data."
+              />
+            </DashboardSection>
+          ) : null}
         </>
       )}
     </>
