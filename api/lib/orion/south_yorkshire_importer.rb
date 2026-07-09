@@ -30,6 +30,7 @@ module Orion
       @courthouses_by_name = {}
       @sitting_types_by_name = {}
       @known_import_statuses = nil
+      @known_unique_events = nil
       @lookup_caches_warm = false
       @stats = Hash.new(0)
       @checkpoint = nil
@@ -102,11 +103,12 @@ module Orion
       @courthouses_by_name = {}
       @sitting_types_by_name = {}
       @known_import_statuses = nil
+      @known_unique_events = nil
       @lookup_caches_warm = false
     end
 
     def importer_version
-      "2026-07-09c (stable sitting import_key, status merge)"
+      "2026-07-09d (unique_event batch dedupe)"
     end
 
     def setup_checkpoint!
@@ -344,9 +346,46 @@ module Orion
     end
 
     def ensure_import_keys_loaded!
-      @known_import_statuses ||= Sitting.where.not(import_key: nil).pluck(:import_key, :status, :id).each_with_object({}) do |(key, status, id), memo|
-        memo[key] = { status: status, id: id }
+      return if @known_import_statuses
+
+      @known_import_statuses = {}
+      @known_unique_events = {}
+      Sitting.pluck(
+        :import_key, :status, :id,
+        :magistrate_id, :session_date, :session, :courthouse_id
+      ).each do |import_key, st, id, magistrate_id, session_date, session, courthouse_id|
+        if import_key.present?
+          @known_import_statuses[import_key] = { status: st, id: id }
+        end
+        @known_unique_events[unique_event_key(magistrate_id, session_date, session, courthouse_id)] = {
+          status: st, id: id, import_key: import_key
+        }
       end
+    end
+
+    def unique_event_key(magistrate_id, session_date, session, courthouse_id)
+      [magistrate_id, session_date, session.to_s.strip, courthouse_id].join("|")
+    end
+
+    def merge_sitting_record!(record, existing, stats_key: :sittings_upgraded)
+      if SittingImportKey.status_priority(record[:status]) > SittingImportKey.status_priority(existing[:status])
+        if existing[:id]
+          Sitting.where(id: existing[:id]).update_all(
+            record.except(:created_at).merge(updated_at: Time.current)
+          )
+        end
+        stats[stats_key] += 1
+        true
+      else
+        stats[:sittings_skipped] += 1
+        false
+      end
+    end
+
+    def track_sitting_caches!(record, id: nil)
+      @known_import_statuses[record[:import_key]] = { status: record[:status], id: id }
+      event_key = unique_event_key(record[:magistrate_id], record[:session_date], record[:session], record[:courthouse_id])
+      @known_unique_events[event_key] = { status: record[:status], id: id, import_key: record[:import_key] }
     end
 
     def bulk_insert_sittings!(records, status)
@@ -356,20 +395,34 @@ module Orion
       records.each do |record|
         existing = @known_import_statuses[record[:import_key]]
         if existing
-          if SittingImportKey.status_priority(record[:status]) > SittingImportKey.status_priority(existing[:status])
-            Sitting.where(id: existing[:id]).update_all(
-              record.except(:created_at).merge(updated_at: Time.current)
-            )
-            @known_import_statuses[record[:import_key]] = { status: record[:status], id: existing[:id] }
-            stats[:sittings_upgraded] += 1
-          else
-            stats[:sittings_skipped] += 1
-          end
+          merge_sitting_record!(record, existing)
+          next
+        end
+
+        event_key = unique_event_key(record[:magistrate_id], record[:session_date], record[:session], record[:courthouse_id])
+        existing_event = @known_unique_events[event_key]
+        if existing_event
+          upgraded = merge_sitting_record!(record, existing_event)
+          track_sitting_caches!(record, id: existing_event[:id]) if upgraded
           next
         end
 
         inserts << record
       end
+
+      return if inserts.empty?
+
+      # Same magistrate/session/courthouse can appear with different import_keys in one batch.
+      by_event = inserts.each_with_object({}) do |record, memo|
+        key = unique_event_key(record[:magistrate_id], record[:session_date], record[:session], record[:courthouse_id])
+        existing = memo[key]
+        if existing.nil? || SittingImportKey.status_priority(record[:status]) > SittingImportKey.status_priority(existing[:status])
+          memo[key] = record
+        else
+          stats[:sittings_skipped] += 1
+        end
+      end
+      inserts = by_event.values
 
       return if inserts.empty?
 
@@ -379,7 +432,7 @@ module Orion
         on_duplicate: :skip,
         record_timestamps: true
       )
-      inserts.each { |r| @known_import_statuses[r[:import_key]] = { status: r[:status], id: nil } }
+      inserts.each { |record| track_sitting_caches!(record) }
       stats[:"sittings_#{status}"] += inserts.size
     end
 
