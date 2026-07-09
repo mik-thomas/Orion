@@ -1,5 +1,7 @@
 # Agent guide (Cursor)
 
+New machine: see [docs/laptop-setup.md](docs/laptop-setup.md) (`npm run laptop-setup`).
+
 ## Local
 
 ```bash
