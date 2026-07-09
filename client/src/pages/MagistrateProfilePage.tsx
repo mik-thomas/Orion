@@ -10,9 +10,11 @@ import { NextLoaReviewTag } from "../lib/loaReview";
 import { CourtRoomTable } from "../components/CourtRoomTable";
 import { DjCancellationSection } from "../components/DjCancellationSection";
 import { PeriodFilter } from "../components/PeriodFilter";
+import { SittingHistoryChart } from "../components/SittingHistoryChart";
 import { useRole } from "../context/RoleContext";
 import {
   defaultPeriodFilter,
+  periodFilterLabel,
   periodFilterQuery,
   type PeriodFilterState,
 } from "../lib/periodFilter";
@@ -352,6 +354,11 @@ export function MagistrateProfilePage() {
         rows={magistrate.sitting_summary.by_court_room}
         heading="Sittings by court room"
         emptyMessage="No court room data for this magistrate."
+      />
+
+      <SittingHistoryChart
+        sittings={magistrate.sittings}
+        periodLabel={magistrate.period?.label ?? periodFilterLabel(periodFilter)}
       />
 
       {magistrate.sittings.length === 0 ? (
