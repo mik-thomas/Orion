@@ -24,6 +24,10 @@ module Api
         render json: magistrates.map { |magistrate| magistrate_summary_json(magistrate) }
       end
 
+      def retiring_soon
+        render json: retiring_soon_rows
+      end
+
       def roster
         magistrates = Magistrate.includes(:home_courthouse)
           .order(:reference_code)

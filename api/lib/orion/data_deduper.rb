@@ -175,7 +175,7 @@ module Orion
         end
 
         %i[title middle_name email date_of_appointment reasonable_adjustments frequency sitting_pattern
-           leaving_date leaving_reason bench_role appraisal_status appraisal_cycle_years presiding_justice
+           leaving_date leaving_reason retirement_on bench_role appraisal_status appraisal_cycle_years presiding_justice
            last_appraisal_on last_appraiser last_login_on days_since_login reference_code].each do |attr|
           next if keeper.public_send(attr).present?
 

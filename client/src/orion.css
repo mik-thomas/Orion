@@ -325,3 +325,30 @@
 .orion-dashboard-hint .govuk-tag {
   vertical-align: baseline;
 }
+
+.orion-dialog {
+  border: none;
+  padding: 0;
+  max-width: 40rem;
+  width: calc(100% - 2rem);
+  background: transparent;
+}
+
+.orion-dialog::backdrop {
+  background: rgba(11, 12, 12, 0.6);
+}
+
+.orion-dialog__panel {
+  background: #ffffff;
+  padding: 1.5rem;
+  border: 4px solid #0b0c0c;
+  box-shadow: 0 4px 0 #0b0c0c;
+}
+
+.orion-dialog__panel .govuk-notification-banner {
+  margin-bottom: 1.5rem;
+}
+
+.orion-dialog__panel .govuk-button {
+  margin-bottom: 0;
+}

@@ -107,6 +107,15 @@ export interface CommitmentForecastRow extends SittingForecast {
   display_name: string;
 }
 
+export interface RetiringSoonRow {
+  magistrate_id: number;
+  display_name: string;
+  reference_code: string;
+  retirement_on: string;
+  days_until_retirement: number;
+  imminent: boolean;
+}
+
 export type Role = "HMCTS-SLM" | "Developer" | "Bench Chair" | "Deputy";
 
 export interface MagistrateSummary {
@@ -132,6 +141,10 @@ export interface MagistrateSummary {
   last_appraiser: string | null;
   last_login_on: string | null;
   days_since_login: number | null;
+  leaving_date: string | null;
+  leaving_reason: string | null;
+  retirement_on: string | null;
+  active: boolean;
   violations: ComplianceViolation[];
   has_violations: boolean;
   sitting_commitment: SittingCommitment | null;
@@ -343,6 +356,7 @@ export interface ReportsOverview {
     days_since_login: number | null;
   }>;
   commitment_forecast: CommitmentForecastRow[];
+  retiring_soon: RetiringSoonRow[];
   note: string;
 }
 

@@ -12,6 +12,11 @@ class Magistrate < ApplicationRecord
     joins(:leaves_of_absence).merge(LeaveOfAbsence.active_on(Date.current)).distinct
   }
 
+  scope :retiring_soon, lambda {
+    window_end = Date.current + 6.months
+    where(retirement_on: Date.current..window_end).order(:retirement_on)
+  }
+
   validates :first_name, :last_name, presence: true
   validates :cluster, :bench, presence: true
   validates :reference_code, uniqueness: true, allow_nil: true
@@ -60,5 +65,22 @@ class Magistrate < ApplicationRecord
     return if reference_code.present?
 
     update_column(:reference_code, "SY-#{format('%04d', id)}")
+  end
+
+  def days_until_retirement(as_of: Date.current)
+    return nil unless retirement_on
+
+    (retirement_on - as_of).to_i
+  end
+
+  def retiring_soon?(as_of: Date.current)
+    return false unless retirement_on
+
+    retirement_on.between?(as_of, as_of + 6.months)
+  end
+
+  def retirement_imminent?(as_of: Date.current, threshold_days: 90)
+    days = days_until_retirement(as_of:)
+    days.present? && days >= 0 && days <= threshold_days
   end
 end

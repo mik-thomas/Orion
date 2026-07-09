@@ -603,6 +603,13 @@ module Orion
       nil
     end
 
+    def retirement_on_from(leaving_date, leaving_reason)
+      return nil unless leaving_date
+      return leaving_date if leaving_reason.to_s.strip.match?(/\Aretirement\z/i)
+
+      nil
+    end
+
     def parse_datetime(value)
       return value.in_time_zone if value.respond_to?(:in_time_zone)
       return nil if value.blank?
@@ -905,9 +912,13 @@ module Orion
         end
 
         if row[4].present? || row[5].present?
+          leaving_date = parse_date(row[4]) || magistrate.leaving_date
+          leaving_reason = normalize_name(row[5]) || magistrate.leaving_reason
+
           magistrate.update!(
-            leaving_date: parse_date(row[4]) || magistrate.leaving_date,
-            leaving_reason: normalize_name(row[5]),
+            leaving_date:,
+            leaving_reason:,
+            retirement_on: retirement_on_from(leaving_date, leaving_reason),
             active: row[4].blank?,
             last_appraisal_on: parse_date(row[6]) || magistrate.last_appraisal_on,
             last_appraiser: normalize_name(row[7]) || magistrate.last_appraiser,

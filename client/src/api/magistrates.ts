@@ -1,5 +1,5 @@
 import { request } from "./http";
-import type { Courthouse, MagistrateDetail, MagistrateRosterEntry, MagistrateSummary } from "../types/domain";
+import type { Courthouse, MagistrateDetail, MagistrateRosterEntry, MagistrateSummary, RetiringSoonRow } from "../types/domain";
 
 export function listMagistrates(q?: string) {
   const params = q ? `?q=${encodeURIComponent(q)}` : "";
@@ -8,6 +8,10 @@ export function listMagistrates(q?: string) {
 
 export function listMagistratesOnLeave() {
   return request<MagistrateSummary[]>("/api/v1/magistrates/on_leave");
+}
+
+export function listMagistratesRetiringSoon() {
+  return request<RetiringSoonRow[]>("/api/v1/magistrates/retiring_soon");
 }
 
 export function getMagistrate(id: number, query = "") {

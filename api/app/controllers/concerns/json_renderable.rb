@@ -34,11 +34,27 @@ module JsonRenderable
       def magistrate_summary_fields
         fields = %i[
           id reference_code date_of_appointment reasonable_adjustments title frequency sitting_pattern
-          leaving_date leaving_reason active cluster bench bench_role appraisal_status appraisal_cycle_years
+          leaving_date leaving_reason retirement_on active cluster bench bench_role appraisal_status appraisal_cycle_years
           presiding_justice last_appraisal_on last_appraiser last_login_on days_since_login
         ]
         fields += %i[first_name last_name] if names_visible?
         fields
+      end
+
+      def retiring_soon_json(magistrate)
+        days = magistrate.days_until_retirement
+        {
+          "magistrate_id" => magistrate.id,
+          "display_name" => magistrate_display_name(magistrate),
+          "reference_code" => magistrate.reference_code,
+          "retirement_on" => magistrate.retirement_on,
+          "days_until_retirement" => days,
+          "imminent" => magistrate.retirement_imminent?
+        }
+      end
+
+      def retiring_soon_rows
+        Magistrate.retiring_soon.includes(:home_courthouse).map { |magistrate| retiring_soon_json(magistrate) }
       end
 
       def magistrate_display_name(magistrate)

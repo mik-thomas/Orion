@@ -36,6 +36,7 @@ module Api
           home_court_movement: Orion::SittingReports.home_court_movement_report_for(scoped_sittings, role: current_role),
           login_report: login_report_rows,
           commitment_forecast: commitment_forecast_rows,
+          retiring_soon: retiring_soon_rows,
           note: overview_note(filter)
         }
       end

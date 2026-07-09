@@ -11,6 +11,7 @@ Rails.application.routes.draw do
       resources :magistrates do
         collection do
           get :on_leave
+          get :retiring_soon
           get :roster
         end
         resources :leaves_of_absence, only: %i[index create update destroy]

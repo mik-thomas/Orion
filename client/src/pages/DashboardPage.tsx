@@ -11,6 +11,7 @@ import { LoginReportTable } from "../components/LoginReportTable";
 import { CourtRoomTable } from "../components/CourtRoomTable";
 import { DjCancellationSection } from "../components/DjCancellationSection";
 import { PeriodFilter } from "../components/PeriodFilter";
+import { RetiringSoonSection } from "../components/RetiringSoonSection";
 import { useRole } from "../context/RoleContext";
 import {
   defaultPeriodFilter,
@@ -175,6 +176,10 @@ export function DashboardPage() {
           </div>
         ) : null}
       </DashboardSection>
+
+      {!loading && reports?.retiring_soon?.length ? (
+        <RetiringSoonSection rows={reports.retiring_soon} canViewNames={canViewNames} />
+      ) : null}
 
       <DashboardSection
         title="Sitting overview"

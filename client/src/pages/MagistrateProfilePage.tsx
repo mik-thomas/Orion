@@ -3,6 +3,7 @@ import { Link, useParams } from "react-router-dom";
 import { getMagistrate } from "../api/magistrates";
 import { ApiError } from "../api/http";
 import { ComplianceViolations } from "../components/ComplianceViolations";
+import { RetirementDueModal } from "../components/RetirementDueModal";
 import { SittingForecastPanel } from "../components/SittingForecastPanel";
 import { NextLoaReviewTag } from "../lib/loaReview";
 import { CourtRoomTable } from "../components/CourtRoomTable";
@@ -16,6 +17,7 @@ import {
 } from "../lib/periodFilter";
 import { SittingPositionCell } from "../lib/sittingPosition";
 import { SittingStatusCell } from "../lib/sittingStatus";
+import { isRetirementAlertDismissed, isRetiringSoon } from "../lib/retirement";
 import type { MagistrateDetail } from "../types/domain";
 
 export function MagistrateProfilePage() {
@@ -26,6 +28,7 @@ export function MagistrateProfilePage() {
   const [availableYears, setAvailableYears] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [showRetirementModal, setShowRetirementModal] = useState(false);
 
   useEffect(() => {
     if (!id) return;
@@ -36,6 +39,9 @@ export function MagistrateProfilePage() {
         if (data.available_fiscal_years) {
           setAvailableYears(data.available_fiscal_years);
         }
+        const shouldAlert =
+          isRetiringSoon(data.retirement_on) && !isRetirementAlertDismissed(data.id);
+        setShowRetirementModal(shouldAlert);
       })
       .catch((err: unknown) => setError(err instanceof ApiError ? err.message : "Failed to load profile"))
       .finally(() => setLoading(false));
@@ -55,6 +61,15 @@ export function MagistrateProfilePage() {
 
   return (
     <>
+      {magistrate.retirement_on && isRetiringSoon(magistrate.retirement_on) ? (
+        <RetirementDueModal
+          magistrateId={magistrate.id}
+          retirementOn={magistrate.retirement_on}
+          open={showRetirementModal}
+          onDismiss={() => setShowRetirementModal(false)}
+        />
+      ) : null}
+
       <nav className="govuk-breadcrumbs" aria-label="Breadcrumb">
         <ol className="govuk-breadcrumbs__list">
           <li className="govuk-breadcrumbs__list-item">
@@ -131,6 +146,20 @@ export function MagistrateProfilePage() {
         <div className="govuk-summary-list__row">
           <dt className="govuk-summary-list__key">Date of appointment</dt>
           <dd className="govuk-summary-list__value">{magistrate.date_of_appointment ?? "Not recorded"}</dd>
+        </div>
+        <div className="govuk-summary-list__row">
+          <dt className="govuk-summary-list__key">Retirement date</dt>
+          <dd className="govuk-summary-list__value">
+            {magistrate.retirement_on ? (
+              isRetiringSoon(magistrate.retirement_on) ? (
+                <strong className="govuk-tag govuk-tag--yellow">{magistrate.retirement_on}</strong>
+              ) : (
+                magistrate.retirement_on
+              )
+            ) : (
+              "Not recorded"
+            )}
+          </dd>
         </div>
         <div className="govuk-summary-list__row">
           <dt className="govuk-summary-list__key">Home court</dt>
