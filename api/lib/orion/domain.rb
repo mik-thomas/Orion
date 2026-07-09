@@ -40,7 +40,7 @@ module Orion
       "Single Justice"
     ].freeze
 
-    CANCELLATION_CATEGORIES = %w[magistrate legal_admin district_judge other].freeze
+    CANCELLATION_CATEGORIES = %w[magistrate hmcts district_judge court unknown].freeze
 
     MIN_TENURE_YEARS = 5
     MIN_FULL_DAYS_PER_YEAR = 13
@@ -80,12 +80,19 @@ module Orion
     end
 
     def self.cancellation_category(reason:, action_by:)
-      combined = "#{reason} #{action_by}".downcase
-      return "district_judge" if combined.include?("dj") || combined.include?("district judge")
-      return "magistrate" if combined.include?("magistrate") || combined.include?("vacated by magistrate")
-      return "legal_admin" if action_by.present? && !combined.include?("magistrate")
+      reason_s = reason.to_s.strip
+      action_s = action_by.to_s.strip
+      return nil if reason_s.blank? && action_s.blank?
 
-      "other"
+      combined = "#{reason_s} #{action_s}".downcase
+
+      return "district_judge" if combined.match?(/\b(dj|district judge)\b/) || combined.include?("court requires a dj")
+      return "magistrate" if combined.include?("magistrate") || combined.include?("vacated by magistrate")
+      return "hmcts" if combined.include?("hmcts") || combined.include?("removed by ra") || combined.include?("legal admin")
+      return "court" if combined.match?(/\b(court|clerk)\b/) && !combined.include?("magistrate")
+      return "hmcts" if action_s.present?
+
+      "unknown"
     end
 
     def self.normalize_court_room(venue_name)

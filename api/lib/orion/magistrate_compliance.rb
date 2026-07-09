@@ -23,7 +23,6 @@ module Orion
       results << tenure_violation(magistrate)
       results.concat(loa_review_violations(magistrate, as_of:))
       results.concat(court_day_violations(magistrate, as_of:))
-      results.concat(training_violations(magistrate, as_of:))
       results.compact.map { |violation| violation.to_h.transform_keys(&:to_s) }
     end
 

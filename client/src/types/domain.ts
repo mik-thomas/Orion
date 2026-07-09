@@ -145,9 +145,16 @@ export interface SittingsDrillDownResponse {
   sittings: SittingDrillDownRow[];
 }
 
+export type CancellationCategory =
+  | "magistrate"
+  | "hmcts"
+  | "district_judge"
+  | "court"
+  | "unknown";
+
 export type SittingsDrillDownFilters = {
   status?: "completed" | "vacated" | "cancelled";
-  cancellation_category?: "district_judge";
+  cancellation_category?: CancellationCategory;
   courthouse?: string;
   courthouse_id?: number;
   court_type?: string;
@@ -277,6 +284,8 @@ export interface ReportsOverview {
     vacated_sittings: number;
     cancelled_sittings: number;
     cancelled_by_dj: number;
+    cancelled_by_hmcts: number;
+    cancelled_by_magistrate: number;
     sitting_types: number;
   };
   by_courthouse: Array<{ courthouse: string; sittings: number }>;

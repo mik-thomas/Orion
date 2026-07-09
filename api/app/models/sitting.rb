@@ -4,11 +4,13 @@ class Sitting < ApplicationRecord
   belongs_to :sitting_type
 
   STATUSES = %w[completed vacated cancelled].freeze
+  CANCELLATION_CATEGORIES = Orion::Domain::CANCELLATION_CATEGORIES
   COURT_TYPES = Orion::Domain::COURT_TYPES
   SITTING_POSITIONS = Orion::Domain::SITTING_POSITIONS
 
   validates :session_date, presence: true
   validates :status, inclusion: { in: STATUSES }
+  validates :cancellation_category, inclusion: { in: CANCELLATION_CATEGORIES }, allow_nil: true
   validates :court_type, inclusion: { in: COURT_TYPES }, allow_nil: true
   validates :sitting_position, inclusion: { in: SITTING_POSITIONS }, allow_nil: true
 

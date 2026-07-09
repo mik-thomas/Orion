@@ -23,6 +23,8 @@ module Api
             vacated_sittings: scoped_sittings.vacated.count,
             cancelled_sittings: scoped_sittings.cancelled.count,
             cancelled_by_dj: scoped_sittings.cancelled.where(cancellation_category: "district_judge").count,
+            cancelled_by_hmcts: scoped_sittings.cancelled.where(cancellation_category: "hmcts").count,
+            cancelled_by_magistrate: scoped_sittings.cancelled.where(cancellation_category: "magistrate").count,
             sitting_types: SittingType.count
           },
           by_courthouse: courthouse_sitting_counts(scoped_sittings),

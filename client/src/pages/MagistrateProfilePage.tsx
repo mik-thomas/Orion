@@ -14,24 +14,8 @@ import {
   type PeriodFilterState,
 } from "../lib/periodFilter";
 import { SittingPositionCell } from "../lib/sittingPosition";
-import type { MagistrateDetail, Sitting } from "../types/domain";
-
-function sittingStatusLabel(sitting: Sitting) {
-  if (sitting.status === "cancelled" && sitting.cancellation_category === "district_judge") {
-    return "Cancelled by DJ";
-  }
-
-  switch (sitting.status) {
-    case "completed":
-      return "Completed";
-    case "vacated":
-      return "Vacated";
-    case "cancelled":
-      return "Cancelled";
-    default:
-      return sitting.status;
-  }
-}
+import { SittingStatusCell } from "../lib/sittingStatus";
+import type { MagistrateDetail } from "../types/domain";
 
 export function MagistrateProfilePage() {
   const { id } = useParams();
@@ -372,15 +356,7 @@ export function MagistrateProfilePage() {
                   <SittingPositionCell sittingPosition={sitting.sitting_position} />
                 </td>
                 <td className="govuk-table__cell">
-                  {sitting.status === "cancelled" && sitting.cancellation_category === "district_judge" ? (
-                    <strong className="govuk-tag govuk-tag--red">Cancelled by DJ</strong>
-                  ) : sitting.status === "vacated" ? (
-                    <strong className="govuk-tag govuk-tag--yellow">Vacated</strong>
-                  ) : sitting.status === "cancelled" ? (
-                    <strong className="govuk-tag govuk-tag--red">Cancelled</strong>
-                  ) : (
-                    sittingStatusLabel(sitting)
-                  )}
+                  <SittingStatusCell sitting={sitting} />
                 </td>
               </tr>
             ))}

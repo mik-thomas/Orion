@@ -1,12 +1,12 @@
 import type { SittingDrillDownRow } from "../types/domain";
+import { cancellationCategoryLabel } from "./cancellationCategory";
 
 export function sittingStatusLabel(sitting: {
   status: string;
   cancellation_category?: string | null;
 }): string {
-  if (sitting.status === "cancelled" && sitting.cancellation_category === "district_judge") {
-    return "Cancelled by DJ";
-  }
+  const categoryLabel = cancellationCategoryLabel(sitting.status, sitting.cancellation_category);
+  if (categoryLabel) return categoryLabel;
 
   switch (sitting.status) {
     case "completed":
@@ -20,15 +20,22 @@ export function sittingStatusLabel(sitting: {
   }
 }
 
-export function SittingStatusCell({ sitting }: { sitting: SittingDrillDownRow }) {
-  if (sitting.status === "cancelled" && sitting.cancellation_category === "district_judge") {
-    return <strong className="govuk-tag govuk-tag--red">Cancelled by DJ</strong>;
+function statusTagClass(status: string): string {
+  if (status === "vacated") return "govuk-tag govuk-tag--yellow";
+  if (status === "cancelled") return "govuk-tag govuk-tag--red";
+  return "govuk-tag";
+}
+
+export function SittingStatusCell({
+  sitting,
+}: {
+  sitting: Pick<SittingDrillDownRow, "status" | "cancellation_category">;
+}) {
+  const label = sittingStatusLabel(sitting);
+
+  if (sitting.status === "completed") {
+    return <>{label}</>;
   }
-  if (sitting.status === "vacated") {
-    return <strong className="govuk-tag govuk-tag--yellow">Vacated</strong>;
-  }
-  if (sitting.status === "cancelled") {
-    return <strong className="govuk-tag govuk-tag--red">Cancelled</strong>;
-  }
-  return <>{sittingStatusLabel(sitting)}</>;
+
+  return <strong className={statusTagClass(sitting.status)}>{label}</strong>;
 }

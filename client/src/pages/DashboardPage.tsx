@@ -230,6 +230,22 @@ export function DashboardPage() {
                   ariaLabel={`View ${reports.summary.cancelled_by_dj} sittings cancelled by District Judge`}
                 />
               </DashboardStat>
+              <DashboardStat label="Cancelled by HMCTS" tone="red">
+                <SittingStatLink
+                  count={reports.summary.cancelled_by_hmcts}
+                  filters={{ status: "cancelled", cancellation_category: "hmcts" }}
+                  period={periodFilter}
+                  ariaLabel={`View ${reports.summary.cancelled_by_hmcts} sittings cancelled by HMCTS`}
+                />
+              </DashboardStat>
+              <DashboardStat label="Cancelled by magistrate" tone="red">
+                <SittingStatLink
+                  count={reports.summary.cancelled_by_magistrate}
+                  filters={{ status: "cancelled", cancellation_category: "magistrate" }}
+                  period={periodFilter}
+                  ariaLabel={`View ${reports.summary.cancelled_by_magistrate} sittings cancelled by magistrate`}
+                />
+              </DashboardStat>
             </div>
 
             <dl className="orion-dashboard-context-stats">

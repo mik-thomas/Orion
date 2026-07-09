@@ -1,4 +1,8 @@
 import { periodFilterQuery, defaultPeriodFilter, type PeriodFilterState } from "./periodFilter";
+import {
+  cancellationCategoryHeading,
+  isCancellationCategory,
+} from "./cancellationCategory";
 import type { SittingsDrillDownFilters } from "../types/domain";
 
 export type { SittingsDrillDownFilters } from "../types/domain";
@@ -58,12 +62,12 @@ export function parseSittingsDrillDownSearch(search: string): SittingsDrillDownF
   const status = params.get("status");
   const page = params.get("page");
   const perPage = params.get("per_page");
+  const cancellationCategory = params.get("cancellation_category");
 
   return {
     ...period,
     status: status === "completed" || status === "vacated" || status === "cancelled" ? status : undefined,
-    cancellation_category:
-      params.get("cancellation_category") === "district_judge" ? "district_judge" : undefined,
+    cancellation_category: isCancellationCategory(cancellationCategory) ? cancellationCategory : undefined,
     courthouse: params.get("courthouse") ?? undefined,
     courthouse_id: params.get("courthouse_id") ? Number(params.get("courthouse_id")) : undefined,
     court_type: params.get("court_type") ?? undefined,
@@ -81,9 +85,11 @@ export function sittingsDrillDownHeading(filters: SittingsDrillDownFilters): str
   const parts: string[] = [];
 
   if (filters.status === "completed") parts.push("Completed sittings");
-  else if (filters.status === "vacated") parts.push("Vacated sittings");
-  else if (filters.status === "cancelled" && filters.cancellation_category === "district_judge") {
-    parts.push("Sittings cancelled by District Judge");
+  else if (filters.status === "vacated" && filters.cancellation_category) {
+    parts.push(cancellationCategoryHeading("vacated", filters.cancellation_category));
+  } else if (filters.status === "vacated") parts.push("Vacated sittings");
+  else if (filters.status === "cancelled" && filters.cancellation_category) {
+    parts.push(cancellationCategoryHeading("cancelled", filters.cancellation_category));
   } else if (filters.status === "cancelled") parts.push("Cancelled sittings");
   else parts.push("Sittings");
 
