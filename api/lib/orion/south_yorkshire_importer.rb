@@ -108,7 +108,7 @@ module Orion
     end
 
     def importer_version
-      "2026-07-09d (unique_event batch dedupe)"
+      "2026-07-09e (rota login row fix)"
     end
 
     def setup_checkpoint!
@@ -168,7 +168,7 @@ module Orion
         checkpoint.complete_phase!("import_magistrates_from_overview")
       end
 
-      rota_total = open_sheet(:rota, "Northeast Rota Last Login").parse[1..]&.count { |row| row.compact.present? } || 0
+      rota_total = rota_login_rows.size
       if rota_total.positive? && Magistrate.where.not(last_login_on: nil).count >= (rota_total * INFER_COMPLETE_RATIO).ceil
         checkpoint.complete_phase!("enrich_from_rota")
       end
@@ -237,9 +237,15 @@ module Orion
 
     def with_checkpointed_rows(label, rows, phase_key:)
       total = rows.size
-      return skip_phase!(label) if phase_complete?(phase_key)
+      reimport_rota_login = phase_key == "enrich_from_rota" && rota_login_import_incomplete?
 
-      offset = @resume ? @checkpoint.rows_processed(phase_key) : 0
+      if reimport_rota_login
+        @progress.message("Re-running rota login enrichment — login data incomplete in database")
+      elsif phase_complete?(phase_key)
+        return skip_phase!(label)
+      end
+
+      offset = @resume && !reimport_rota_login ? @checkpoint.rows_processed(phase_key) : 0
       @progress.message("Resuming #{label} from row #{offset}/#{total}") if offset.positive?
 
       if offset >= total && total.positive?
@@ -819,9 +825,19 @@ module Orion
       end
     end
 
+    def rota_login_rows
+      open_sheet(:rota, "Northeast Rota Last Login").parse.reject { |row| row.compact.blank? }
+    end
+
+    def rota_login_import_incomplete?
+      rows = rota_login_rows
+      return false if rows.empty?
+
+      Magistrate.where.not(last_login_on: nil).count < (rows.size * INFER_COMPLETE_RATIO).ceil
+    end
+
     def enrich_from_rota!
-      sheet = open_sheet(:rota, "Northeast Rota Last Login")
-      rows = sheet.parse[1..].reject { |row| row.compact.blank? }
+      rows = rota_login_rows
 
       with_checkpointed_rows("enriching magistrates from rota", rows, phase_key: "enrich_from_rota") do |row|
         magistrate_for!(
