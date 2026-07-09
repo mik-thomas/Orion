@@ -2,8 +2,8 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { listMagistratesOnLeave } from "../api/magistrates";
 import { ApiError } from "../api/http";
+import { LoaReviewDateEditor } from "../components/LoaReviewDateEditor";
 import { MagistrateLink } from "../components/MagistrateLink";
-import { NextLoaReviewTag } from "../lib/loaReview";
 import { useRole } from "../context/RoleContext";
 import type { LeaveOfAbsence, MagistrateSummary } from "../types/domain";
 
@@ -23,6 +23,21 @@ export function OnLeavePage() {
       .catch((err: unknown) => setError(err instanceof ApiError ? err.message : "Failed to load leave list"))
       .finally(() => setLoading(false));
   }, [role]);
+
+  function handleLeaveUpdated(magistrateId: number, updated: LeaveOfAbsence) {
+    setMagistrates((current) =>
+      current.map((magistrate) =>
+        magistrate.id === magistrateId
+          ? {
+              ...magistrate,
+              current_leaves: magistrate.current_leaves.map((leave) =>
+                leave.id === updated.id ? updated : leave
+              ),
+            }
+          : magistrate
+      )
+    );
+  }
 
   return (
     <>
@@ -94,7 +109,10 @@ export function OnLeavePage() {
                     <strong className="govuk-tag govuk-tag--yellow">{formatLeaveEnd(leave)}</strong>
                   </td>
                   <td className="govuk-table__cell">
-                    <NextLoaReviewTag leave={leave} />
+                    <LoaReviewDateEditor
+                      leave={leave}
+                      onUpdated={(updated) => handleLeaveUpdated(magistrate.id, updated)}
+                    />
                   </td>
                   <td className="govuk-table__cell">{leave.reason ?? "—"}</td>
                 </tr>

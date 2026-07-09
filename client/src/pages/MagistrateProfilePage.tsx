@@ -5,6 +5,7 @@ import { ApiError } from "../api/http";
 import { ComplianceViolations } from "../components/ComplianceViolations";
 import { RetirementDueModal } from "../components/RetirementDueModal";
 import { SittingForecastPanel } from "../components/SittingForecastPanel";
+import { LoaReviewDateEditor } from "../components/LoaReviewDateEditor";
 import { NextLoaReviewTag } from "../lib/loaReview";
 import { CourtRoomTable } from "../components/CourtRoomTable";
 import { DjCancellationSection } from "../components/DjCancellationSection";
@@ -18,7 +19,7 @@ import {
 import { SittingPositionCell } from "../lib/sittingPosition";
 import { SittingStatusCell } from "../lib/sittingStatus";
 import { isRetirementAlertDismissed, isRetiringSoon } from "../lib/retirement";
-import type { MagistrateDetail } from "../types/domain";
+import type { LeaveOfAbsence, MagistrateDetail } from "../types/domain";
 
 export function MagistrateProfilePage() {
   const { id } = useParams();
@@ -46,6 +47,19 @@ export function MagistrateProfilePage() {
       .catch((err: unknown) => setError(err instanceof ApiError ? err.message : "Failed to load profile"))
       .finally(() => setLoading(false));
   }, [id, periodFilter, role]);
+
+  function handleLeaveUpdated(updated: LeaveOfAbsence) {
+    setMagistrate((current) =>
+      current
+        ? {
+            ...current,
+            leaves_of_absence: current.leaves_of_absence.map((leave) =>
+              leave.id === updated.id ? updated : leave
+            ),
+          }
+        : current
+    );
+  }
 
   if (loading) return <p className="govuk-body">Loading…</p>;
   if (error || !magistrate) {
@@ -427,7 +441,11 @@ export function MagistrateProfilePage() {
                 <td className="govuk-table__cell">{leave.ends_on ?? "Open-ended"}</td>
                 <td className="govuk-table__cell">{leave.reason ?? "—"}</td>
                 <td className="govuk-table__cell">
-                  {leave.active ? <NextLoaReviewTag leave={leave} /> : (leave.next_loa_review_on ?? "—")}
+                  <LoaReviewDateEditor
+                    leave={leave}
+                    editable={leave.active}
+                    onUpdated={handleLeaveUpdated}
+                  />
                 </td>
                 <td className="govuk-table__cell">
                   {leave.active ? (
