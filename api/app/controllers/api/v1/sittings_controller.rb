@@ -102,8 +102,8 @@ module Api
 
         by_courthouse = scope.joins(:courthouse)
           .group("courthouses.name")
-          .order(Arel.sql("count_all DESC"))
           .count
+          .sort_by { |_, count| -count }
           .map { |courthouse, sittings| { courthouse: courthouse, sittings: sittings } }
 
         {
