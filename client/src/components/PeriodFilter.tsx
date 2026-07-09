@@ -12,9 +12,9 @@ export function PeriodFilter({ value, onChange, availableYears }: PeriodFilterPr
   const quarterDisabled = value.mode === "all";
 
   return (
-    <div className="govuk-form-group govuk-!-margin-bottom-4">
+    <div className="govuk-form-group orion-period-filter">
       <fieldset className="govuk-fieldset">
-        <legend className="govuk-fieldset__legend govuk-fieldset__legend--s govuk-!-margin-bottom-4">
+        <legend className="govuk-fieldset__legend govuk-fieldset__legend--s">
           Filter period
         </legend>
 

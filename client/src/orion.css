@@ -101,12 +101,28 @@
 
 .orion-dashboard-stats {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(9rem, 1fr));
+  grid-template-columns: repeat(5, 1fr);
   gap: 1rem;
   margin-bottom: 1.5rem;
+  align-items: stretch;
+}
+
+@media (max-width: 48.0625em) {
+  .orion-dashboard-stats {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 28.125em) {
+  .orion-dashboard-stats {
+    grid-template-columns: 1fr;
+  }
 }
 
 .orion-dashboard-stat {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
   padding: 1rem 1.25rem;
   background-color: #f3f2f1;
   border-left: 4px solid #1d70b8;
@@ -129,20 +145,29 @@
 }
 
 .orion-dashboard-stat__label {
-  margin: 0 0 0.35rem;
-  font-size: 1rem;
-  line-height: 1.25;
-  font-weight: 700;
+  margin-top: 0;
 }
 
-.orion-dashboard-stat__value {
-  font-size: 1.875rem;
-  line-height: 1.15;
-  font-weight: 700;
+.orion-dashboard-stat__value .govuk-link:link,
+.orion-dashboard-stat__value .govuk-link:visited {
+  color: #0b0c0c;
+  text-decoration: none;
 }
 
-.orion-dashboard-stat__value .govuk-link {
-  font-weight: 700;
+.orion-dashboard-stat__value .govuk-link:hover {
+  text-decoration: underline;
+}
+
+.orion-period-filter.govuk-form-group {
+  margin-bottom: 1.25rem;
+}
+
+.orion-period-filter .govuk-fieldset__legend {
+  margin-bottom: 0.5rem;
+}
+
+.orion-period-filter .govuk-label {
+  margin-bottom: 0.25rem;
 }
 
 .orion-dashboard-hint {
