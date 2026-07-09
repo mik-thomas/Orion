@@ -61,6 +61,10 @@ class Magistrate < ApplicationRecord
     Orion::SittingForecaster.forecast_for(self, as_of:)
   end
 
+  def sitting_score(as_of: Date.current)
+    Orion::MagistrateSittingScore.score_for(self, as_of:)
+  end
+
   def ensure_reference_code!
     return if reference_code.present?
 

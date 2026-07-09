@@ -955,3 +955,102 @@
 .orion-loa-review-editor__actions .govuk-button {
   margin-bottom: 0;
 }
+
+/* Sitting score meter — credit-score style gauge on magistrate profile */
+
+.orion-sitting-score__panel {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 1.5rem 2rem;
+  padding: 1.25rem 1.5rem;
+  border: 1px solid #b1b4b6;
+  background: #f3f2f1;
+}
+
+.orion-sitting-score__gauge {
+  position: relative;
+  width: min(100%, 14rem);
+  flex-shrink: 0;
+}
+
+.orion-sitting-score__arc {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.orion-sitting-score__arc-track {
+  fill: none;
+  stroke: #b1b4b6;
+  stroke-width: 10;
+  stroke-linecap: round;
+}
+
+.orion-sitting-score__arc-zone {
+  fill: none;
+  stroke-width: 10;
+  stroke-linecap: butt;
+}
+
+.orion-sitting-score__arc-zone--poor {
+  stroke: #d4351c;
+}
+
+.orion-sitting-score__arc-zone--fair {
+  stroke: #f47738;
+}
+
+.orion-sitting-score__arc-zone--good {
+  stroke: #85994b;
+}
+
+.orion-sitting-score__arc-zone--excellent {
+  stroke: #00703c;
+}
+
+.orion-sitting-score__needle {
+  stroke: #0b0c0c;
+  stroke-width: 3;
+  stroke-linecap: round;
+}
+
+.orion-sitting-score__hub {
+  fill: #0b0c0c;
+}
+
+.orion-sitting-score__value {
+  position: absolute;
+  left: 50%;
+  bottom: 0.35rem;
+  transform: translateX(-50%);
+  margin: 0;
+  font-size: 2rem;
+  font-weight: 700;
+  line-height: 1;
+  color: #0b0c0c;
+}
+
+.orion-sitting-score__summary {
+  flex: 1 1 12rem;
+  min-width: 0;
+}
+
+.orion-sitting-score__toggle {
+  margin-top: 0.75rem;
+  padding: 0;
+  border: none;
+  background: none;
+  cursor: pointer;
+  text-align: left;
+}
+
+.orion-sitting-score__points--positive {
+  color: #00703c;
+  font-weight: 700;
+}
+
+.orion-sitting-score__points--negative {
+  color: #d4351c;
+  font-weight: 700;
+}

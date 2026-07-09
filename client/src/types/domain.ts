@@ -118,6 +118,22 @@ export interface RetiringSoonRow {
 
 export type Role = "HMCTS-SLM" | "Developer" | "Bench Chair" | "Deputy";
 
+export type SittingScoreRating = "Excellent" | "Good" | "Fair" | "Poor";
+
+export interface SittingScoreBreakdownItem {
+  factor: string;
+  label: string;
+  points: number;
+  detail: string | null;
+}
+
+export interface SittingScore {
+  score: number;
+  rating: SittingScoreRating;
+  fiscal_year_label: string;
+  breakdown: SittingScoreBreakdownItem[];
+}
+
 export interface MagistrateSummary {
   id: number;
   reference_code: string;
@@ -149,6 +165,7 @@ export interface MagistrateSummary {
   has_violations: boolean;
   sitting_commitment: SittingCommitment | null;
   sitting_forecast: SittingForecast | null;
+  sitting_score: SittingScore | null;
 }
 
 export interface Sitting {

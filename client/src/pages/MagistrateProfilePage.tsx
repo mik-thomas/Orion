@@ -5,6 +5,7 @@ import { ApiError } from "../api/http";
 import { ComplianceViolations } from "../components/ComplianceViolations";
 import { RetirementDueModal } from "../components/RetirementDueModal";
 import { SittingForecastPanel } from "../components/SittingForecastPanel";
+import { SittingScoreMeter } from "../components/SittingScoreMeter";
 import { LoaReviewDateEditor } from "../components/LoaReviewDateEditor";
 import { NextLoaReviewTag } from "../lib/loaReview";
 import { DjCancellationSection } from "../components/DjCancellationSection";
@@ -133,6 +134,8 @@ export function MagistrateProfilePage() {
         violations={magistrate.violations}
         sittingCommitment={magistrate.sitting_commitment}
       />
+
+      <SittingScoreMeter sittingScore={magistrate.sitting_score} />
 
       <SittingForecastPanel forecast={magistrate.sitting_forecast} />
 
