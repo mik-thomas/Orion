@@ -1,4 +1,5 @@
 import { MagistrateLink } from "./MagistrateLink";
+import { DashboardSection } from "./DashboardSection";
 
 export interface LoginReportRow {
   magistrate_id: number;
@@ -18,9 +19,15 @@ export function LoginReportTable({
   heading = "Rota login report",
   emptyMessage = "No login data recorded yet.",
 }: LoginReportTableProps) {
+  const staleCount = rows.filter((row) => row.days_since_login != null && row.days_since_login >= 90).length;
+
   return (
-    <section className="govuk-!-margin-top-6">
-      <h3 className="govuk-heading-m">{heading}</h3>
+    <DashboardSection
+      title={heading}
+      tag={staleCount > 0 ? `${staleCount} overdue` : undefined}
+      tagColour="red"
+      description="Magistrates who have not logged into the rota system recently."
+    >
       {rows.length === 0 ? (
         <p className="govuk-body">{emptyMessage}</p>
       ) : (
@@ -63,6 +70,6 @@ export function LoginReportTable({
           </tbody>
         </table>
       )}
-    </section>
+    </DashboardSection>
   );
 }

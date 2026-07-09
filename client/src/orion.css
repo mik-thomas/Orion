@@ -50,3 +50,105 @@
   color: #0b0c0c;
   background-color: #ffffff;
 }
+
+/* Dashboard sections — bordered panels with consistent spacing */
+
+.orion-dashboard-section {
+  margin-bottom: 2.5rem;
+  padding: 1.5rem 1.75rem;
+  border: 1px solid #b1b4b6;
+  background-color: #ffffff;
+}
+
+.orion-dashboard-section__header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.75rem 1rem;
+  margin-bottom: 1rem;
+}
+
+.orion-dashboard-section__title {
+  margin-bottom: 0;
+  flex: 1 1 auto;
+}
+
+.orion-dashboard-section__tag {
+  flex-shrink: 0;
+}
+
+.orion-dashboard-section__description {
+  margin-top: -0.25rem;
+  margin-bottom: 1.25rem;
+  color: #505a5f;
+}
+
+.orion-dashboard-section__content > :last-child {
+  margin-bottom: 0;
+}
+
+.orion-dashboard-subsection {
+  margin-bottom: 1.5rem;
+}
+
+.orion-dashboard-subsection:last-child {
+  margin-bottom: 0;
+}
+
+.orion-dashboard-subsection__title {
+  margin-bottom: 0.75rem;
+}
+
+.orion-dashboard-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(9rem, 1fr));
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.orion-dashboard-stat {
+  padding: 1rem 1.25rem;
+  background-color: #f3f2f1;
+  border-left: 4px solid #1d70b8;
+}
+
+.orion-dashboard-stat--green {
+  border-left-color: #00703c;
+}
+
+.orion-dashboard-stat--yellow {
+  border-left-color: #ffdd00;
+}
+
+.orion-dashboard-stat--red {
+  border-left-color: #d4351c;
+}
+
+.orion-dashboard-stat--grey {
+  border-left-color: #505a5f;
+}
+
+.orion-dashboard-stat__label {
+  margin: 0 0 0.35rem;
+  font-size: 1rem;
+  line-height: 1.25;
+  font-weight: 700;
+}
+
+.orion-dashboard-stat__value {
+  font-size: 1.875rem;
+  line-height: 1.15;
+  font-weight: 700;
+}
+
+.orion-dashboard-stat__value .govuk-link {
+  font-weight: 700;
+}
+
+.orion-dashboard-hint {
+  margin-bottom: 1rem;
+}
+
+.orion-dashboard-hint .govuk-tag {
+  vertical-align: baseline;
+}

@@ -3,6 +3,8 @@ import { listMagistrates } from "../api/magistrates";
 import { getReportsOverview } from "../api/reports";
 import { ApiError } from "../api/http";
 import { ClusterMovementSection } from "../components/ClusterMovementSection";
+import { DashboardSection } from "../components/DashboardSection";
+import { DashboardStat } from "../components/DashboardStat";
 import { DrillDownLink } from "../components/DrillDownLink";
 import { MagistrateLink } from "../components/MagistrateLink";
 import { LoginReportTable } from "../components/LoginReportTable";
@@ -12,10 +14,17 @@ import { PeriodFilter } from "../components/PeriodFilter";
 import { useRole } from "../context/RoleContext";
 import {
   defaultPeriodFilter,
+  periodFilterLabel,
   periodFilterQuery,
   type PeriodFilterState,
 } from "../lib/periodFilter";
 import type { MagistrateSummary, ReportsOverview } from "../types/domain";
+
+function awaySittingsTag(count: number) {
+  if (count >= 10) return { text: String(count), colour: "red" as const };
+  if (count >= 5) return { text: String(count), colour: "yellow" as const };
+  return null;
+}
 
 export function DashboardPage() {
   const { role, canViewNames } = useRole();
@@ -60,37 +69,15 @@ export function DashboardPage() {
     setSearchTerm(query.trim());
   }
 
+  const periodTag = periodFilterLabel(periodFilter);
+  const periodTagColour = periodFilter.mode === "all" ? "grey" : "blue";
+
   return (
     <>
       <h1 className="govuk-heading-xl">Dashboard</h1>
       <p className="govuk-body-l">
-        Sitting patterns across courthouses and magistrate movement. Import full sitting data later.
+        Sitting patterns across courthouses and magistrate movement.
       </p>
-
-      <form className="govuk-!-margin-bottom-6" onSubmit={handleSearch}>
-        <div className="govuk-form-group">
-          <label className="govuk-label govuk-label--m" htmlFor="search">
-            Search magistrates
-          </label>
-          <div id="search-hint" className="govuk-hint">
-            {canViewNames
-              ? "Search by name, email, reference code, home court, sitting location or bench."
-              : "Search by reference code, home court, sitting location or bench."}
-          </div>
-          <input
-            className="govuk-input govuk-!-width-two-thirds"
-            id="search"
-            name="search"
-            type="search"
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
-            aria-describedby="search-hint"
-          />
-        </div>
-        <button type="submit" className="govuk-button" data-module="govuk-button">
-          Search
-        </button>
-      </form>
 
       {error && (
         <div className="govuk-error-summary" role="alert">
@@ -101,222 +88,246 @@ export function DashboardPage() {
         </div>
       )}
 
-      {searchTerm && (
-        <section className="govuk-!-margin-bottom-8">
-          <h2 className="govuk-heading-l">Search results</h2>
-          {results.length === 0 ? (
-            <p className="govuk-body">No magistrates matched &ldquo;{searchTerm}&rdquo;.</p>
-          ) : (
-            <table className="govuk-table">
-              <thead className="govuk-table__head">
-                <tr className="govuk-table__row">
-                  <th scope="col" className="govuk-table__header">
-                    {canViewNames ? "Name" : "Reference"}
-                  </th>
-                  <th scope="col" className="govuk-table__header">
-                    Home court
-                  </th>
-                  <th scope="col" className="govuk-table__header">
-                    Bench
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="govuk-table__body">
-                {results.map((magistrate) => (
-                  <tr key={magistrate.id} className="govuk-table__row">
-                    <td className="govuk-table__cell">
-                      <MagistrateLink id={magistrate.id} name={magistrate.display_name} />
-                    </td>
-                <td className="govuk-table__cell">{magistrate.home_courthouse?.name ?? "—"}</td>
-                <td className="govuk-table__cell">{magistrate.home_courthouse?.bench ?? "—"}</td>
+      <DashboardSection title="Search magistrates">
+        <form onSubmit={handleSearch}>
+          <div className="govuk-form-group govuk-!-margin-bottom-4">
+            <label className="govuk-label govuk-label--m" htmlFor="search">
+              Find a magistrate
+            </label>
+            <div id="search-hint" className="govuk-hint">
+              {canViewNames
+                ? "Search by name, email, reference code, home court, sitting location or bench."
+                : "Search by reference code, home court, sitting location or bench."}
+            </div>
+            <input
+              className="govuk-input govuk-!-width-two-thirds"
+              id="search"
+              name="search"
+              type="search"
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              aria-describedby="search-hint"
+            />
+          </div>
+          <button type="submit" className="govuk-button" data-module="govuk-button">
+            Search
+          </button>
+        </form>
+
+        {searchTerm ? (
+          <div className="orion-dashboard-subsection govuk-!-margin-top-6">
+            <h3 className="govuk-heading-m orion-dashboard-subsection__title">
+              Results for &ldquo;{searchTerm}&rdquo;
+            </h3>
+            {results.length === 0 ? (
+              <p className="govuk-body">No magistrates matched.</p>
+            ) : (
+              <table className="govuk-table">
+                <thead className="govuk-table__head">
+                  <tr className="govuk-table__row">
+                    <th scope="col" className="govuk-table__header">
+                      {canViewNames ? "Name" : "Reference"}
+                    </th>
+                    <th scope="col" className="govuk-table__header">
+                      Home court
+                    </th>
+                    <th scope="col" className="govuk-table__header">
+                      Bench
+                    </th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
-        </section>
-      )}
+                </thead>
+                <tbody className="govuk-table__body">
+                  {results.map((magistrate) => (
+                    <tr key={magistrate.id} className="govuk-table__row">
+                      <td className="govuk-table__cell">
+                        <MagistrateLink id={magistrate.id} name={magistrate.display_name} />
+                      </td>
+                      <td className="govuk-table__cell">{magistrate.home_courthouse?.name ?? "—"}</td>
+                      <td className="govuk-table__cell">{magistrate.home_courthouse?.bench ?? "—"}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </div>
+        ) : null}
+      </DashboardSection>
 
-      <h2 className="govuk-heading-l">Sitting overview</h2>
-      <PeriodFilter
-        value={periodFilter}
-        onChange={setPeriodFilter}
-        availableYears={availableYears}
-      />
-      {loading ? (
-        <p className="govuk-body">Loading sitting data…</p>
-      ) : reports ? (
+      <DashboardSection
+        title="Sitting overview"
+        tag={periodTag}
+        tagColour={periodTagColour}
+        description="Summary counts for the selected period. Select figures to view underlying sittings."
+      >
+        <PeriodFilter value={periodFilter} onChange={setPeriodFilter} availableYears={availableYears} />
+
+        {loading ? (
+          <p className="govuk-body">Loading sitting data…</p>
+        ) : reports ? (
+          <div className="orion-dashboard-stats">
+            <DashboardStat label="Completed" variant="green" labelTag={{ text: "Completed", colour: "green" }}>
+              <DrillDownLink
+                filters={{ status: "completed" }}
+                period={periodFilter}
+                ariaLabel={`View ${reports.summary.completed_sittings} completed sittings`}
+              >
+                {reports.summary.completed_sittings}
+              </DrillDownLink>
+            </DashboardStat>
+            <DashboardStat label="Vacated" variant="yellow" labelTag={{ text: "Vacated", colour: "yellow" }}>
+              <DrillDownLink
+                filters={{ status: "vacated" }}
+                period={periodFilter}
+                ariaLabel={`View ${reports.summary.vacated_sittings} vacated sittings`}
+              >
+                {reports.summary.vacated_sittings}
+              </DrillDownLink>
+            </DashboardStat>
+            <DashboardStat label="Cancelled" variant="red" labelTag={{ text: "Cancelled", colour: "red" }}>
+              <DrillDownLink
+                filters={{ status: "cancelled" }}
+                period={periodFilter}
+                ariaLabel={`View ${reports.summary.cancelled_sittings} cancelled sittings`}
+              >
+                {reports.summary.cancelled_sittings}
+              </DrillDownLink>
+            </DashboardStat>
+            <DashboardStat
+              label="Cancelled by DJ"
+              variant="red"
+              labelTag={{ text: "Cancelled by DJ", colour: "red" }}
+            >
+              <DrillDownLink
+                filters={{ status: "cancelled", cancellation_category: "district_judge" }}
+                period={periodFilter}
+                ariaLabel={`View ${reports.summary.cancelled_by_dj} sittings cancelled by District Judge`}
+              >
+                {reports.summary.cancelled_by_dj}
+              </DrillDownLink>
+            </DashboardStat>
+            <DashboardStat label="Magistrates" variant="grey">
+              {reports.summary.magistrates}
+            </DashboardStat>
+            <DashboardStat label="Total sittings">{reports.summary.sittings}</DashboardStat>
+            <DashboardStat label="Courthouses">{reports.summary.courthouses}</DashboardStat>
+            <DashboardStat label="Active magistrates">{reports.summary.active_magistrates}</DashboardStat>
+            <DashboardStat label="Sitting types">{reports.summary.sitting_types}</DashboardStat>
+          </div>
+        ) : null}
+      </DashboardSection>
+
+      {!loading && reports ? (
         <>
-          <div className="govuk-grid-row govuk-!-margin-bottom-6">
-            <div className="govuk-grid-column-one-quarter">
-              <p className="govuk-body govuk-!-font-weight-bold govuk-!-margin-bottom-1">Completed</p>
-              <p className="govuk-heading-m govuk-!-margin-top-0">
-                <DrillDownLink
-                  filters={{ status: "completed" }}
-                  period={periodFilter}
-                  ariaLabel={`View ${reports.summary.completed_sittings} completed sittings`}
-                >
-                  {reports.summary.completed_sittings}
-                </DrillDownLink>
-              </p>
-            </div>
-            <div className="govuk-grid-column-one-quarter">
-              <p className="govuk-body govuk-!-font-weight-bold govuk-!-margin-bottom-1">Vacated</p>
-              <p className="govuk-heading-m govuk-!-margin-top-0">
-                <DrillDownLink
-                  filters={{ status: "vacated" }}
-                  period={periodFilter}
-                  ariaLabel={`View ${reports.summary.vacated_sittings} vacated sittings`}
-                >
-                  {reports.summary.vacated_sittings}
-                </DrillDownLink>
-              </p>
-            </div>
-            <div className="govuk-grid-column-one-quarter">
-              <p className="govuk-body govuk-!-font-weight-bold govuk-!-margin-bottom-1">Cancelled</p>
-              <p className="govuk-heading-m govuk-!-margin-top-0">
-                <DrillDownLink
-                  filters={{ status: "cancelled" }}
-                  period={periodFilter}
-                  ariaLabel={`View ${reports.summary.cancelled_sittings} cancelled sittings`}
-                >
-                  {reports.summary.cancelled_sittings}
-                </DrillDownLink>
-              </p>
-            </div>
-            <div className="govuk-grid-column-one-quarter">
-              <p className="govuk-body govuk-!-font-weight-bold govuk-!-margin-bottom-1">Cancelled by DJ</p>
-              <p className="govuk-heading-m govuk-!-margin-top-0">
-                <DrillDownLink
-                  filters={{ status: "cancelled", cancellation_category: "district_judge" }}
-                  period={periodFilter}
-                  ariaLabel={`View ${reports.summary.cancelled_by_dj} sittings cancelled by District Judge`}
-                >
-                  {reports.summary.cancelled_by_dj}
-                </DrillDownLink>
-              </p>
-            </div>
-            <div className="govuk-grid-column-one-quarter">
-              <p className="govuk-body govuk-!-font-weight-bold govuk-!-margin-bottom-1">Magistrates</p>
-              <p className="govuk-heading-m govuk-!-margin-top-0">{reports.summary.magistrates}</p>
-            </div>
-          </div>
-
-          <div className="govuk-grid-row govuk-!-margin-bottom-6">
-            <div className="govuk-grid-column-one-quarter">
-              <p className="govuk-body govuk-!-font-weight-bold govuk-!-margin-bottom-1">Total sittings</p>
-              <p className="govuk-heading-m govuk-!-margin-top-0">{reports.summary.sittings}</p>
-            </div>
-            <div className="govuk-grid-column-one-quarter">
-              <p className="govuk-body govuk-!-font-weight-bold govuk-!-margin-bottom-1">Courthouses</p>
-              <p className="govuk-heading-m govuk-!-margin-top-0">{reports.summary.courthouses}</p>
-            </div>
-            <div className="govuk-grid-column-one-quarter">
-              <p className="govuk-body govuk-!-font-weight-bold govuk-!-margin-bottom-1">Active magistrates</p>
-              <p className="govuk-heading-m govuk-!-margin-top-0">{reports.summary.active_magistrates}</p>
-            </div>
-            <div className="govuk-grid-column-one-quarter">
-              <p className="govuk-body govuk-!-font-weight-bold govuk-!-margin-bottom-1">Sitting types</p>
-              <p className="govuk-heading-m govuk-!-margin-top-0">{reports.summary.sitting_types}</p>
-            </div>
-          </div>
-
-          {reports.dj_cancellations && (
+          {reports.dj_cancellations ? (
             <DjCancellationSection report={reports.dj_cancellations} periodFilter={periodFilter} />
-          )}
+          ) : null}
 
-          <div className="govuk-grid-row">
-            <div className="govuk-grid-column-one-half">
-              <h3 className="govuk-heading-m">Sittings by courthouse</h3>
-              {reports.by_courthouse.length === 0 ? (
-                <p className="govuk-body">No sitting data yet.</p>
-              ) : (
-                <table className="govuk-table">
-                  <thead className="govuk-table__head">
-                    <tr className="govuk-table__row">
-                      <th scope="col" className="govuk-table__header">
-                        Courthouse
-                      </th>
-                      <th scope="col" className="govuk-table__header">
-                        Sittings
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="govuk-table__body">
-                    {reports.by_courthouse.map((row) => (
-                      <tr key={row.courthouse} className="govuk-table__row">
-                        <td className="govuk-table__cell">
-                          <DrillDownLink
-                            filters={{ courthouse: row.courthouse }}
-                            period={periodFilter}
-                            ariaLabel={`View sittings at ${row.courthouse}`}
-                          >
-                            {row.courthouse}
-                          </DrillDownLink>
-                        </td>
-                        <td className="govuk-table__cell">
-                          <DrillDownLink
-                            filters={{ courthouse: row.courthouse }}
-                            period={periodFilter}
-                            ariaLabel={`View ${row.sittings} sittings at ${row.courthouse}`}
-                          >
-                            {row.sittings}
-                          </DrillDownLink>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              )}
-            </div>
-            <div className="govuk-grid-column-one-half">
-              <h3 className="govuk-heading-m">Sittings by court type</h3>
-              {reports.by_court_type.length === 0 ? (
-                <p className="govuk-body">No court type data yet.</p>
-              ) : (
-                <table className="govuk-table">
-                  <thead className="govuk-table__head">
-                    <tr className="govuk-table__row">
-                      <th scope="col" className="govuk-table__header">
-                        Court type
-                      </th>
-                      <th scope="col" className="govuk-table__header">
-                        Sittings
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="govuk-table__body">
-                    {reports.by_court_type.map((row) => (
-                      <tr key={row.court_type} className="govuk-table__row">
-                        <td className="govuk-table__cell">
-                          <DrillDownLink
-                            filters={{ court_type: row.court_type }}
-                            period={periodFilter}
-                            ariaLabel={`View sittings for court type ${row.court_type}`}
-                          >
-                            {row.court_type}
-                          </DrillDownLink>
-                        </td>
-                        <td className="govuk-table__cell">
-                          <DrillDownLink
-                            filters={{ court_type: row.court_type }}
-                            period={periodFilter}
-                            ariaLabel={`View ${row.sittings} sittings for court type ${row.court_type}`}
-                          >
-                            {row.sittings}
-                          </DrillDownLink>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              )}
-            </div>
-          </div>
+          <DashboardSection
+            title="Breakdown by location and type"
+            description="Courthouse, court type, business type and court room totals for the selected period."
+          >
+            <p className="govuk-hint orion-dashboard-hint">
+              <strong className="govuk-tag govuk-tag--grey">Drill-down</strong> Click any figure to view matching
+              sittings.
+            </p>
 
-          <div className="govuk-grid-row govuk-!-margin-top-6">
-            <div className="govuk-grid-column-one-half">
-              <h3 className="govuk-heading-m">Business types (Remands, Trials, etc.)</h3>
+            <div className="govuk-grid-row">
+              <div className="govuk-grid-column-one-half">
+                <div className="orion-dashboard-subsection">
+                  <h3 className="govuk-heading-s orion-dashboard-subsection__title">Sittings by courthouse</h3>
+                  {reports.by_courthouse.length === 0 ? (
+                    <p className="govuk-body">No sitting data yet.</p>
+                  ) : (
+                    <table className="govuk-table">
+                      <thead className="govuk-table__head">
+                        <tr className="govuk-table__row">
+                          <th scope="col" className="govuk-table__header">
+                            Courthouse
+                          </th>
+                          <th scope="col" className="govuk-table__header">
+                            Sittings
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody className="govuk-table__body">
+                        {reports.by_courthouse.map((row) => (
+                          <tr key={row.courthouse} className="govuk-table__row">
+                            <td className="govuk-table__cell">
+                              <DrillDownLink
+                                filters={{ courthouse: row.courthouse }}
+                                period={periodFilter}
+                                ariaLabel={`View sittings at ${row.courthouse}`}
+                              >
+                                {row.courthouse}
+                              </DrillDownLink>
+                            </td>
+                            <td className="govuk-table__cell">
+                              <DrillDownLink
+                                filters={{ courthouse: row.courthouse }}
+                                period={periodFilter}
+                                ariaLabel={`View ${row.sittings} sittings at ${row.courthouse}`}
+                              >
+                                {row.sittings}
+                              </DrillDownLink>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  )}
+                </div>
+              </div>
+              <div className="govuk-grid-column-one-half">
+                <div className="orion-dashboard-subsection">
+                  <h3 className="govuk-heading-s orion-dashboard-subsection__title">Sittings by court type</h3>
+                  {reports.by_court_type.length === 0 ? (
+                    <p className="govuk-body">No court type data yet.</p>
+                  ) : (
+                    <table className="govuk-table">
+                      <thead className="govuk-table__head">
+                        <tr className="govuk-table__row">
+                          <th scope="col" className="govuk-table__header">
+                            Court type
+                          </th>
+                          <th scope="col" className="govuk-table__header">
+                            Sittings
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody className="govuk-table__body">
+                        {reports.by_court_type.map((row) => (
+                          <tr key={row.court_type} className="govuk-table__row">
+                            <td className="govuk-table__cell">
+                              <DrillDownLink
+                                filters={{ court_type: row.court_type }}
+                                period={periodFilter}
+                                ariaLabel={`View sittings for court type ${row.court_type}`}
+                              >
+                                {row.court_type}
+                              </DrillDownLink>
+                            </td>
+                            <td className="govuk-table__cell">
+                              <DrillDownLink
+                                filters={{ court_type: row.court_type }}
+                                period={periodFilter}
+                                ariaLabel={`View ${row.sittings} sittings for court type ${row.court_type}`}
+                              >
+                                {row.sittings}
+                              </DrillDownLink>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <div className="orion-dashboard-subsection">
+              <h3 className="govuk-heading-s orion-dashboard-subsection__title">
+                Business types (Remands, Trials, etc.)
+              </h3>
               {reports.by_sitting_type.length === 0 ? (
                 <p className="govuk-body">No sitting types recorded yet.</p>
               ) : (
@@ -358,45 +369,64 @@ export function DashboardPage() {
                 </table>
               )}
             </div>
-          </div>
 
-          <CourtRoomTable rows={reports.by_court_room} periodFilter={periodFilter} />
+            <CourtRoomTable rows={reports.by_court_room} periodFilter={periodFilter} embedded />
+          </DashboardSection>
 
-          {reports.home_court_movement && (
+          {reports.home_court_movement ? (
             <ClusterMovementSection report={reports.home_court_movement} />
-          )}
+          ) : null}
 
-          <h3 className="govuk-heading-m govuk-!-margin-top-6">Away from home court</h3>
-          {reports.away_from_home.length === 0 ? (
-            <p className="govuk-body">No cross-court movement recorded yet.</p>
-          ) : (
-            <table className="govuk-table">
-              <thead className="govuk-table__head">
-                <tr className="govuk-table__row">
-                  <th scope="col" className="govuk-table__header">
-                    Magistrate
-                  </th>
-                  <th scope="col" className="govuk-table__header">
-                    Away sittings
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="govuk-table__body">
-                {reports.away_from_home.map((row) => (
-                  <tr key={row.magistrate_id} className="govuk-table__row">
-                    <td className="govuk-table__cell">
-                      <MagistrateLink id={row.magistrate_id} name={row.magistrate} />
-                    </td>
-                    <td className="govuk-table__cell">{row.away_sittings}</td>
+          <DashboardSection
+            title="Away from home court"
+            tag={
+              reports.away_from_home.length > 0
+                ? `${reports.away_from_home.length} magistrate${reports.away_from_home.length === 1 ? "" : "s"}`
+                : undefined
+            }
+            tagColour="yellow"
+            description="Magistrates with completed sittings outside their home courthouse."
+          >
+            {reports.away_from_home.length === 0 ? (
+              <p className="govuk-body">No cross-court movement recorded yet.</p>
+            ) : (
+              <table className="govuk-table">
+                <thead className="govuk-table__head">
+                  <tr className="govuk-table__row">
+                    <th scope="col" className="govuk-table__header">
+                      Magistrate
+                    </th>
+                    <th scope="col" className="govuk-table__header">
+                      Away sittings
+                    </th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
+                </thead>
+                <tbody className="govuk-table__body">
+                  {reports.away_from_home.map((row) => {
+                    const tag = awaySittingsTag(row.away_sittings);
+                    return (
+                      <tr key={row.magistrate_id} className="govuk-table__row">
+                        <td className="govuk-table__cell">
+                          <MagistrateLink id={row.magistrate_id} name={row.magistrate} />
+                        </td>
+                        <td className="govuk-table__cell">
+                          {tag ? (
+                            <strong className={`govuk-tag govuk-tag--${tag.colour}`}>{tag.text}</strong>
+                          ) : (
+                            row.away_sittings
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            )}
+          </DashboardSection>
 
           <LoginReportTable rows={reports.login_report} />
 
-          <p className="govuk-body govuk-!-margin-top-6 govuk-hint">{reports.note}</p>
+          <p className="govuk-body govuk-hint">{reports.note}</p>
         </>
       ) : null}
     </>
