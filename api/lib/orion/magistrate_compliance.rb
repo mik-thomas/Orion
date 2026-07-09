@@ -225,51 +225,6 @@ module Orion
       ]
     end
 
-    def training_violations(magistrate, as_of:)
-      violations = []
-      appointment = magistrate.date_of_appointment
-      first_two_years_end = appointment + Domain::INITIAL_TRAINING_YEARS.years
-
-      if as_of >= first_two_years_end
-        training_days = training_days_in_range(magistrate, appointment, first_two_years_end - 1.day)
-        if training_days < Domain::TRAINING_DAYS_FIRST_TWO_YEARS
-          violations << Violation.new(
-            code: "insufficient_initial_training",
-            severity: "red",
-            message: "Requires about #{Domain::TRAINING_DAYS_FIRST_TWO_YEARS} days of training in the first #{Domain::INITIAL_TRAINING_YEARS} years",
-            actual: training_days,
-            required: Domain::TRAINING_DAYS_FIRST_TWO_YEARS,
-            year: FiscalYear.fiscal_year_label_for(first_two_years_end)
-          )
-        end
-      end
-
-      fiscal_year = FiscalYear.current_fiscal_year(as_of:)
-      fy_start, fy_end = FiscalYear.fiscal_year_dates(fiscal_year)
-      return violations if fy_end < first_two_years_end
-
-      period_start = [fy_start, appointment].max
-      period_end = [fy_end, as_of, magistrate.leaving_date].compact.min
-      annual_period_start = [period_start, first_two_years_end].max
-      return violations if annual_period_start > period_end
-
-      days = training_days_in_range(magistrate, annual_period_start, period_end)
-      required = prorated_minimum(Domain::MIN_TRAINING_DAYS_PER_YEAR_AFTER, annual_period_start, period_end)
-      return violations if days >= required
-
-      year_label = FiscalYear.fiscal_year_label(fiscal_year)
-      violations << Violation.new(
-        code: "insufficient_annual_training",
-        severity: "red",
-        message: "Requires about #{Domain::MIN_TRAINING_DAYS_PER_YEAR_AFTER}–#{Domain::MAX_TRAINING_DAYS_PER_YEAR_AFTER} days of training per fiscal year after the first #{Domain::INITIAL_TRAINING_YEARS} years (#{year_label})",
-        actual: days,
-        required: required,
-        year: year_label
-      )
-
-      violations
-    end
-
     def half_days_for_sittings(sittings)
       grouped = sittings.to_a.group_by(&:session_date)
       grouped.sum do |_date, day_sittings|
@@ -297,15 +252,6 @@ module Orion
 
     def full_day_equivalents(half_days)
       (half_days / 2.0).round(1)
-    end
-
-    def training_days_in_range(magistrate, start_date, end_date)
-      return 0 if end_date < start_date
-
-      magistrate.training_records
-        .where(session_date: start_date..end_date)
-        .sum(:days)
-        .to_f
     end
 
     def evaluation_window(magistrate, fiscal_year, as_of:)

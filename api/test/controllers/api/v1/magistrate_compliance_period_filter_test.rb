@@ -21,14 +21,6 @@ class MagistrateCompliancePeriodFilterTest < ActionDispatch::IntegrationTest
       )
     end
 
-    5.times do |index|
-      TrainingRecord.create!(
-        magistrate: @magistrate,
-        session_date: Date.new(2020, 5, 1) + index.months,
-        days: 2
-      )
-    end
-    TrainingRecord.create!(magistrate: @magistrate, session_date: Date.new(2025, 5, 1), days: 1)
   end
 
   test "period filter does not change compliance violations or sitting commitment" do
