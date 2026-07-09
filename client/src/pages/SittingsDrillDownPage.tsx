@@ -4,6 +4,7 @@ import { listSittingsDrillDownFromSearch } from "../api/sittings";
 import { ApiError } from "../api/http";
 import { MagistrateLink } from "../components/MagistrateLink";
 import { PeriodFilter } from "../components/PeriodFilter";
+import { SittingPositionCell } from "../lib/sittingPosition";
 import { SittingStatusCell } from "../lib/sittingStatus";
 import { useRole } from "../context/RoleContext";
 import {
@@ -125,6 +126,9 @@ export function SittingsDrillDownPage() {
                   Court type
                 </th>
                 <th scope="col" className="govuk-table__header">
+                  Role
+                </th>
+                <th scope="col" className="govuk-table__header">
                   Status
                 </th>
               </tr>
@@ -144,6 +148,9 @@ export function SittingsDrillDownPage() {
                   <td className="govuk-table__cell">{sitting.court_room ?? "—"}</td>
                   <td className="govuk-table__cell">{sitting.sitting_type}</td>
                   <td className="govuk-table__cell">{sitting.court_type ?? "—"}</td>
+                  <td className="govuk-table__cell">
+                    <SittingPositionCell sittingPosition={sitting.sitting_position} />
+                  </td>
                   <td className="govuk-table__cell">
                     <SittingStatusCell sitting={sitting} />
                   </td>

@@ -12,6 +12,7 @@ import {
   periodFilterQuery,
   type PeriodFilterState,
 } from "../lib/periodFilter";
+import { SittingPositionCell } from "../lib/sittingPosition";
 import type { MagistrateDetail, Sitting } from "../types/domain";
 
 function sittingStatusLabel(sitting: Sitting) {
@@ -342,6 +343,9 @@ export function MagistrateProfilePage() {
                 Court type
               </th>
               <th scope="col" className="govuk-table__header">
+                Role
+              </th>
+              <th scope="col" className="govuk-table__header">
                 Status
               </th>
             </tr>
@@ -358,6 +362,9 @@ export function MagistrateProfilePage() {
                 <td className="govuk-table__cell">{sitting.court_room ?? "—"}</td>
                 <td className="govuk-table__cell">{sitting.sitting_type.name}</td>
                 <td className="govuk-table__cell">{sitting.court_type ?? "—"}</td>
+                <td className="govuk-table__cell">
+                  <SittingPositionCell sittingPosition={sitting.sitting_position} />
+                </td>
                 <td className="govuk-table__cell">
                   {sitting.status === "cancelled" && sitting.cancellation_category === "district_judge" ? (
                     <strong className="govuk-tag govuk-tag--red">Cancelled by DJ</strong>

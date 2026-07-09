@@ -104,6 +104,7 @@ module Api
           "court_room" => sitting.court_room,
           "court_type" => sitting.court_type,
           "sitting_type" => sitting.sitting_type.name,
+          "sitting_position" => sitting.sitting_position,
           "status" => sitting.status,
           "cancellation_category" => sitting.cancellation_category,
           "away_from_home" => sitting.magistrate.home_courthouse_id.present? &&

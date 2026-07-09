@@ -113,6 +113,7 @@ export interface SittingDrillDownRow {
   court_room: string | null;
   court_type: string | null;
   sitting_type: string;
+  sitting_position: string | null;
   status: "completed" | "vacated" | "cancelled";
   cancellation_category: string | null;
   away_from_home: boolean;
