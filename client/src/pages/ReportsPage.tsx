@@ -1,12 +1,17 @@
-import { useEffect, useState } from "react";
+import { useEffect, useId, useState } from "react";
 import { getReportsOverview } from "../api/reports";
 import { ApiError } from "../api/http";
+import { DashboardSection } from "../components/DashboardSection";
+import { DonutOrBarChart } from "../components/charts/DonutOrBarChart";
+import { HorizontalBarChart } from "../components/charts/HorizontalBarChart";
 import type { ReportsOverview } from "../types/domain";
 
 export function ReportsPage() {
   const [reports, setReports] = useState<ReportsOverview | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const statusSummaryId = useId();
+  const locationSummaryId = useId();
 
   useEffect(() => {
     getReportsOverview()
@@ -32,10 +37,40 @@ export function ReportsPage() {
       {loading ? (
         <p className="govuk-body">Loading…</p>
       ) : reports ? (
-        <p className="govuk-body">
-          {reports.summary.sittings} sittings recorded across {reports.summary.courthouses} courthouses.
-          Detailed borough movement reports will expand when sitting imports are connected.
-        </p>
+        <>
+          <p className="govuk-body govuk-!-margin-bottom-6">
+            {reports.summary.sittings} sittings recorded across {reports.summary.courthouses} courthouses.
+          </p>
+
+          <div className="orion-profile-charts-grid orion-profile-charts-grid--two">
+            <DashboardSection title="Sitting status" description={reports.period.label}>
+              <DonutOrBarChart
+                totals={{
+                  completed: reports.summary.completed_sittings,
+                  vacated: reports.summary.vacated_sittings,
+                  cancelled: reports.summary.cancelled_sittings - reports.summary.cancelled_by_dj,
+                  cancelled_by_dj: reports.summary.cancelled_by_dj,
+                }}
+                summaryContext={reports.period.label}
+                summaryId={statusSummaryId}
+                variant="donut"
+              />
+            </DashboardSection>
+
+            <DashboardSection title="Sittings by courthouse" description={reports.period.label}>
+              <HorizontalBarChart
+                rows={reports.by_courthouse.map((row) => ({
+                  key: row.courthouse,
+                  label: row.courthouse,
+                  value: row.sittings,
+                }))}
+                emptyMessage="No sitting data yet."
+                summaryContext={reports.period.label}
+                summaryId={locationSummaryId}
+              />
+            </DashboardSection>
+          </div>
+        </>
       ) : null}
     </>
   );

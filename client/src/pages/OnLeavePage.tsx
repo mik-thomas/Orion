@@ -1,9 +1,16 @@
-import { useEffect, useState } from "react";
+import { useEffect, useId, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { listMagistratesOnLeave } from "../api/magistrates";
 import { ApiError } from "../api/http";
 import { LoaReviewDateEditor } from "../components/LoaReviewDateEditor";
 import { MagistrateLink } from "../components/MagistrateLink";
+import { DashboardSection } from "../components/DashboardSection";
+import { HorizontalBarChart } from "../components/charts/HorizontalBarChart";
+import {
+  loaReasonRows,
+  loaReviewStatusRows,
+  loaTimelineRows,
+} from "../components/charts/chartAggregations";
 import { useRole } from "../context/RoleContext";
 import type { LeaveOfAbsence, MagistrateSummary } from "../types/domain";
 
@@ -16,6 +23,9 @@ export function OnLeavePage() {
   const [magistrates, setMagistrates] = useState<MagistrateSummary[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const reasonSummaryId = useId();
+  const reviewSummaryId = useId();
+  const timelineSummaryId = useId();
 
   useEffect(() => {
     listMagistratesOnLeave()
@@ -23,6 +33,11 @@ export function OnLeavePage() {
       .catch((err: unknown) => setError(err instanceof ApiError ? err.message : "Failed to load leave list"))
       .finally(() => setLoading(false));
   }, [role]);
+
+  const allLeaves = useMemo(
+    () => magistrates.flatMap((magistrate) => magistrate.current_leaves),
+    [magistrates]
+  );
 
   function handleLeaveUpdated(magistrateId: number, updated: LeaveOfAbsence) {
     setMagistrates((current) =>
@@ -73,53 +88,83 @@ export function OnLeavePage() {
       ) : magistrates.length === 0 ? (
         <p className="govuk-body">No magistrates are currently on leave.</p>
       ) : (
-        <table className="govuk-table">
-          <thead className="govuk-table__head">
-            <tr className="govuk-table__row">
-              <th scope="col" className="govuk-table__header">
-                {canViewNames ? "Name" : "Reference"}
-              </th>
-              <th scope="col" className="govuk-table__header">
-                Home court
-              </th>
-              <th scope="col" className="govuk-table__header">
-                Leave from
-              </th>
-              <th scope="col" className="govuk-table__header">
-                Leave to
-              </th>
-              <th scope="col" className="govuk-table__header">
-                Next LOA review
-              </th>
-              <th scope="col" className="govuk-table__header">
-                Reason
-              </th>
-            </tr>
-          </thead>
-          <tbody className="govuk-table__body">
-            {magistrates.flatMap((magistrate) =>
-              magistrate.current_leaves.map((leave) => (
-                <tr key={`${magistrate.id}-${leave.id}`} className="govuk-table__row">
-                  <td className="govuk-table__cell">
-                    <MagistrateLink id={magistrate.id} name={magistrate.display_name} />
-                  </td>
-                  <td className="govuk-table__cell">{magistrate.home_courthouse?.name ?? "—"}</td>
-                  <td className="govuk-table__cell">{leave.starts_on}</td>
-                  <td className="govuk-table__cell">
-                    <strong className="govuk-tag govuk-tag--yellow">{formatLeaveEnd(leave)}</strong>
-                  </td>
-                  <td className="govuk-table__cell">
-                    <LoaReviewDateEditor
-                      leave={leave}
-                      onUpdated={(updated) => handleLeaveUpdated(magistrate.id, updated)}
-                    />
-                  </td>
-                  <td className="govuk-table__cell">{leave.reason ?? "—"}</td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
+        <>
+          <div className="orion-profile-charts-grid orion-profile-charts-grid--three govuk-!-margin-bottom-6">
+            <DashboardSection title="Leave reasons" headingLevel={2}>
+              <HorizontalBarChart
+                rows={loaReasonRows(allLeaves)}
+                emptyMessage="No leave reasons recorded."
+                summaryContext="leave reasons"
+                summaryId={reasonSummaryId}
+              />
+            </DashboardSection>
+            <DashboardSection title="LOA review status" headingLevel={2}>
+              <HorizontalBarChart
+                rows={loaReviewStatusRows(allLeaves)}
+                emptyMessage="No review dates to show."
+                summaryContext="LOA review status"
+                summaryId={reviewSummaryId}
+              />
+            </DashboardSection>
+            <DashboardSection title="Leave start timeline" headingLevel={2}>
+              <HorizontalBarChart
+                rows={loaTimelineRows(allLeaves)}
+                emptyMessage="No leave start dates recorded."
+                summaryContext="leave starts by month"
+                summaryId={timelineSummaryId}
+              />
+            </DashboardSection>
+          </div>
+
+          <table className="govuk-table">
+            <caption className="govuk-table__caption govuk-table__caption--m">Magistrates on leave</caption>
+            <thead className="govuk-table__head">
+                  <tr className="govuk-table__row">
+                    <th scope="col" className="govuk-table__header">
+                      {canViewNames ? "Name" : "Reference"}
+                    </th>
+                    <th scope="col" className="govuk-table__header">
+                      Home court
+                    </th>
+                    <th scope="col" className="govuk-table__header">
+                      Leave from
+                    </th>
+                    <th scope="col" className="govuk-table__header">
+                      Leave to
+                    </th>
+                    <th scope="col" className="govuk-table__header">
+                      Next LOA review
+                    </th>
+                    <th scope="col" className="govuk-table__header">
+                      Reason
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="govuk-table__body">
+                  {magistrates.flatMap((magistrate) =>
+                    magistrate.current_leaves.map((leave) => (
+                      <tr key={`${magistrate.id}-${leave.id}`} className="govuk-table__row">
+                        <td className="govuk-table__cell">
+                          <MagistrateLink id={magistrate.id} name={magistrate.display_name} />
+                        </td>
+                        <td className="govuk-table__cell">{magistrate.home_courthouse?.name ?? "—"}</td>
+                        <td className="govuk-table__cell">{leave.starts_on}</td>
+                        <td className="govuk-table__cell">
+                          <strong className="govuk-tag govuk-tag--yellow">{formatLeaveEnd(leave)}</strong>
+                        </td>
+                        <td className="govuk-table__cell">
+                          <LoaReviewDateEditor
+                            leave={leave}
+                            onUpdated={(updated) => handleLeaveUpdated(magistrate.id, updated)}
+                          />
+                        </td>
+                        <td className="govuk-table__cell">{leave.reason ?? "—"}</td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+          </table>
+        </>
       )}
     </>
   );

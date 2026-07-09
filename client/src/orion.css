@@ -655,7 +655,17 @@
 
 /* Charts — shared SVG styles for magistrate profile summaries */
 
-.orion-chart__svg,
+.orion-chart-table-toggle .govuk-radios--inline {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 1rem;
+}
+
+.orion-chart-table-toggle .govuk-radios__item {
+  margin-bottom: 0;
+}
+
 .orion-sitting-history-chart__svg {
   display: block;
   width: 100%;

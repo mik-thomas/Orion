@@ -1,9 +1,12 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useId, useMemo, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { listSittingsDrillDownFromSearch } from "../api/sittings";
 import { ApiError } from "../api/http";
 import { MagistrateLink } from "../components/MagistrateLink";
 import { PeriodFilter } from "../components/PeriodFilter";
+import { DashboardSection } from "../components/DashboardSection";
+import { DonutOrBarChart } from "../components/charts/DonutOrBarChart";
+import { HorizontalBarChart } from "../components/charts/HorizontalBarChart";
 import { SittingPositionCell } from "../lib/sittingPosition";
 import { SittingStatusCell } from "../lib/sittingStatus";
 import { useRole } from "../context/RoleContext";
@@ -37,6 +40,8 @@ export function SittingsDrillDownPage() {
   const [data, setData] = useState<SittingsDrillDownResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const statusSummaryId = useId();
+  const locationSummaryId = useId();
 
   useEffect(() => {
     setLoading(true);
@@ -97,98 +102,128 @@ export function SittingsDrillDownPage() {
 
       {loading ? (
         <p className="govuk-body">Loading sittings…</p>
-      ) : data && data.sittings.length === 0 ? (
-        <p className="govuk-body">No sittings match these filters.</p>
       ) : data ? (
         <>
-          <table className="govuk-table">
-            <thead className="govuk-table__head">
-              <tr className="govuk-table__row">
-                <th scope="col" className="govuk-table__header">
-                  Date
-                </th>
-                <th scope="col" className="govuk-table__header">
-                  Session
-                </th>
-                <th scope="col" className="govuk-table__header">
-                  Magistrate
-                </th>
-                <th scope="col" className="govuk-table__header">
-                  Location
-                </th>
-                <th scope="col" className="govuk-table__header">
-                  Court room
-                </th>
-                <th scope="col" className="govuk-table__header">
-                  Business type
-                </th>
-                <th scope="col" className="govuk-table__header">
-                  Court type
-                </th>
-                <th scope="col" className="govuk-table__header">
-                  Role
-                </th>
-                <th scope="col" className="govuk-table__header">
-                  Status
-                </th>
-              </tr>
-            </thead>
-            <tbody className="govuk-table__body">
-              {data.sittings.map((sitting) => (
-                <tr key={sitting.id} className="govuk-table__row">
-                  <td className="govuk-table__cell">{sitting.session_date}</td>
-                  <td className="govuk-table__cell">{sitting.session ?? "—"}</td>
-                  <td className="govuk-table__cell">
-                    <MagistrateLink id={sitting.magistrate_id} name={sitting.display_name} />
-                  </td>
-                  <td className="govuk-table__cell">
-                    {sitting.courthouse}
-                    {sitting.away_from_home ? " (away)" : ""}
-                  </td>
-                  <td className="govuk-table__cell">{sitting.court_room ?? "—"}</td>
-                  <td className="govuk-table__cell">{sitting.sitting_type}</td>
-                  <td className="govuk-table__cell">{sitting.court_type ?? "—"}</td>
-                  <td className="govuk-table__cell">
-                    <SittingPositionCell sittingPosition={sitting.sitting_position} />
-                  </td>
-                  <td className="govuk-table__cell">
-                    <SittingStatusCell sitting={sitting} />
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          {data.summary ? (
+            <div className="orion-profile-charts-grid orion-profile-charts-grid--two govuk-!-margin-bottom-6">
+              <DashboardSection title="Status breakdown" headingLevel={2}>
+                <DonutOrBarChart
+                  totals={data.summary.totals}
+                  summaryContext={periodLabel}
+                  summaryId={statusSummaryId}
+                  variant="donut"
+                />
+              </DashboardSection>
+              <DashboardSection title="By location" headingLevel={2}>
+                <HorizontalBarChart
+                  rows={data.summary.by_courthouse.map((row) => ({
+                    key: row.courthouse,
+                    label: row.courthouse,
+                    value: row.sittings,
+                  }))}
+                  emptyMessage="No location data for these filters."
+                  summaryContext={periodLabel}
+                  summaryId={locationSummaryId}
+                />
+              </DashboardSection>
+            </div>
+          ) : null}
 
-          {data.pagination.total_pages > 1 && (
-            <nav className="govuk-pagination" role="navigation" aria-label="Pagination">
-              <ul className="govuk-pagination__list">
-                {data.pagination.page > 1 && (
-                  <li className="govuk-pagination__item govuk-pagination__item--prev">
-                    <button
-                      type="button"
-                      className="govuk-link govuk-pagination__link"
-                      onClick={() => goToPage(data.pagination.page - 1)}
-                    >
-                      Previous<span className="govuk-visually-hidden"> page</span>
-                    </button>
-                  </li>
-                )}
-                <li className="govuk-pagination__item govuk-pagination__item--active">
-                  Page {data.pagination.page} of {data.pagination.total_pages}
-                </li>
-                {data.pagination.page < data.pagination.total_pages && (
-                  <li className="govuk-pagination__item govuk-pagination__item--next">
-                    <button
-                      type="button"
-                      className="govuk-link govuk-pagination__link"
-                      onClick={() => goToPage(data.pagination.page + 1)}
-                    >
-                      Next<span className="govuk-visually-hidden"> page</span>
-                    </button>
-                  </li>
-                )}
-              </ul>
-            </nav>
+          {data.sittings.length === 0 ? (
+            <p className="govuk-body">No sittings match these filters.</p>
+          ) : (
+            <>
+              <table className="govuk-table">
+                <caption className="govuk-table__caption govuk-table__caption--m">{heading}</caption>
+                <thead className="govuk-table__head">
+                  <tr className="govuk-table__row">
+                    <th scope="col" className="govuk-table__header">
+                      Date
+                    </th>
+                    <th scope="col" className="govuk-table__header">
+                      Session
+                    </th>
+                    <th scope="col" className="govuk-table__header">
+                      Magistrate
+                    </th>
+                    <th scope="col" className="govuk-table__header">
+                      Location
+                    </th>
+                    <th scope="col" className="govuk-table__header">
+                      Court room
+                    </th>
+                    <th scope="col" className="govuk-table__header">
+                      Business type
+                    </th>
+                    <th scope="col" className="govuk-table__header">
+                      Court type
+                    </th>
+                    <th scope="col" className="govuk-table__header">
+                      Role
+                    </th>
+                    <th scope="col" className="govuk-table__header">
+                      Status
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="govuk-table__body">
+                  {data.sittings.map((sitting) => (
+                    <tr key={sitting.id} className="govuk-table__row">
+                      <td className="govuk-table__cell">{sitting.session_date}</td>
+                      <td className="govuk-table__cell">{sitting.session ?? "—"}</td>
+                      <td className="govuk-table__cell">
+                        <MagistrateLink id={sitting.magistrate_id} name={sitting.display_name} />
+                      </td>
+                      <td className="govuk-table__cell">
+                        {sitting.courthouse}
+                        {sitting.away_from_home ? " (away)" : ""}
+                      </td>
+                      <td className="govuk-table__cell">{sitting.court_room ?? "—"}</td>
+                      <td className="govuk-table__cell">{sitting.sitting_type}</td>
+                      <td className="govuk-table__cell">{sitting.court_type ?? "—"}</td>
+                      <td className="govuk-table__cell">
+                        <SittingPositionCell sittingPosition={sitting.sitting_position} />
+                      </td>
+                      <td className="govuk-table__cell">
+                        <SittingStatusCell sitting={sitting} />
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+
+              {data.pagination.total_pages > 1 && (
+                <nav className="govuk-pagination" role="navigation" aria-label="Pagination">
+                  <ul className="govuk-pagination__list">
+                    {data.pagination.page > 1 && (
+                      <li className="govuk-pagination__item govuk-pagination__item--prev">
+                        <button
+                          type="button"
+                          className="govuk-link govuk-pagination__link"
+                          onClick={() => goToPage(data.pagination.page - 1)}
+                        >
+                          Previous<span className="govuk-visually-hidden"> page</span>
+                        </button>
+                      </li>
+                    )}
+                    <li className="govuk-pagination__item govuk-pagination__item--active">
+                      Page {data.pagination.page} of {data.pagination.total_pages}
+                    </li>
+                    {data.pagination.page < data.pagination.total_pages && (
+                      <li className="govuk-pagination__item govuk-pagination__item--next">
+                        <button
+                          type="button"
+                          className="govuk-link govuk-pagination__link"
+                          onClick={() => goToPage(data.pagination.page + 1)}
+                        >
+                          Next<span className="govuk-visually-hidden"> page</span>
+                        </button>
+                      </li>
+                    )}
+                  </ul>
+                </nav>
+              )}
+            </>
           )}
         </>
       ) : null}

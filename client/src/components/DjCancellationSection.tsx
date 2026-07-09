@@ -1,7 +1,10 @@
+import { useId } from "react";
 import type { DjCancellations } from "../types/domain";
 import type { PeriodFilterState } from "../lib/periodFilter";
 import { DashboardSection } from "./DashboardSection";
 import { DrillDownLink } from "./DrillDownLink";
+import { ChartTableToggle } from "./charts/ChartTableToggle";
+import { HorizontalBarChart } from "./charts/HorizontalBarChart";
 
 interface DjCancellationSectionProps {
   report: DjCancellations;
@@ -14,11 +17,131 @@ const djFilters = {
   cancellation_category: "district_judge" as const,
 };
 
+type DjBreakdownRow = {
+  key: string;
+  label: string;
+  value: number;
+  filters: Parameters<typeof DrillDownLink>[0]["filters"];
+};
+
+function DjBreakdownPanel({
+  title,
+  rows,
+  periodFilter,
+}: {
+  title: string;
+  rows: DjBreakdownRow[];
+  periodFilter?: PeriodFilterState;
+}) {
+  const summaryId = useId();
+
+  if (rows.length === 0) {
+    return (
+      <div className="orion-dashboard-subsection">
+        <h3 className="govuk-heading-s orion-dashboard-subsection__title">{title}</h3>
+        <p className="govuk-body">None recorded.</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="orion-dashboard-subsection">
+      <h3 className="govuk-heading-s orion-dashboard-subsection__title">{title}</h3>
+      <ChartTableToggle
+        tableCaption={title}
+        hasData={rows.length > 0}
+        chart={
+          <HorizontalBarChart
+            rows={rows.map((row) => ({
+              key: row.key,
+              label: row.label,
+              value: row.value,
+              colour: "#d4351c",
+            }))}
+            emptyMessage="None recorded."
+            summaryContext={title.toLowerCase()}
+            summaryId={summaryId}
+          />
+        }
+        table={
+          <>
+            <thead className="govuk-table__head">
+              <tr className="govuk-table__row">
+                <th scope="col" className="govuk-table__header">
+                  {title === "By court room" ? "Location" : title.replace("By ", "")}
+                </th>
+                <th scope="col" className="govuk-table__header">
+                  Cancelled
+                </th>
+              </tr>
+            </thead>
+            <tbody className="govuk-table__body">
+              {rows.map((row) => (
+                <tr key={row.key} className="govuk-table__row">
+                  <td className="govuk-table__cell">
+                    {periodFilter ? (
+                      <DrillDownLink
+                        filters={row.filters}
+                        period={periodFilter}
+                        ariaLabel={`View DJ cancellations for ${row.label}`}
+                      >
+                        {row.label}
+                      </DrillDownLink>
+                    ) : (
+                      row.label
+                    )}
+                  </td>
+                  <td className="govuk-table__cell">
+                    {periodFilter && row.value > 0 ? (
+                      <DrillDownLink
+                        filters={row.filters}
+                        period={periodFilter}
+                        ariaLabel={`View ${row.value} DJ cancellations for ${row.label}`}
+                      >
+                        <strong className="govuk-tag govuk-tag--red">{row.value}</strong>
+                      </DrillDownLink>
+                    ) : row.value > 0 ? (
+                      <strong className="govuk-tag govuk-tag--red">{row.value}</strong>
+                    ) : (
+                      row.value
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </>
+        }
+      />
+    </div>
+  );
+}
+
 export function DjCancellationSection({
   report,
   heading = "District Judge cancellations",
   periodFilter,
 }: DjCancellationSectionProps) {
+  const courthouseRows: DjBreakdownRow[] = report.by_courthouse.map((row) => ({
+    key: row.courthouse,
+    label: row.courthouse,
+    value: row.sittings,
+    filters: { ...djFilters, courthouse: row.courthouse },
+  }));
+
+  const sittingTypeRows: DjBreakdownRow[] = report.by_sitting_type.map((row) => ({
+    key: row.sitting_type,
+    label: row.sitting_type,
+    value: row.sittings,
+    filters: { ...djFilters, sitting_type: row.sitting_type },
+  }));
+
+  const courtRoomRows: DjBreakdownRow[] = report.by_court_room.map((row) => ({
+    key: `${row.courthouse}-${row.court_room}`,
+    label: `${row.courthouse} — ${row.court_room}`,
+    value: row.sittings,
+    filters: { ...djFilters, courthouse: row.courthouse, court_room: row.court_room },
+  }));
+
   return (
     <DashboardSection
       title={heading}
@@ -44,179 +167,13 @@ export function DjCancellationSection({
 
       <div className="govuk-grid-row">
         <div className="govuk-grid-column-one-third">
-          <div className="orion-dashboard-subsection">
-            <h3 className="govuk-heading-s orion-dashboard-subsection__title">By location</h3>
-            {report.by_courthouse.length === 0 ? (
-              <p className="govuk-body">None recorded.</p>
-            ) : (
-              <table className="govuk-table">
-                <thead className="govuk-table__head">
-                  <tr className="govuk-table__row">
-                    <th scope="col" className="govuk-table__header">
-                      Courthouse
-                    </th>
-                    <th scope="col" className="govuk-table__header">
-                      Cancelled
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="govuk-table__body">
-                  {report.by_courthouse.map((row) => (
-                    <tr key={row.courthouse} className="govuk-table__row">
-                      <td className="govuk-table__cell">
-                        {periodFilter ? (
-                          <DrillDownLink
-                            filters={{ ...djFilters, courthouse: row.courthouse }}
-                            period={periodFilter}
-                            ariaLabel={`View DJ cancellations at ${row.courthouse}`}
-                          >
-                            {row.courthouse}
-                          </DrillDownLink>
-                        ) : (
-                          row.courthouse
-                        )}
-                      </td>
-                      <td className="govuk-table__cell">
-                        {periodFilter && row.sittings > 0 ? (
-                          <DrillDownLink
-                            filters={{ ...djFilters, courthouse: row.courthouse }}
-                            period={periodFilter}
-                            ariaLabel={`View ${row.sittings} DJ cancellations at ${row.courthouse}`}
-                          >
-                            <strong className="govuk-tag govuk-tag--red">{row.sittings}</strong>
-                          </DrillDownLink>
-                        ) : row.sittings > 0 ? (
-                          <strong className="govuk-tag govuk-tag--red">{row.sittings}</strong>
-                        ) : (
-                          row.sittings
-                        )}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            )}
-          </div>
+          <DjBreakdownPanel title="By location" rows={courthouseRows} periodFilter={periodFilter} />
         </div>
         <div className="govuk-grid-column-one-third">
-          <div className="orion-dashboard-subsection">
-            <h3 className="govuk-heading-s orion-dashboard-subsection__title">By sitting bench</h3>
-            {report.by_sitting_type.length === 0 ? (
-              <p className="govuk-body">None recorded.</p>
-            ) : (
-              <table className="govuk-table">
-                <thead className="govuk-table__head">
-                  <tr className="govuk-table__row">
-                    <th scope="col" className="govuk-table__header">
-                      Type
-                    </th>
-                    <th scope="col" className="govuk-table__header">
-                      Cancelled
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="govuk-table__body">
-                  {report.by_sitting_type.map((row) => (
-                    <tr key={row.sitting_type} className="govuk-table__row">
-                      <td className="govuk-table__cell">
-                        {periodFilter ? (
-                          <DrillDownLink
-                            filters={{ ...djFilters, sitting_type: row.sitting_type }}
-                            period={periodFilter}
-                            ariaLabel={`View DJ cancellations for ${row.sitting_type}`}
-                          >
-                            {row.sitting_type}
-                          </DrillDownLink>
-                        ) : (
-                          row.sitting_type
-                        )}
-                      </td>
-                      <td className="govuk-table__cell">
-                        {periodFilter && row.sittings > 0 ? (
-                          <DrillDownLink
-                            filters={{ ...djFilters, sitting_type: row.sitting_type }}
-                            period={periodFilter}
-                            ariaLabel={`View ${row.sittings} DJ cancellations for ${row.sitting_type}`}
-                          >
-                            <strong className="govuk-tag govuk-tag--red">{row.sittings}</strong>
-                          </DrillDownLink>
-                        ) : row.sittings > 0 ? (
-                          <strong className="govuk-tag govuk-tag--red">{row.sittings}</strong>
-                        ) : (
-                          row.sittings
-                        )}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            )}
-          </div>
+          <DjBreakdownPanel title="By sitting bench" rows={sittingTypeRows} periodFilter={periodFilter} />
         </div>
         <div className="govuk-grid-column-one-third">
-          <div className="orion-dashboard-subsection">
-            <h3 className="govuk-heading-s orion-dashboard-subsection__title">By court room</h3>
-            {report.by_court_room.length === 0 ? (
-              <p className="govuk-body">None recorded.</p>
-            ) : (
-              <table className="govuk-table">
-                <thead className="govuk-table__head">
-                  <tr className="govuk-table__row">
-                    <th scope="col" className="govuk-table__header">
-                      Location
-                    </th>
-                    <th scope="col" className="govuk-table__header">
-                      Cancelled
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="govuk-table__body">
-                  {report.by_court_room.map((row) => (
-                    <tr key={`${row.courthouse}-${row.court_room}`} className="govuk-table__row">
-                      <td className="govuk-table__cell">
-                        {periodFilter ? (
-                          <DrillDownLink
-                            filters={{
-                              ...djFilters,
-                              courthouse: row.courthouse,
-                              court_room: row.court_room,
-                            }}
-                            period={periodFilter}
-                            ariaLabel={`View DJ cancellations in ${row.court_room} at ${row.courthouse}`}
-                          >
-                            {row.courthouse} — {row.court_room}
-                          </DrillDownLink>
-                        ) : (
-                          <>
-                            {row.courthouse} — {row.court_room}
-                          </>
-                        )}
-                      </td>
-                      <td className="govuk-table__cell">
-                        {periodFilter && row.sittings > 0 ? (
-                          <DrillDownLink
-                            filters={{
-                              ...djFilters,
-                              courthouse: row.courthouse,
-                              court_room: row.court_room,
-                            }}
-                            period={periodFilter}
-                            ariaLabel={`View ${row.sittings} DJ cancellations in ${row.court_room} at ${row.courthouse}`}
-                          >
-                            <strong className="govuk-tag govuk-tag--red">{row.sittings}</strong>
-                          </DrillDownLink>
-                        ) : row.sittings > 0 ? (
-                          <strong className="govuk-tag govuk-tag--red">{row.sittings}</strong>
-                        ) : (
-                          row.sittings
-                        )}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            )}
-          </div>
+          <DjBreakdownPanel title="By court room" rows={courtRoomRows} periodFilter={periodFilter} />
         </div>
       </div>
     </DashboardSection>

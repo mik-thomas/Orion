@@ -1,6 +1,10 @@
+import { useId } from "react";
 import { MagistrateLink } from "./MagistrateLink";
 import { DashboardSection } from "./DashboardSection";
 import { DashboardStat } from "./DashboardStat";
+import { ChartTableToggle } from "./charts/ChartTableToggle";
+import { HorizontalBarChart } from "./charts/HorizontalBarChart";
+import { SimpleDonut, homeAwaySegments } from "./charts/SimpleDonut";
 import type { HomeCourtMovementReport } from "../types/domain";
 
 interface ClusterMovementSectionProps {
@@ -16,6 +20,9 @@ function cellClass(homeCourthouse: string, sittingCourthouse: string, count: num
 
 export function ClusterMovementSection({ report }: ClusterMovementSectionProps) {
   const { summary, courthouses, by_home_court, matrix, flags } = report;
+  const homeAwaySummaryId = useId();
+  const awayByHomeCourtSummaryId = useId();
+  const homeCourtTotalSummaryId = useId();
 
   const maxOffDiagonal = matrix.reduce((max, row) => {
     const rowMax = courthouses.reduce((innerMax, courthouse) => {
@@ -53,49 +60,97 @@ export function ClusterMovementSection({ report }: ClusterMovementSectionProps) 
         </p>
       )}
 
+      <div className="orion-profile-charts-grid orion-profile-charts-grid--two govuk-!-margin-bottom-4">
+        <div className="orion-dashboard-subsection">
+          <h3 className="govuk-heading-s orion-dashboard-subsection__title">At home vs away</h3>
+          <SimpleDonut
+            segments={homeAwaySegments(summary.completed_at_home, summary.completed_away)}
+            centreLabel={`${summary.away_pct}% away`}
+            summaryContext="completed sittings"
+            summaryId={homeAwaySummaryId}
+            emptyMessage="No completed sittings recorded."
+          />
+        </div>
+        <div className="orion-dashboard-subsection">
+          <h3 className="govuk-heading-s orion-dashboard-subsection__title">Away sittings by home court</h3>
+          {by_home_court.length === 0 ? (
+            <p className="govuk-body">No movement data yet.</p>
+          ) : (
+            <HorizontalBarChart
+              rows={by_home_court.map((row) => ({
+                key: row.home_courthouse,
+                label: row.home_courthouse,
+                value: row.completed_away,
+              }))}
+              emptyMessage="No movement data yet."
+              summaryContext="away sittings by home court"
+              summaryId={awayByHomeCourtSummaryId}
+            />
+          )}
+        </div>
+      </div>
+
       <div className="orion-dashboard-subsection">
         <h3 className="govuk-heading-s orion-dashboard-subsection__title">Home court summary</h3>
         {by_home_court.length === 0 ? (
           <p className="govuk-body">No movement data yet.</p>
         ) : (
-          <table className="govuk-table">
-            <thead className="govuk-table__head">
-              <tr className="govuk-table__row">
-                <th scope="col" className="govuk-table__header">
-                  Home court
-                </th>
-                <th scope="col" className="govuk-table__header">
-                  Magistrates
-                </th>
-                <th scope="col" className="govuk-table__header">
-                  At home
-                </th>
-                <th scope="col" className="govuk-table__header">
-                  Away
-                </th>
-                <th scope="col" className="govuk-table__header">
-                  Total
-                </th>
-                <th scope="col" className="govuk-table__header">
-                  Away %
-                </th>
-              </tr>
-            </thead>
-            <tbody className="govuk-table__body">
-              {by_home_court.map((row) => (
-                <tr key={row.home_courthouse} className="govuk-table__row">
-                  <th scope="row" className="govuk-table__header">
-                    {row.home_courthouse}
-                  </th>
-                  <td className="govuk-table__cell">{row.magistrates}</td>
-                  <td className="govuk-table__cell">{row.completed_at_home}</td>
-                  <td className="govuk-table__cell">{row.completed_away}</td>
-                  <td className="govuk-table__cell">{row.completed_total}</td>
-                  <td className="govuk-table__cell">{row.away_pct}%</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          <ChartTableToggle
+            tableCaption="Home court summary"
+            hasData={by_home_court.length > 0}
+            chart={
+              <HorizontalBarChart
+                rows={by_home_court.map((row) => ({
+                  key: `${row.home_courthouse}-total`,
+                  label: row.home_courthouse,
+                  value: row.completed_total,
+                }))}
+                emptyMessage="No movement data yet."
+                summaryContext="completed sittings by home court"
+                summaryId={homeCourtTotalSummaryId}
+              />
+            }
+            table={
+              <>
+                <thead className="govuk-table__head">
+                  <tr className="govuk-table__row">
+                    <th scope="col" className="govuk-table__header">
+                      Home court
+                    </th>
+                    <th scope="col" className="govuk-table__header">
+                      Magistrates
+                    </th>
+                    <th scope="col" className="govuk-table__header">
+                      At home
+                    </th>
+                    <th scope="col" className="govuk-table__header">
+                      Away
+                    </th>
+                    <th scope="col" className="govuk-table__header">
+                      Total
+                    </th>
+                    <th scope="col" className="govuk-table__header">
+                      Away %
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="govuk-table__body">
+                  {by_home_court.map((row) => (
+                    <tr key={row.home_courthouse} className="govuk-table__row">
+                      <th scope="row" className="govuk-table__header">
+                        {row.home_courthouse}
+                      </th>
+                      <td className="govuk-table__cell">{row.magistrates}</td>
+                      <td className="govuk-table__cell">{row.completed_at_home}</td>
+                      <td className="govuk-table__cell">{row.completed_away}</td>
+                      <td className="govuk-table__cell">{row.completed_total}</td>
+                      <td className="govuk-table__cell">{row.away_pct}%</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </>
+            }
+          />
         )}
       </div>
 
