@@ -3,6 +3,7 @@ import { Link, useParams } from "react-router-dom";
 import { getMagistrate } from "../api/magistrates";
 import { ApiError } from "../api/http";
 import { ComplianceViolations } from "../components/ComplianceViolations";
+import { NextLoaReviewTag } from "../lib/loaReview";
 import { CourtRoomTable } from "../components/CourtRoomTable";
 import { DjCancellationSection } from "../components/DjCancellationSection";
 import { PeriodFilter } from "../components/PeriodFilter";
@@ -89,7 +90,10 @@ export function MagistrateProfilePage() {
         </p>
       )}
 
-      <ComplianceViolations violations={magistrate.violations} />
+      <ComplianceViolations
+        violations={magistrate.violations}
+        sittingCommitment={magistrate.sitting_commitment}
+      />
 
       {magistrate.active_leave && (
         <div className="govuk-notification-banner govuk-notification-banner--warning" role="region">
@@ -103,6 +107,8 @@ export function MagistrateProfilePage() {
                 <li key={leave.id}>
                   {leave.starts_on} to {leave.ends_on ?? "open-ended"}
                   {leave.reason ? ` — ${leave.reason}` : ""}
+                  {" — next review: "}
+                  <NextLoaReviewTag leave={leave} />
                 </li>
               ))}
             </ul>
@@ -399,6 +405,9 @@ export function MagistrateProfilePage() {
                 Reason
               </th>
               <th scope="col" className="govuk-table__header">
+                Next LOA review
+              </th>
+              <th scope="col" className="govuk-table__header">
                 Status
               </th>
             </tr>
@@ -409,6 +418,9 @@ export function MagistrateProfilePage() {
                 <td className="govuk-table__cell">{leave.starts_on}</td>
                 <td className="govuk-table__cell">{leave.ends_on ?? "Open-ended"}</td>
                 <td className="govuk-table__cell">{leave.reason ?? "—"}</td>
+                <td className="govuk-table__cell">
+                  {leave.active ? <NextLoaReviewTag leave={leave} /> : (leave.next_loa_review_on ?? "—")}
+                </td>
                 <td className="govuk-table__cell">
                   {leave.active ? (
                     <strong className="govuk-tag govuk-tag--yellow">Active</strong>

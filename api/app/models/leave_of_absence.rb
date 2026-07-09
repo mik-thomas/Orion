@@ -5,6 +5,7 @@ class LeaveOfAbsence < ApplicationRecord
 
   validates :starts_on, presence: true
   validate :ends_on_after_starts_on
+  validate :next_review_on_on_or_after_starts_on
 
   scope :active_on, lambda { |date|
     where("starts_on <= ? AND (ends_on IS NULL OR ends_on >= ?)", date, date)
@@ -23,5 +24,12 @@ class LeaveOfAbsence < ApplicationRecord
     return if ends_on >= starts_on
 
     errors.add(:ends_on, "must be on or after starts on")
+  end
+
+  def next_review_on_on_or_after_starts_on
+    return if next_review_on.blank? || starts_on.blank?
+    return if next_review_on >= starts_on
+
+    errors.add(:next_review_on, "must be on or after starts on")
   end
 end

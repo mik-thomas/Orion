@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { listMagistratesOnLeave } from "../api/magistrates";
 import { ApiError } from "../api/http";
 import { MagistrateLink } from "../components/MagistrateLink";
+import { NextLoaReviewTag } from "../lib/loaReview";
 import { useRole } from "../context/RoleContext";
 import type { LeaveOfAbsence, MagistrateSummary } from "../types/domain";
 
@@ -73,6 +74,9 @@ export function OnLeavePage() {
                 Leave to
               </th>
               <th scope="col" className="govuk-table__header">
+                Next LOA review
+              </th>
+              <th scope="col" className="govuk-table__header">
                 Reason
               </th>
             </tr>
@@ -88,6 +92,9 @@ export function OnLeavePage() {
                   <td className="govuk-table__cell">{leave.starts_on}</td>
                   <td className="govuk-table__cell">
                     <strong className="govuk-tag govuk-tag--yellow">{formatLeaveEnd(leave)}</strong>
+                  </td>
+                  <td className="govuk-table__cell">
+                    <NextLoaReviewTag leave={leave} />
                   </td>
                   <td className="govuk-table__cell">{leave.reason ?? "—"}</td>
                 </tr>

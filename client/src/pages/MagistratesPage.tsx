@@ -78,10 +78,18 @@ export function MagistratesPage() {
                   )}
                 </td>
                 <td className="govuk-table__cell">
+                  {magistrate.sitting_commitment ? (
+                    <span className="govuk-body-s govuk-!-display-block">
+                      {magistrate.sitting_commitment.full_days_completed}/
+                      {magistrate.sitting_commitment.full_days_required} full days
+                    </span>
+                  ) : null}
                   {magistrate.has_violations ? (
                     <strong className="govuk-tag govuk-tag--red">
                       {magistrate.violations.length} {magistrate.violations.length === 1 ? "issue" : "issues"}
                     </strong>
+                  ) : magistrate.sitting_commitment ? (
+                    <span className="govuk-body-s">On track</span>
                   ) : (
                     "—"
                   )}

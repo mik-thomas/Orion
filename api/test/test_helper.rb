@@ -9,6 +9,7 @@ module ActiveSupport
 
     # Setup all fixtures in test/fixtures/*.yml for all tests in alphabetical order.
     fixtures :all
+    set_fixture_class leaves_of_absence: LeaveOfAbsence
 
     # Add more helper methods to be used by all tests here...
   end

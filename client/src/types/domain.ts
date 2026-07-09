@@ -19,6 +19,7 @@ export interface LeaveOfAbsence {
   ends_on: string | null;
   reason: string | null;
   notes: string | null;
+  next_loa_review_on: string | null;
   active: boolean;
 }
 
@@ -48,11 +49,22 @@ export interface CaseDetail extends CaseSummary {
 
 export interface ComplianceViolation {
   code: string;
-  severity: "red";
+  severity: "red" | "yellow";
   message: string;
   actual: number | null;
   required: number | null;
   year: string | null;
+}
+
+export interface SittingCommitment {
+  fiscal_year_label: string;
+  full_days_completed: number;
+  full_days_required: number;
+  half_days_completed: number;
+  half_days_required: number;
+  prorated_half_days_required: number;
+  on_track: boolean;
+  multi_court: boolean;
 }
 
 export type Role = "HMCTS-SLM" | "Developer" | "Bench Chair" | "Deputy";
@@ -82,6 +94,7 @@ export interface MagistrateSummary {
   days_since_login: number | null;
   violations: ComplianceViolation[];
   has_violations: boolean;
+  sitting_commitment: SittingCommitment | null;
 }
 
 export interface Sitting {

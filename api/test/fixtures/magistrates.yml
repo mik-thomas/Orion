@@ -7,6 +7,7 @@ alice:
   bench: Adult
   home_courthouse: one
   active: true
+  date_of_appointment: 2020-04-01
 
 bob:
   first_name: Bob
@@ -17,3 +18,4 @@ bob:
   bench: Adult
   home_courthouse: two
   active: true
+  date_of_appointment: 2019-04-01

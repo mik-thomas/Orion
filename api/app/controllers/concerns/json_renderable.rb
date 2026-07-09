@@ -19,7 +19,8 @@ module JsonRenderable
           "active_leave" => magistrate.active_leave?,
           "current_leaves" => magistrate.current_leaves.map { |leave| leave_json(leave) },
           "violations" => violations,
-          "has_violations" => violations.any?
+          "has_violations" => violations.any?,
+          "sitting_commitment" => magistrate.sitting_commitment
         )
 
         if names_visible?
@@ -45,14 +46,6 @@ module JsonRenderable
 
       def magistrate_detail_json(magistrate, period: nil)
         summary = magistrate_summary_json(magistrate)
-        if period
-          violations = compliance_violations_for_period(magistrate, period)
-          summary = summary.merge(
-            "violations" => violations,
-            "has_violations" => violations.any?
-          )
-        end
-
         filtered_sittings = sittings_for_period(magistrate, period)
 
         summary.merge(
@@ -74,16 +67,6 @@ module JsonRenderable
           "home_courthouse" => magistrate.home_courthouse&.name,
           "email" => magistrate.email
         }
-      end
-
-      def compliance_violations_for_period(magistrate, period)
-        if period.all_time?
-          magistrate.compliance_violations
-        elsif period.fiscal_year_label.present?
-          magistrate.compliance_violations(fiscal_year_label: period.fiscal_year_label)
-        else
-          magistrate.compliance_violations
-        end
       end
 
       def sittings_for_period(magistrate, period)
@@ -136,6 +119,7 @@ module JsonRenderable
 
   def leave_json(leave)
     leave.as_json(only: %i[id magistrate_id starts_on ends_on reason notes]).merge(
+      "next_loa_review_on" => leave.next_review_on&.iso8601,
       "active" => leave.active?
     )
   end
