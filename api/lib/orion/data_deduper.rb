@@ -5,7 +5,7 @@ module Orion
     SITTING_GROUP_SQL = <<~SQL.squish
       magistrate_id,
       session_date,
-      COALESCE(session, ''),
+      COALESCE(TRIM(session), ''),
       courthouse_id
     SQL
 
@@ -21,8 +21,8 @@ module Orion
     end
 
     def dedupe!(sittings: true, magistrates: true, leaves: true, training: true)
-      dedupe_sittings! if sittings
       dedupe_magistrates! if magistrates
+      dedupe_sittings! if sittings
       dedupe_leaves! if leaves
       dedupe_training_records! if training
       stats
@@ -104,17 +104,17 @@ module Orion
       sql = <<~SQL
         SELECT id, magistrate_id, session_date, session, courthouse_id, status, import_key, updated_at
         FROM sittings
-        WHERE (magistrate_id, session_date, COALESCE(session, ''), courthouse_id) IN (
-          SELECT magistrate_id, session_date, COALESCE(session, ''), courthouse_id
+        WHERE (magistrate_id, session_date, COALESCE(TRIM(session), ''), courthouse_id) IN (
+          SELECT magistrate_id, session_date, COALESCE(TRIM(session), ''), courthouse_id
           FROM sittings
-          GROUP BY magistrate_id, session_date, COALESCE(session, ''), courthouse_id
+          GROUP BY magistrate_id, session_date, COALESCE(TRIM(session), ''), courthouse_id
           HAVING COUNT(*) > 1
         )
         ORDER BY magistrate_id, session_date, session, courthouse_id, id
       SQL
 
       ActiveRecord::Base.connection.exec_query(sql).group_by do |row|
-        [row["magistrate_id"], row["session_date"], row["session"].to_s, row["courthouse_id"]]
+        [row["magistrate_id"], row["session_date"], row["session"].to_s.strip, row["courthouse_id"]]
       end
     end
 
