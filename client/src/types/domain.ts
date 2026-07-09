@@ -103,6 +103,49 @@ export interface Sitting {
   sitting_type: SittingType;
 }
 
+export interface SittingDrillDownRow {
+  id: number;
+  magistrate_id: number;
+  session_date: string;
+  session: string | null;
+  display_name: string;
+  courthouse: string;
+  court_room: string | null;
+  court_type: string | null;
+  sitting_type: string;
+  status: "completed" | "vacated" | "cancelled";
+  cancellation_category: string | null;
+  away_from_home: boolean;
+}
+
+export interface SittingsDrillDownResponse {
+  period: PeriodFilterContext;
+  available_fiscal_years: string[];
+  filters: Partial<SittingsDrillDownFilters>;
+  pagination: {
+    page: number;
+    per_page: number;
+    total_count: number;
+    total_pages: number;
+  };
+  sittings: SittingDrillDownRow[];
+}
+
+export type SittingsDrillDownFilters = {
+  status?: "completed" | "vacated" | "cancelled";
+  cancellation_category?: "district_judge";
+  courthouse?: string;
+  courthouse_id?: number;
+  court_type?: string;
+  court_room?: string;
+  sitting_type?: string;
+  sitting_type_id?: number;
+  magistrate_id?: number;
+  away_from_home?: boolean;
+  page?: number;
+  per_page?: number;
+};
+
 export interface CourtRoomRow {
   courthouse: string;
   court_room: string;

@@ -7,6 +7,7 @@ import { MagistrateRosterPage } from "./pages/MagistrateRosterPage";
 import { MagistratesPage } from "./pages/MagistratesPage";
 import { OnLeavePage } from "./pages/OnLeavePage";
 import { ReportsPage } from "./pages/ReportsPage";
+import { SittingsDrillDownPage } from "./pages/SittingsDrillDownPage";
 
 export default function App() {
   return (
@@ -20,6 +21,7 @@ export default function App() {
             <Route path="magistrates/roster" element={<MagistrateRosterPage />} />
             <Route path="magistrates/:id" element={<MagistrateProfilePage />} />
             <Route path="reports" element={<ReportsPage />} />
+            <Route path="reports/sittings" element={<SittingsDrillDownPage />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Route>
         </Routes>

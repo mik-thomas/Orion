@@ -23,7 +23,11 @@ Rails.application.routes.draw do
 
       resources :courthouses, only: %i[index]
       resources :sitting_types, only: %i[index]
-      resources :sittings, only: %i[index]
+      resources :sittings, only: %i[index] do
+        collection do
+          get :drill_down
+        end
+      end
     end
   end
 end

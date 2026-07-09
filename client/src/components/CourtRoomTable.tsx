@@ -1,15 +1,41 @@
 import type { CourtRoomRow } from "../types/domain";
+import type { PeriodFilterState } from "../lib/periodFilter";
+import { DrillDownLink } from "./DrillDownLink";
 
 interface CourtRoomTableProps {
   rows: CourtRoomRow[];
   heading?: string;
   emptyMessage?: string;
+  periodFilter?: PeriodFilterState;
+}
+
+function CountLink({
+  count,
+  filters,
+  periodFilter,
+  label,
+}: {
+  count: number;
+  filters: Parameters<typeof DrillDownLink>[0]["filters"];
+  periodFilter?: PeriodFilterState;
+  label: string;
+}) {
+  if (!periodFilter || count === 0) {
+    return <>{count}</>;
+  }
+
+  return (
+    <DrillDownLink filters={filters} period={periodFilter} ariaLabel={label}>
+      {count}
+    </DrillDownLink>
+  );
 }
 
 export function CourtRoomTable({
   rows,
   heading = "Sittings by court room",
   emptyMessage = "No court room data recorded.",
+  periodFilter,
 }: CourtRoomTableProps) {
   return (
     <section className="govuk-!-margin-top-6">
@@ -44,23 +70,90 @@ export function CourtRoomTable({
             </tr>
           </thead>
           <tbody className="govuk-table__body">
-            {rows.map((row) => (
-              <tr key={`${row.courthouse}-${row.court_room}`} className="govuk-table__row">
-                <td className="govuk-table__cell">{row.courthouse}</td>
-                <td className="govuk-table__cell">{row.court_room}</td>
-                <td className="govuk-table__cell">{row.sittings}</td>
-                <td className="govuk-table__cell">{row.completed}</td>
-                <td className="govuk-table__cell">{row.vacated}</td>
-                <td className="govuk-table__cell">{row.cancelled}</td>
-                <td className="govuk-table__cell">
-                  {row.cancelled_by_dj > 0 ? (
-                    <strong className="govuk-tag govuk-tag--red">{row.cancelled_by_dj}</strong>
-                  ) : (
-                    row.cancelled_by_dj
-                  )}
-                </td>
-              </tr>
-            ))}
+            {rows.map((row) => {
+              const base = { courthouse: row.courthouse, court_room: row.court_room };
+              return (
+                <tr key={`${row.courthouse}-${row.court_room}`} className="govuk-table__row">
+                  <td className="govuk-table__cell">
+                    {periodFilter ? (
+                      <DrillDownLink
+                        filters={{ courthouse: row.courthouse }}
+                        period={periodFilter}
+                        ariaLabel={`View sittings at ${row.courthouse}`}
+                      >
+                        {row.courthouse}
+                      </DrillDownLink>
+                    ) : (
+                      row.courthouse
+                    )}
+                  </td>
+                  <td className="govuk-table__cell">
+                    {periodFilter ? (
+                      <DrillDownLink
+                        filters={base}
+                        period={periodFilter}
+                        ariaLabel={`View sittings in ${row.court_room} at ${row.courthouse}`}
+                      >
+                        {row.court_room}
+                      </DrillDownLink>
+                    ) : (
+                      row.court_room
+                    )}
+                  </td>
+                  <td className="govuk-table__cell">
+                    <CountLink
+                      count={row.sittings}
+                      filters={base}
+                      periodFilter={periodFilter}
+                      label={`View ${row.sittings} sittings in ${row.court_room} at ${row.courthouse}`}
+                    />
+                  </td>
+                  <td className="govuk-table__cell">
+                    <CountLink
+                      count={row.completed}
+                      filters={{ ...base, status: "completed" }}
+                      periodFilter={periodFilter}
+                      label={`View ${row.completed} completed sittings in ${row.court_room} at ${row.courthouse}`}
+                    />
+                  </td>
+                  <td className="govuk-table__cell">
+                    <CountLink
+                      count={row.vacated}
+                      filters={{ ...base, status: "vacated" }}
+                      periodFilter={periodFilter}
+                      label={`View ${row.vacated} vacated sittings in ${row.court_room} at ${row.courthouse}`}
+                    />
+                  </td>
+                  <td className="govuk-table__cell">
+                    <CountLink
+                      count={row.cancelled}
+                      filters={{ ...base, status: "cancelled" }}
+                      periodFilter={periodFilter}
+                      label={`View ${row.cancelled} cancelled sittings in ${row.court_room} at ${row.courthouse}`}
+                    />
+                  </td>
+                  <td className="govuk-table__cell">
+                    {row.cancelled_by_dj > 0 && periodFilter ? (
+                      <DrillDownLink
+                        filters={{
+                          ...base,
+                          status: "cancelled",
+                          cancellation_category: "district_judge",
+                        }}
+                        period={periodFilter}
+                        ariaLabel={`View ${row.cancelled_by_dj} sittings cancelled by DJ in ${row.court_room} at ${row.courthouse}`}
+                      >
+                        <strong className="govuk-tag govuk-tag--red">{row.cancelled_by_dj}</strong>
+                      </DrillDownLink>
+                    ) : row.cancelled_by_dj > 0 ? (
+                      <strong className="govuk-tag govuk-tag--red">{row.cancelled_by_dj}</strong>
+                    ) : (
+                      row.cancelled_by_dj
+                    )}
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       )}

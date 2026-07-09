@@ -3,6 +3,7 @@ import { listMagistrates } from "../api/magistrates";
 import { getReportsOverview } from "../api/reports";
 import { ApiError } from "../api/http";
 import { ClusterMovementSection } from "../components/ClusterMovementSection";
+import { DrillDownLink } from "../components/DrillDownLink";
 import { MagistrateLink } from "../components/MagistrateLink";
 import { LoginReportTable } from "../components/LoginReportTable";
 import { CourtRoomTable } from "../components/CourtRoomTable";
@@ -149,19 +150,51 @@ export function DashboardPage() {
           <div className="govuk-grid-row govuk-!-margin-bottom-6">
             <div className="govuk-grid-column-one-quarter">
               <p className="govuk-body govuk-!-font-weight-bold govuk-!-margin-bottom-1">Completed</p>
-              <p className="govuk-heading-m govuk-!-margin-top-0">{reports.summary.completed_sittings}</p>
+              <p className="govuk-heading-m govuk-!-margin-top-0">
+                <DrillDownLink
+                  filters={{ status: "completed" }}
+                  period={periodFilter}
+                  ariaLabel={`View ${reports.summary.completed_sittings} completed sittings`}
+                >
+                  {reports.summary.completed_sittings}
+                </DrillDownLink>
+              </p>
             </div>
             <div className="govuk-grid-column-one-quarter">
               <p className="govuk-body govuk-!-font-weight-bold govuk-!-margin-bottom-1">Vacated</p>
-              <p className="govuk-heading-m govuk-!-margin-top-0">{reports.summary.vacated_sittings}</p>
+              <p className="govuk-heading-m govuk-!-margin-top-0">
+                <DrillDownLink
+                  filters={{ status: "vacated" }}
+                  period={periodFilter}
+                  ariaLabel={`View ${reports.summary.vacated_sittings} vacated sittings`}
+                >
+                  {reports.summary.vacated_sittings}
+                </DrillDownLink>
+              </p>
             </div>
             <div className="govuk-grid-column-one-quarter">
               <p className="govuk-body govuk-!-font-weight-bold govuk-!-margin-bottom-1">Cancelled</p>
-              <p className="govuk-heading-m govuk-!-margin-top-0">{reports.summary.cancelled_sittings}</p>
+              <p className="govuk-heading-m govuk-!-margin-top-0">
+                <DrillDownLink
+                  filters={{ status: "cancelled" }}
+                  period={periodFilter}
+                  ariaLabel={`View ${reports.summary.cancelled_sittings} cancelled sittings`}
+                >
+                  {reports.summary.cancelled_sittings}
+                </DrillDownLink>
+              </p>
             </div>
             <div className="govuk-grid-column-one-quarter">
               <p className="govuk-body govuk-!-font-weight-bold govuk-!-margin-bottom-1">Cancelled by DJ</p>
-              <p className="govuk-heading-m govuk-!-margin-top-0">{reports.summary.cancelled_by_dj}</p>
+              <p className="govuk-heading-m govuk-!-margin-top-0">
+                <DrillDownLink
+                  filters={{ status: "cancelled", cancellation_category: "district_judge" }}
+                  period={periodFilter}
+                  ariaLabel={`View ${reports.summary.cancelled_by_dj} sittings cancelled by District Judge`}
+                >
+                  {reports.summary.cancelled_by_dj}
+                </DrillDownLink>
+              </p>
             </div>
             <div className="govuk-grid-column-one-quarter">
               <p className="govuk-body govuk-!-font-weight-bold govuk-!-margin-bottom-1">Magistrates</p>
@@ -188,7 +221,9 @@ export function DashboardPage() {
             </div>
           </div>
 
-          {reports.dj_cancellations && <DjCancellationSection report={reports.dj_cancellations} />}
+          {reports.dj_cancellations && (
+            <DjCancellationSection report={reports.dj_cancellations} periodFilter={periodFilter} />
+          )}
 
           <div className="govuk-grid-row">
             <div className="govuk-grid-column-one-half">
@@ -210,8 +245,24 @@ export function DashboardPage() {
                   <tbody className="govuk-table__body">
                     {reports.by_courthouse.map((row) => (
                       <tr key={row.courthouse} className="govuk-table__row">
-                        <td className="govuk-table__cell">{row.courthouse}</td>
-                        <td className="govuk-table__cell">{row.sittings}</td>
+                        <td className="govuk-table__cell">
+                          <DrillDownLink
+                            filters={{ courthouse: row.courthouse }}
+                            period={periodFilter}
+                            ariaLabel={`View sittings at ${row.courthouse}`}
+                          >
+                            {row.courthouse}
+                          </DrillDownLink>
+                        </td>
+                        <td className="govuk-table__cell">
+                          <DrillDownLink
+                            filters={{ courthouse: row.courthouse }}
+                            period={periodFilter}
+                            ariaLabel={`View ${row.sittings} sittings at ${row.courthouse}`}
+                          >
+                            {row.sittings}
+                          </DrillDownLink>
+                        </td>
                       </tr>
                     ))}
                   </tbody>
@@ -237,8 +288,24 @@ export function DashboardPage() {
                   <tbody className="govuk-table__body">
                     {reports.by_court_type.map((row) => (
                       <tr key={row.court_type} className="govuk-table__row">
-                        <td className="govuk-table__cell">{row.court_type}</td>
-                        <td className="govuk-table__cell">{row.sittings}</td>
+                        <td className="govuk-table__cell">
+                          <DrillDownLink
+                            filters={{ court_type: row.court_type }}
+                            period={periodFilter}
+                            ariaLabel={`View sittings for court type ${row.court_type}`}
+                          >
+                            {row.court_type}
+                          </DrillDownLink>
+                        </td>
+                        <td className="govuk-table__cell">
+                          <DrillDownLink
+                            filters={{ court_type: row.court_type }}
+                            period={periodFilter}
+                            ariaLabel={`View ${row.sittings} sittings for court type ${row.court_type}`}
+                          >
+                            {row.sittings}
+                          </DrillDownLink>
+                        </td>
                       </tr>
                     ))}
                   </tbody>
@@ -267,8 +334,24 @@ export function DashboardPage() {
                   <tbody className="govuk-table__body">
                     {reports.by_sitting_type.map((row) => (
                       <tr key={row.sitting_type} className="govuk-table__row">
-                        <td className="govuk-table__cell">{row.sitting_type}</td>
-                        <td className="govuk-table__cell">{row.sittings}</td>
+                        <td className="govuk-table__cell">
+                          <DrillDownLink
+                            filters={{ sitting_type: row.sitting_type }}
+                            period={periodFilter}
+                            ariaLabel={`View sittings for business type ${row.sitting_type}`}
+                          >
+                            {row.sitting_type}
+                          </DrillDownLink>
+                        </td>
+                        <td className="govuk-table__cell">
+                          <DrillDownLink
+                            filters={{ sitting_type: row.sitting_type }}
+                            period={periodFilter}
+                            ariaLabel={`View ${row.sittings} sittings for business type ${row.sitting_type}`}
+                          >
+                            {row.sittings}
+                          </DrillDownLink>
+                        </td>
                       </tr>
                     ))}
                   </tbody>
@@ -277,7 +360,7 @@ export function DashboardPage() {
             </div>
           </div>
 
-          <CourtRoomTable rows={reports.by_court_room} />
+          <CourtRoomTable rows={reports.by_court_room} periodFilter={periodFilter} />
 
           {reports.home_court_movement && (
             <ClusterMovementSection report={reports.home_court_movement} />
