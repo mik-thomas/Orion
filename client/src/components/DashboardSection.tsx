@@ -8,6 +8,7 @@ interface DashboardSectionProps {
   description?: string;
   tag?: string;
   tagColour?: DashboardTagColour;
+  headerAside?: ReactNode;
   children: ReactNode;
   className?: string;
 }
@@ -18,6 +19,7 @@ export function DashboardSection({
   description,
   tag,
   tagColour = "grey",
+  headerAside,
   children,
   className,
 }: DashboardSectionProps) {
@@ -28,6 +30,7 @@ export function DashboardSection({
     <section className={["orion-dashboard-section", className].filter(Boolean).join(" ")}>
       <div className="orion-dashboard-section__header">
         <Heading className={`${headingClass} orion-dashboard-section__title`}>{title}</Heading>
+        {headerAside ? <div className="orion-dashboard-section__aside">{headerAside}</div> : null}
         {tag ? (
           <strong className={`govuk-tag govuk-tag--${tagColour} orion-dashboard-section__tag`}>{tag}</strong>
         ) : null}

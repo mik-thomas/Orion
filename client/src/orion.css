@@ -63,18 +63,23 @@
 .orion-dashboard-section__header {
   display: flex;
   flex-wrap: wrap;
-  align-items: baseline;
-  gap: 0.75rem 1rem;
-  margin-bottom: 1rem;
+  align-items: flex-end;
+  gap: 0.75rem 1.5rem;
+  margin-bottom: 1.25rem;
 }
 
 .orion-dashboard-section__title {
   margin-bottom: 0;
-  flex: 1 1 auto;
+  flex: 1 1 12rem;
+}
+
+.orion-dashboard-section__aside {
+  flex: 2 1 20rem;
 }
 
 .orion-dashboard-section__tag {
   flex-shrink: 0;
+  align-self: center;
 }
 
 .orion-dashboard-section__description {
@@ -101,61 +106,182 @@
 
 .orion-dashboard-stats {
   display: grid;
-  grid-template-columns: repeat(5, 1fr);
   gap: 1rem;
   margin-bottom: 1.5rem;
   align-items: stretch;
 }
 
+.orion-dashboard-stats--primary {
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0;
+  margin-bottom: 1.5rem;
+  border: 1px solid #b1b4b6;
+  background-color: #f3f2f1;
+}
+
 @media (max-width: 48.0625em) {
-  .orion-dashboard-stats {
+  .orion-dashboard-stats--primary {
     grid-template-columns: repeat(2, 1fr);
+  }
+
+  .orion-dashboard-stats--primary .orion-dashboard-stat {
+    border-right: 1px solid #b1b4b6;
+    border-bottom: 1px solid #b1b4b6;
+  }
+
+  .orion-dashboard-stats--primary .orion-dashboard-stat:nth-child(2n) {
+    border-right: none;
+  }
+
+  .orion-dashboard-stats--primary .orion-dashboard-stat:nth-last-child(-n + 2) {
+    border-bottom: none;
   }
 }
 
 @media (max-width: 28.125em) {
-  .orion-dashboard-stats {
+  .orion-dashboard-stats--primary {
     grid-template-columns: 1fr;
+  }
+
+  .orion-dashboard-stats--primary .orion-dashboard-stat {
+    border-right: none;
+    border-bottom: 1px solid #b1b4b6;
+  }
+
+  .orion-dashboard-stats--primary .orion-dashboard-stat:last-child {
+    border-bottom: none;
   }
 }
 
 .orion-dashboard-stat {
   display: flex;
   flex-direction: column;
+  justify-content: center;
   height: 100%;
-  padding: 1rem 1.25rem;
-  background-color: #f3f2f1;
-  border-left: 4px solid #1d70b8;
+  padding: 1.25rem 1rem;
+  background-color: transparent;
 }
 
-.orion-dashboard-stat--green {
-  border-left-color: #00703c;
+.orion-dashboard-stats--primary .orion-dashboard-stat {
+  border-right: 1px solid #b1b4b6;
+  border-bottom: none;
 }
 
-.orion-dashboard-stat--yellow {
-  border-left-color: #ffdd00;
-}
-
-.orion-dashboard-stat--red {
-  border-left-color: #d4351c;
-}
-
-.orion-dashboard-stat--grey {
-  border-left-color: #505a5f;
+.orion-dashboard-stats--primary .orion-dashboard-stat:last-child {
+  border-right: none;
 }
 
 .orion-dashboard-stat__label {
   margin-top: 0;
+  color: #505a5f;
+}
+
+.orion-dashboard-stat__label--green {
+  color: #00703c;
+}
+
+.orion-dashboard-stat__label--yellow {
+  color: #854a00;
+}
+
+.orion-dashboard-stat__label--red {
+  color: #d4351c;
+}
+
+.orion-dashboard-stat__label--grey {
+  color: #505a5f;
+}
+
+.orion-dashboard-stat__value {
+  font-family: "GDS Transport", arial, sans-serif;
+  font-size: 2.25rem;
+  font-weight: 700;
+  line-height: 1.1;
+  color: #0b0c0c;
 }
 
 .orion-dashboard-stat__value .govuk-link:link,
 .orion-dashboard-stat__value .govuk-link:visited {
   color: #0b0c0c;
-  text-decoration: none;
+  text-decoration: underline;
+  text-decoration-thickness: max(1px, 0.0625rem);
+  text-underline-offset: 0.1578em;
 }
 
 .orion-dashboard-stat__value .govuk-link:hover {
-  text-decoration: underline;
+  color: #003078;
+}
+
+.orion-dashboard-stat__zero {
+  color: #b1b4b6;
+}
+
+.orion-dashboard-overview-hint {
+  margin-top: -0.5rem;
+  margin-bottom: 1rem;
+}
+
+.orion-dashboard-context-stats {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 0;
+  margin: 0;
+  padding: 0;
+  border-top: 1px solid #b1b4b6;
+}
+
+.orion-dashboard-context-stats__item {
+  margin: 0;
+  padding: 1rem 1.25rem 1rem 0;
+}
+
+.orion-dashboard-context-stats__item:not(:last-child) {
+  border-right: 1px solid #b1b4b6;
+  padding-right: 1.25rem;
+  margin-right: 1.25rem;
+}
+
+.orion-dashboard-context-stats__label {
+  margin: 0 0 0.25rem;
+  font-family: "GDS Transport", arial, sans-serif;
+  font-size: 1rem;
+  font-weight: 400;
+  line-height: 1.25;
+  color: #505a5f;
+}
+
+.orion-dashboard-context-stats__value {
+  margin: 0;
+  font-family: "GDS Transport", arial, sans-serif;
+  font-size: 1.5rem;
+  font-weight: 700;
+  line-height: 1.2;
+  color: #0b0c0c;
+}
+
+@media (max-width: 48.0625em) {
+  .orion-dashboard-context-stats {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem 1.25rem;
+    border-top: none;
+    padding-top: 0.5rem;
+  }
+
+  .orion-dashboard-context-stats__item {
+    padding: 0;
+  }
+
+  .orion-dashboard-context-stats__item:not(:last-child) {
+    border-right: none;
+    padding-right: 0;
+    margin-right: 0;
+  }
+}
+
+@media (max-width: 28.125em) {
+  .orion-dashboard-context-stats {
+    grid-template-columns: 1fr;
+  }
 }
 
 .orion-period-filter.govuk-form-group {
@@ -168,6 +294,28 @@
 
 .orion-period-filter .govuk-label {
   margin-bottom: 0.25rem;
+}
+
+.orion-period-filter--compact {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 0.75rem 1.25rem;
+  margin-bottom: 0;
+}
+
+.orion-period-filter--compact .orion-period-filter__control {
+  flex: 1 1 8rem;
+  min-width: 0;
+  margin-bottom: 0;
+}
+
+.orion-period-filter--compact .govuk-label {
+  margin-bottom: 0.25rem;
+}
+
+.orion-period-filter--compact .govuk-select {
+  width: 100%;
 }
 
 .orion-dashboard-hint {
