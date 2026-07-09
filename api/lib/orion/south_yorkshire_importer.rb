@@ -29,7 +29,7 @@ module Orion
       @magistrates_by_name = {}
       @courthouses_by_name = {}
       @sitting_types_by_name = {}
-      @known_import_keys = nil
+      @known_import_statuses = nil
       @lookup_caches_warm = false
       @stats = Hash.new(0)
       @checkpoint = nil
@@ -101,12 +101,12 @@ module Orion
       @magistrates_by_name = {}
       @courthouses_by_name = {}
       @sitting_types_by_name = {}
-      @known_import_keys = nil
+      @known_import_statuses = nil
       @lookup_caches_warm = false
     end
 
     def importer_version
-      "2026-07-09b (bulk sittings, synthetic resume)"
+      "2026-07-09c (stable sitting import_key, status merge)"
     end
 
     def setup_checkpoint!
@@ -344,20 +344,43 @@ module Orion
     end
 
     def ensure_import_keys_loaded!
-      @known_import_keys ||= Set.new(Sitting.where.not(import_key: nil).pluck(:import_key))
+      @known_import_statuses ||= Sitting.where.not(import_key: nil).pluck(:import_key, :status, :id).each_with_object({}) do |(key, status, id), memo|
+        memo[key] = { status: status, id: id }
+      end
     end
 
     def bulk_insert_sittings!(records, status)
       return if records.empty?
 
+      inserts = []
+      records.each do |record|
+        existing = @known_import_statuses[record[:import_key]]
+        if existing
+          if SittingImportKey.status_priority(record[:status]) > SittingImportKey.status_priority(existing[:status])
+            Sitting.where(id: existing[:id]).update_all(
+              record.except(:created_at).merge(updated_at: Time.current)
+            )
+            @known_import_statuses[record[:import_key]] = { status: record[:status], id: existing[:id] }
+            stats[:sittings_upgraded] += 1
+          else
+            stats[:sittings_skipped] += 1
+          end
+          next
+        end
+
+        inserts << record
+      end
+
+      return if inserts.empty?
+
       Sitting.upsert_all(
-        records,
+        inserts,
         unique_by: :import_key,
         on_duplicate: :skip,
         record_timestamps: true
       )
-      records.each { |r| @known_import_keys.add(r[:import_key]) }
-      stats[:"sittings_#{status}"] += records.size
+      inserts.each { |r| @known_import_statuses[r[:import_key]] = { status: r[:status], id: nil } }
+      stats[:"sittings_#{status}"] += inserts.size
     end
 
     def build_sitting_attributes(row, status:, source:, format:)
@@ -387,23 +410,16 @@ module Orion
       position = extra.delete(:position)
       panel = extra.delete(:panel)
 
-      key = import_key_for([
-        magistrate.email,
-        session_date,
-        session,
-        courthouse.name,
-        venue_name,
-        sitting_type.name,
-        panel,
-        position,
-        status,
-        source
-      ])
-
-      if @known_import_keys.include?(key)
-        stats[:sittings_skipped] += 1
-        return nil
-      end
+      key = SittingImportKey.build(
+        magistrate_email: magistrate.email,
+        session_date: session_date,
+        session: session,
+        courthouse_name: courthouse.name,
+        venue_name: venue_name,
+        sitting_type_name: sitting_type.name,
+        panel: panel,
+        position: position
+      )
 
       {
         magistrate_id: magistrate.id,
@@ -684,7 +700,7 @@ module Orion
     end
 
     def import_key_for(parts)
-      Digest::SHA256.hexdigest(parts.map { |p| p.to_s.strip.downcase }.join("|"))
+      SittingImportKey.digest(parts)
     end
 
     def rows_after_header(sheet, header_first_cell)

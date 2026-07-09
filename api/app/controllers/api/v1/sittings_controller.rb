@@ -76,6 +76,7 @@ module Api
           .joins(:magistrate)
           .where.not(magistrates: { home_courthouse_id: nil })
           .where("sittings.courthouse_id != magistrates.home_courthouse_id")
+      end
 
       def drill_down_filters_json
         {

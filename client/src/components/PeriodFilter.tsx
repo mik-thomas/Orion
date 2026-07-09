@@ -1,5 +1,5 @@
 import type { PeriodFilterState } from "../lib/periodFilter";
-import { QUARTER_OPTIONS, periodFilterLabel } from "../lib/periodFilter";
+import { QUARTER_OPTIONS } from "../lib/periodFilter";
 
 type PeriodFilterProps = {
   value: PeriodFilterState;
@@ -12,14 +12,11 @@ export function PeriodFilter({ value, onChange, availableYears }: PeriodFilterPr
   const quarterDisabled = value.mode === "all";
 
   return (
-    <div className="govuk-form-group govuk-!-margin-bottom-6">
+    <div className="govuk-form-group govuk-!-margin-bottom-4">
       <fieldset className="govuk-fieldset">
-        <legend className="govuk-fieldset__legend govuk-fieldset__legend--m">
-          <h2 className="govuk-fieldset__heading">Period</h2>
+        <legend className="govuk-fieldset__legend govuk-fieldset__legend--s govuk-!-margin-bottom-4">
+          Filter period
         </legend>
-        <p className="govuk-body govuk-!-margin-bottom-4">
-          Showing: <strong>{periodFilterLabel(value)}</strong>
-        </p>
 
         <div className="govuk-grid-row">
           <div className="govuk-grid-column-one-third">

@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2026_07_09_030000) do
+ActiveRecord::Schema[7.1].define(version: 2026_07_09_040000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
 
@@ -135,6 +135,7 @@ ActiveRecord::Schema[7.1].define(version: 2026_07_09_030000) do
     t.string "sitting_position"
     t.string "court_room"
     t.string "cancellation_category"
+    t.index "magistrate_id, session_date, COALESCE(session, ''::character varying), courthouse_id", name: "index_sittings_on_unique_event", unique: true
     t.index ["business_type"], name: "index_sittings_on_business_type"
     t.index ["court_type"], name: "index_sittings_on_court_type"
     t.index ["courthouse_id", "session_date"], name: "index_sittings_on_courthouse_id_and_session_date"
