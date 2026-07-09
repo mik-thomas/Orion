@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useId, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { getMagistrate } from "../api/magistrates";
 import { ApiError } from "../api/http";
@@ -7,10 +7,15 @@ import { RetirementDueModal } from "../components/RetirementDueModal";
 import { SittingForecastPanel } from "../components/SittingForecastPanel";
 import { LoaReviewDateEditor } from "../components/LoaReviewDateEditor";
 import { NextLoaReviewTag } from "../lib/loaReview";
-import { CourtRoomTable } from "../components/CourtRoomTable";
 import { DjCancellationSection } from "../components/DjCancellationSection";
 import { PeriodFilter } from "../components/PeriodFilter";
 import { SittingHistoryChart } from "../components/SittingHistoryChart";
+import { DashboardSection } from "../components/DashboardSection";
+import { DonutOrBarChart } from "../components/charts/DonutOrBarChart";
+import { HorizontalBarChart } from "../components/charts/HorizontalBarChart";
+import { ShowTableToggle } from "../components/charts/ShowTableToggle";
+import { homeAwaySegments, SimpleDonut } from "../components/charts/SimpleDonut";
+import { courtRoomStackRow, StackedBarChart } from "../components/charts/StackedBarChart";
 import { useRole } from "../context/RoleContext";
 import {
   defaultPeriodFilter,
@@ -32,6 +37,12 @@ export function MagistrateProfilePage() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [showRetirementModal, setShowRetirementModal] = useState(false);
+  const statusSummaryId = useId();
+  const homeAwaySummaryId = useId();
+  const locationSummaryId = useId();
+  const courtTypeSummaryId = useId();
+  const sittingTypeSummaryId = useId();
+  const courtRoomSummaryId = useId();
 
   useEffect(() => {
     if (!id) return;
@@ -74,6 +85,9 @@ export function MagistrateProfilePage() {
       </div>
     );
   }
+
+  const periodLabel = magistrate.period?.label ?? periodFilterLabel(periodFilter);
+  const summary = magistrate.sitting_summary;
 
   return (
     <>
@@ -223,143 +237,247 @@ export function MagistrateProfilePage() {
         onChange={setPeriodFilter}
         availableYears={availableYears}
       />
-      <div className="govuk-grid-row govuk-!-margin-bottom-6">
-        <div className="govuk-grid-column-one-quarter">
-          <p className="govuk-body govuk-!-font-weight-bold govuk-!-margin-bottom-1">Completed</p>
-          <p className="govuk-heading-m govuk-!-margin-top-0">{magistrate.sitting_summary.totals.completed}</p>
-        </div>
-        <div className="govuk-grid-column-one-quarter">
-          <p className="govuk-body govuk-!-font-weight-bold govuk-!-margin-bottom-1">Vacated</p>
-          <p className="govuk-heading-m govuk-!-margin-top-0">{magistrate.sitting_summary.totals.vacated}</p>
-        </div>
-        <div className="govuk-grid-column-one-quarter">
-          <p className="govuk-body govuk-!-font-weight-bold govuk-!-margin-bottom-1">Cancelled</p>
-          <p className="govuk-heading-m govuk-!-margin-top-0">{magistrate.sitting_summary.totals.cancelled}</p>
-        </div>
-        <div className="govuk-grid-column-one-quarter">
-          <p className="govuk-body govuk-!-font-weight-bold govuk-!-margin-bottom-1">Cancelled by DJ</p>
-          <p className="govuk-heading-m govuk-!-margin-top-0">{magistrate.sitting_summary.totals.cancelled_by_dj}</p>
-        </div>
-      </div>
 
-      {magistrate.sitting_summary.home_away && (
-        <div className="govuk-grid-row govuk-!-margin-bottom-6">
-          <div className="govuk-grid-column-one-quarter">
-            <p className="govuk-body govuk-!-font-weight-bold govuk-!-margin-bottom-1">At home court</p>
-            <p className="govuk-heading-m govuk-!-margin-top-0">{magistrate.sitting_summary.home_away.at_home}</p>
-          </div>
-          <div className="govuk-grid-column-one-quarter">
-            <p className="govuk-body govuk-!-font-weight-bold govuk-!-margin-bottom-1">Away from home</p>
-            <p className="govuk-heading-m govuk-!-margin-top-0">{magistrate.sitting_summary.home_away.away}</p>
-          </div>
-          <div className="govuk-grid-column-one-quarter">
-            <p className="govuk-body govuk-!-font-weight-bold govuk-!-margin-bottom-1">Away %</p>
-            <p className="govuk-heading-m govuk-!-margin-top-0">{magistrate.sitting_summary.home_away.away_pct}%</p>
-          </div>
-        </div>
-      )}
+      <>
+            <div className="orion-profile-charts-grid orion-profile-charts-grid--two">
+              <DashboardSection
+                title="Sitting status"
+                headingLevel={3}
+                description={`Outcome breakdown for ${periodLabel}.`}
+              >
+                <DonutOrBarChart
+                  totals={summary.totals}
+                  summaryContext={periodLabel}
+                  summaryId={statusSummaryId}
+                />
+              </DashboardSection>
 
-      <div className="govuk-grid-row govuk-!-margin-bottom-6">
-        <div className="govuk-grid-column-one-third">
-          <h3 className="govuk-heading-m">By location</h3>
-          {magistrate.sitting_summary.by_location.length === 0 ? (
-            <p className="govuk-body">No sittings recorded.</p>
-          ) : (
-            <table className="govuk-table">
-              <thead className="govuk-table__head">
-                <tr className="govuk-table__row">
-                  <th scope="col" className="govuk-table__header">
-                    Courthouse
-                  </th>
-                  <th scope="col" className="govuk-table__header">
-                    Sittings
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="govuk-table__body">
-                {magistrate.sitting_summary.by_location.map((row) => (
-                  <tr key={row.courthouse} className="govuk-table__row">
-                    <td className="govuk-table__cell">{row.courthouse}</td>
-                    <td className="govuk-table__cell">{row.sittings}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
-        </div>
-        <div className="govuk-grid-column-one-third">
-          <h3 className="govuk-heading-m">By court type</h3>
-          {magistrate.sitting_summary.by_court_type.length === 0 ? (
-            <p className="govuk-body">No court types recorded.</p>
-          ) : (
-            <table className="govuk-table">
-              <thead className="govuk-table__head">
-                <tr className="govuk-table__row">
-                  <th scope="col" className="govuk-table__header">
-                    Court type
-                  </th>
-                  <th scope="col" className="govuk-table__header">
-                    Sittings
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="govuk-table__body">
-                {magistrate.sitting_summary.by_court_type.map((row) => (
-                  <tr key={row.court_type} className="govuk-table__row">
-                    <td className="govuk-table__cell">{row.court_type}</td>
-                    <td className="govuk-table__cell">{row.sittings}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
-        </div>
-        <div className="govuk-grid-column-one-third">
-          <h3 className="govuk-heading-m">By sitting type</h3>
-          {magistrate.sitting_summary.by_sitting_type.length === 0 ? (
-            <p className="govuk-body">No sitting types recorded.</p>
-          ) : (
-            <table className="govuk-table">
-              <thead className="govuk-table__head">
-                <tr className="govuk-table__row">
-                  <th scope="col" className="govuk-table__header">
-                    Type
-                  </th>
-                  <th scope="col" className="govuk-table__header">
-                    Sittings
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="govuk-table__body">
-                {magistrate.sitting_summary.by_sitting_type.map((row) => (
-                  <tr key={row.sitting_type} className="govuk-table__row">
-                    <td className="govuk-table__cell">{row.sitting_type}</td>
-                    <td className="govuk-table__cell">{row.sittings}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
-        </div>
-      </div>
+              {summary.home_away ? (
+                <DashboardSection
+                  title="Home / away"
+                  headingLevel={3}
+                  description={`Completed sittings at home court vs away for ${periodLabel}.`}
+                >
+                  <SimpleDonut
+                    segments={homeAwaySegments(summary.home_away.at_home, summary.home_away.away)}
+                    centreLabel={`${summary.home_away.away_pct}% away`}
+                    summaryContext={periodLabel}
+                    summaryId={homeAwaySummaryId}
+                    emptyMessage="No completed sittings recorded."
+                  />
+                </DashboardSection>
+              ) : null}
+            </div>
 
-      {magistrate.sitting_summary.dj_cancellations.total > 0 && (
-        <DjCancellationSection
-          report={magistrate.sitting_summary.dj_cancellations}
-          heading="District Judge cancellations"
-        />
-      )}
+            <div className="orion-profile-charts-grid orion-profile-charts-grid--three">
+              <DashboardSection
+                title="By location"
+                headingLevel={3}
+                description={`Sittings by courthouse for ${periodLabel}.`}
+              >
+                <ShowTableToggle
+                  tableCaption="Sittings by location"
+                  hasData={summary.by_location.length > 0}
+                  table={
+                    <>
+                      <thead className="govuk-table__head">
+                        <tr className="govuk-table__row">
+                          <th scope="col" className="govuk-table__header">
+                            Courthouse
+                          </th>
+                          <th scope="col" className="govuk-table__header">
+                            Sittings
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody className="govuk-table__body">
+                        {summary.by_location.map((row) => (
+                          <tr key={row.courthouse} className="govuk-table__row">
+                            <td className="govuk-table__cell">{row.courthouse}</td>
+                            <td className="govuk-table__cell">{row.sittings}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </>
+                  }
+                >
+                  <HorizontalBarChart
+                    rows={summary.by_location.map((row) => ({
+                      key: row.courthouse,
+                      label: row.courthouse,
+                      value: row.sittings,
+                    }))}
+                    emptyMessage="No sittings recorded."
+                    summaryContext={periodLabel}
+                    summaryId={locationSummaryId}
+                  />
+                </ShowTableToggle>
+              </DashboardSection>
 
-      <CourtRoomTable
-        rows={magistrate.sitting_summary.by_court_room}
-        heading="Sittings by court room"
-        emptyMessage="No court room data for this magistrate."
-      />
+              <DashboardSection
+                title="By court type"
+                headingLevel={3}
+                description={`Sittings by court type for ${periodLabel}.`}
+              >
+                <ShowTableToggle
+                  tableCaption="Sittings by court type"
+                  hasData={summary.by_court_type.length > 0}
+                  table={
+                    <>
+                      <thead className="govuk-table__head">
+                        <tr className="govuk-table__row">
+                          <th scope="col" className="govuk-table__header">
+                            Court type
+                          </th>
+                          <th scope="col" className="govuk-table__header">
+                            Sittings
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody className="govuk-table__body">
+                        {summary.by_court_type.map((row) => (
+                          <tr key={row.court_type} className="govuk-table__row">
+                            <td className="govuk-table__cell">{row.court_type}</td>
+                            <td className="govuk-table__cell">{row.sittings}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </>
+                  }
+                >
+                  <HorizontalBarChart
+                    rows={summary.by_court_type.map((row) => ({
+                      key: row.court_type,
+                      label: row.court_type,
+                      value: row.sittings,
+                    }))}
+                    emptyMessage="No court types recorded."
+                    summaryContext={periodLabel}
+                    summaryId={courtTypeSummaryId}
+                  />
+                </ShowTableToggle>
+              </DashboardSection>
 
-      <SittingHistoryChart
-        sittings={magistrate.sittings}
-        periodLabel={magistrate.period?.label ?? periodFilterLabel(periodFilter)}
-      />
+              <DashboardSection
+                title="By sitting type"
+                headingLevel={3}
+                description={`Sittings by type for ${periodLabel}.`}
+              >
+                <ShowTableToggle
+                  tableCaption="Sittings by sitting type"
+                  hasData={summary.by_sitting_type.length > 0}
+                  table={
+                    <>
+                      <thead className="govuk-table__head">
+                        <tr className="govuk-table__row">
+                          <th scope="col" className="govuk-table__header">
+                            Type
+                          </th>
+                          <th scope="col" className="govuk-table__header">
+                            Sittings
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody className="govuk-table__body">
+                        {summary.by_sitting_type.map((row) => (
+                          <tr key={row.sitting_type} className="govuk-table__row">
+                            <td className="govuk-table__cell">{row.sitting_type}</td>
+                            <td className="govuk-table__cell">{row.sittings}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </>
+                  }
+                >
+                  <HorizontalBarChart
+                    rows={summary.by_sitting_type.map((row) => ({
+                      key: row.sitting_type,
+                      label: row.sitting_type,
+                      value: row.sittings,
+                    }))}
+                    emptyMessage="No sitting types recorded."
+                    summaryContext={periodLabel}
+                    summaryId={sittingTypeSummaryId}
+                  />
+                </ShowTableToggle>
+              </DashboardSection>
+            </div>
+
+            {summary.dj_cancellations.total > 0 && (
+              <DjCancellationSection
+                report={summary.dj_cancellations}
+                heading="District Judge cancellations"
+              />
+            )}
+
+            <DashboardSection
+              title="Sittings by court room"
+              headingLevel={3}
+              description={`Completed, vacated and cancelled sittings by court room for ${periodLabel}.`}
+            >
+              <ShowTableToggle
+                tableCaption="Sittings by court room"
+                hasData={summary.by_court_room.length > 0}
+                table={
+                  <>
+                    <thead className="govuk-table__head">
+                      <tr className="govuk-table__row">
+                        <th scope="col" className="govuk-table__header">
+                          Courthouse
+                        </th>
+                        <th scope="col" className="govuk-table__header">
+                          Court room
+                        </th>
+                        <th scope="col" className="govuk-table__header">
+                          Total
+                        </th>
+                        <th scope="col" className="govuk-table__header">
+                          Completed
+                        </th>
+                        <th scope="col" className="govuk-table__header">
+                          Vacated
+                        </th>
+                        <th scope="col" className="govuk-table__header">
+                          Cancelled
+                        </th>
+                        <th scope="col" className="govuk-table__header">
+                          Cancelled by DJ
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="govuk-table__body">
+                      {summary.by_court_room.map((row) => (
+                        <tr key={`${row.courthouse}-${row.court_room}`} className="govuk-table__row">
+                          <td className="govuk-table__cell">{row.courthouse}</td>
+                          <td className="govuk-table__cell">{row.court_room}</td>
+                          <td className="govuk-table__cell">{row.sittings}</td>
+                          <td className="govuk-table__cell">{row.completed}</td>
+                          <td className="govuk-table__cell">{row.vacated}</td>
+                          <td className="govuk-table__cell">{row.cancelled}</td>
+                          <td className="govuk-table__cell">{row.cancelled_by_dj}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </>
+                }
+              >
+                <StackedBarChart
+                  rows={summary.by_court_room.map((row) =>
+                    courtRoomStackRow(row.courthouse, row.court_room, {
+                      completed: row.completed,
+                      vacated: row.vacated,
+                      cancelled: row.cancelled,
+                    })
+                  )}
+                  emptyMessage="No court room data for this magistrate."
+                  summaryContext={periodLabel}
+                  summaryId={courtRoomSummaryId}
+                />
+              </ShowTableToggle>
+            </DashboardSection>
+
+            <SittingHistoryChart sittings={magistrate.sittings} periodLabel={periodLabel} />
+      </>
 
       {magistrate.sittings.length === 0 ? (
         <p className="govuk-body">No individual sittings recorded.</p>

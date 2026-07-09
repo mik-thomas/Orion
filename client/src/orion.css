@@ -607,8 +607,9 @@
   width: 100%;
 }
 
-/* Sitting history chart — monthly stacked bar on magistrate profile */
+/* Charts — shared SVG styles for magistrate profile summaries */
 
+.orion-chart__svg,
 .orion-sitting-history-chart__svg {
   display: block;
   width: 100%;
@@ -616,12 +617,22 @@
   height: auto;
 }
 
+.orion-chart__svg--donut {
+  max-width: 14rem;
+}
+
+.orion-chart__donut-figure {
+  max-width: 14rem;
+}
+
+.orion-chart__axis-label,
 .orion-sitting-history-chart__axis-label {
   font-family: "GDS Transport", arial, sans-serif;
   font-size: 11px;
   fill: #505a5f;
 }
 
+.orion-chart__axis-title,
 .orion-sitting-history-chart__axis-title {
   font-family: "GDS Transport", arial, sans-serif;
   font-size: 12px;
@@ -629,6 +640,14 @@
   fill: #0b0c0c;
 }
 
+.orion-chart__donut-centre {
+  font-family: "GDS Transport", arial, sans-serif;
+  font-size: 18px;
+  font-weight: 700;
+  fill: #0b0c0c;
+}
+
+.orion-chart__legend,
 .orion-sitting-history-chart__legend {
   display: flex;
   flex-wrap: wrap;
@@ -637,6 +656,7 @@
   padding: 0;
 }
 
+.orion-chart__legend-item,
 .orion-sitting-history-chart__legend-item {
   display: flex;
   align-items: center;
@@ -644,12 +664,34 @@
   margin: 0;
 }
 
+.orion-chart__swatch,
 .orion-sitting-history-chart__swatch {
   display: inline-block;
   width: 1rem;
   height: 1rem;
   border: 1px solid #0b0c0c;
   flex-shrink: 0;
+}
+
+.orion-profile-charts-grid {
+  display: grid;
+  gap: 1.5rem;
+  margin-bottom: 2.5rem;
+}
+
+.orion-profile-charts-grid--two {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.orion-profile-charts-grid--three {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+@media (max-width: 48.0625em) {
+  .orion-profile-charts-grid--two,
+  .orion-profile-charts-grid--three {
+    grid-template-columns: 1fr;
+  }
 }
 
 .orion-dashboard-hint {
