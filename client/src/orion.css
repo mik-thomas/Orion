@@ -40,3 +40,13 @@
   color: #ffffff;
   opacity: 0.9;
 }
+
+.orion-header__role {
+  margin-left: auto;
+}
+
+.orion-role-selector__select {
+  min-width: 11rem;
+  color: #0b0c0c;
+  background-color: #ffffff;
+}

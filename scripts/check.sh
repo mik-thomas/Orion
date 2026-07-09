@@ -7,6 +7,9 @@ cd "$ROOT"
 echo "==> Smoke tests"
 npm test
 
+echo "==> API role serialization tests"
+(cd api && bin/rails test test/controllers/api/v1/magistrate_role_serialization_test.rb)
+
 echo "==> Client production build"
 npm run test:client
 

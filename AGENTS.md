@@ -23,6 +23,17 @@ Manual equivalent: branch off `main` → PR → CI green → merge → Railway.
 
 Do not use `railway up` for normal releases.
 
+## Role-based magistrate visibility (MVP)
+
+Access is controlled by the `X-Orion-Role` request header (set from the client role dropdown, persisted in `localStorage`). This is **not** real authentication — production needs proper SSO and server-side authorization.
+
+| Role | Sees names | Roster (`/magistrates/roster`) |
+| --- | --- | --- |
+| HMCTS-SLM, Developer | Yes | Yes |
+| Bench Chair, Deputy | Reference codes only | No (403) |
+
+Default role when the header is missing: **Deputy** (most restrictive).
+
 ## Railway production (monorepo)
 
 Both services deploy from `main` on GitHub (`mik-thomas/Orion`):

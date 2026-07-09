@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2026_07_09_020000) do
+ActiveRecord::Schema[7.1].define(version: 2026_07_09_030000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
 
@@ -82,9 +82,11 @@ ActiveRecord::Schema[7.1].define(version: 2026_07_09_020000) do
     t.string "last_appraiser"
     t.date "last_login_on"
     t.integer "days_since_login"
+    t.string "reference_code"
     t.index ["email"], name: "index_magistrates_on_email"
     t.index ["home_courthouse_id"], name: "index_magistrates_on_home_courthouse_id"
     t.index ["last_name", "first_name"], name: "index_magistrates_on_last_name_and_first_name"
+    t.index ["reference_code"], name: "index_magistrates_on_reference_code", unique: true
   end
 
   create_table "notes", force: :cascade do |t|

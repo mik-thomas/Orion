@@ -1,6 +1,10 @@
 import { Link, Outlet } from "react-router-dom";
+import { RoleSelector } from "../components/RoleSelector";
+import { useRole } from "../context/RoleContext";
 
 export function GovUkLayout() {
+  const { canViewRoster } = useRole();
+
   return (
     <div className="govuk-template">
       <a href="#main-content" className="govuk-skip-link" data-module="govuk-skip-link">
@@ -43,10 +47,20 @@ export function GovUkLayout() {
                   On leave
                 </Link>
               </li>
+              {canViewRoster && (
+                <li className="govuk-header__navigation-item">
+                  <Link to="/magistrates/roster" className="govuk-header__link">
+                    Roster
+                  </Link>
+                </li>
+              )}
               <li className="govuk-header__navigation-item">
                 <Link to="/reports" className="govuk-header__link">
                   Reports
                 </Link>
+              </li>
+              <li className="govuk-header__navigation-item orion-header__role">
+                <RoleSelector />
               </li>
             </ul>
           </nav>
@@ -58,7 +72,7 @@ export function GovUkLayout() {
           <p className="govuk-phase-banner__content">
             <strong className="govuk-tag govuk-phase-banner__content__tag">Beta</strong>
             <span className="govuk-phase-banner__text">
-              This is a new service — sitting data imports will be added soon.
+              Role selection is for demonstration — production needs proper sign-in and access control.
             </span>
           </p>
         </div>

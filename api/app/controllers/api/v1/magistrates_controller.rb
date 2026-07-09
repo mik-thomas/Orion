@@ -6,6 +6,7 @@ module Api
 
       before_action :set_magistrate, only: %i[show update destroy]
       before_action :validate_period_filter!, only: :show
+      before_action :require_roster_access!, only: :roster
 
       def index
         magistrates = Magistrate.includes(:home_courthouse, :leaves_of_absence, :sitting_locations)
@@ -21,6 +22,13 @@ module Api
           .order(:last_name, :first_name)
 
         render json: magistrates.map { |magistrate| magistrate_summary_json(magistrate) }
+      end
+
+      def roster
+        magistrates = Magistrate.includes(:home_courthouse)
+          .order(:reference_code)
+
+        render json: magistrates.map { |magistrate| magistrate_roster_json(magistrate) }
       end
 
       def show
@@ -89,8 +97,10 @@ module Api
           .pluck(:id)
 
         scope.where(
-          "magistrates.first_name ILIKE :q OR magistrates.last_name ILIKE :q OR magistrates.email ILIKE :q " \
-          "OR magistrates.home_courthouse_id IN (:court_ids) OR magistrates.id IN (:magistrate_ids)",
+          "magistrates.first_name ILIKE :q OR magistrates.last_name ILIKE :q " \
+          "OR magistrates.reference_code ILIKE :q " \
+          "OR magistrates.home_courthouse_id IN (:court_ids) OR magistrates.id IN (:magistrate_ids)" \
+          "#{names_visible? ? ' OR magistrates.email ILIKE :q' : ''}",
           q: pattern,
           court_ids: courthouse_ids.presence || [0],
           magistrate_ids: sitting_magistrate_ids.presence || [0]

@@ -119,9 +119,7 @@ GEM
       net-smtp
     marcel (1.2.1)
     mini_mime (1.1.5)
-    minitest (6.0.6)
-      drb (~> 2.0)
-      prism (~> 1.5)
+    minitest (5.27.0)
     msgpack (1.8.3)
     mutex_m (0.3.0)
     net-imap (0.6.4.1)
@@ -249,6 +247,7 @@ PLATFORMS
 DEPENDENCIES
   bootsnap
   debug
+  minitest (~> 5.25)
   pg (~> 1.1)
   puma (>= 5.0)
   rack-cors

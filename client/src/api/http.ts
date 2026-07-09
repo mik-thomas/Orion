@@ -1,4 +1,5 @@
 import { apiUrl } from "./apiUrl";
+import { loadStoredRole } from "../lib/role";
 
 export class ApiError extends Error {
   status: number;
@@ -13,6 +14,7 @@ export async function request<T>(path: string, options?: RequestInit): Promise<T
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
     Accept: "application/json",
+    "X-Orion-Role": loadStoredRole(),
     ...(options?.headers as Record<string, string> | undefined),
   };
 

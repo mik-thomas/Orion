@@ -55,12 +55,16 @@ export interface ComplianceViolation {
   year: string | null;
 }
 
+export type Role = "HMCTS-SLM" | "Developer" | "Bench Chair" | "Deputy";
+
 export interface MagistrateSummary {
   id: number;
-  first_name: string;
-  last_name: string;
-  full_name: string;
-  email: string | null;
+  reference_code: string;
+  display_name: string;
+  name_visible: boolean;
+  first_name: string | null;
+  last_name: string | null;
+  full_name: string | null;
   date_of_appointment: string | null;
   reasonable_adjustments: string | null;
   home_courthouse: Courthouse | null;
@@ -83,6 +87,7 @@ export interface MagistrateSummary {
 export interface Sitting {
   id: number;
   magistrate_id: number;
+  magistrate_name?: string;
   courthouse_id: number;
   sitting_type_id: number;
   session_date: string;
@@ -231,4 +236,12 @@ export interface ReportsOverview {
     days_since_login: number | null;
   }>;
   note: string;
+}
+
+export interface MagistrateRosterEntry {
+  id: number;
+  reference_code: string;
+  full_name: string;
+  home_courthouse: string | null;
+  email: string | null;
 }

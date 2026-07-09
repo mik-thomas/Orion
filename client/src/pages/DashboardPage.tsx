@@ -8,6 +8,7 @@ import { LoginReportTable } from "../components/LoginReportTable";
 import { CourtRoomTable } from "../components/CourtRoomTable";
 import { DjCancellationSection } from "../components/DjCancellationSection";
 import { PeriodFilter } from "../components/PeriodFilter";
+import { useRole } from "../context/RoleContext";
 import {
   defaultPeriodFilter,
   periodFilterQuery,
@@ -16,6 +17,7 @@ import {
 import type { MagistrateSummary, ReportsOverview } from "../types/domain";
 
 export function DashboardPage() {
+  const { role, canViewNames } = useRole();
   const [query, setQuery] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
   const [periodFilter, setPeriodFilter] = useState<PeriodFilterState>(defaultPeriodFilter());
@@ -36,7 +38,7 @@ export function DashboardPage() {
         setError(err instanceof ApiError ? err.message : "Failed to load sitting data");
       })
       .finally(() => setLoading(false));
-  }, [periodFilter]);
+  }, [periodFilter, role]);
 
   useEffect(() => {
     if (!searchTerm) {
@@ -49,7 +51,7 @@ export function DashboardPage() {
       .catch((err: unknown) => {
         setError(err instanceof ApiError ? err.message : "Search failed");
       });
-  }, [searchTerm]);
+  }, [searchTerm, role]);
 
   function handleSearch(event: FormEvent) {
     event.preventDefault();
@@ -70,7 +72,9 @@ export function DashboardPage() {
             Search magistrates
           </label>
           <div id="search-hint" className="govuk-hint">
-            Search by name, email, home court, sitting location or bench.
+            {canViewNames
+              ? "Search by name, email, reference code, home court, sitting location or bench."
+              : "Search by reference code, home court, sitting location or bench."}
           </div>
           <input
             className="govuk-input govuk-!-width-two-thirds"
@@ -106,7 +110,7 @@ export function DashboardPage() {
               <thead className="govuk-table__head">
                 <tr className="govuk-table__row">
                   <th scope="col" className="govuk-table__header">
-                    Name
+                    {canViewNames ? "Name" : "Reference"}
                   </th>
                   <th scope="col" className="govuk-table__header">
                     Home court
@@ -120,7 +124,7 @@ export function DashboardPage() {
                 {results.map((magistrate) => (
                   <tr key={magistrate.id} className="govuk-table__row">
                     <td className="govuk-table__cell">
-                      <MagistrateLink id={magistrate.id} name={magistrate.full_name} />
+                      <MagistrateLink id={magistrate.id} name={magistrate.display_name} />
                     </td>
                 <td className="govuk-table__cell">{magistrate.home_courthouse?.name ?? "—"}</td>
                 <td className="govuk-table__cell">{magistrate.home_courthouse?.bench ?? "—"}</td>

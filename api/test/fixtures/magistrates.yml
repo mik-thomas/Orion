@@ -1,0 +1,19 @@
+alice:
+  first_name: Alice
+  last_name: Example
+  email: alice@example.com
+  reference_code: SY-0001
+  cluster: South Yorkshire
+  bench: Adult
+  home_courthouse: one
+  active: true
+
+bob:
+  first_name: Bob
+  last_name: Sample
+  email: bob@example.com
+  reference_code: SY-0002
+  cluster: South Yorkshire
+  bench: Adult
+  home_courthouse: two
+  active: true

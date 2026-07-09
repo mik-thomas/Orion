@@ -3,9 +3,11 @@ import { Link } from "react-router-dom";
 import { listMagistrates } from "../api/magistrates";
 import { ApiError } from "../api/http";
 import { MagistrateLink } from "../components/MagistrateLink";
+import { useRole } from "../context/RoleContext";
 import type { MagistrateSummary } from "../types/domain";
 
 export function MagistratesPage() {
+  const { role, canViewNames } = useRole();
   const [magistrates, setMagistrates] = useState<MagistrateSummary[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -15,7 +17,7 @@ export function MagistratesPage() {
       .then(setMagistrates)
       .catch((err: unknown) => setError(err instanceof ApiError ? err.message : "Failed to load magistrates"))
       .finally(() => setLoading(false));
-  }, []);
+  }, [role]);
 
   return (
     <>
@@ -44,7 +46,7 @@ export function MagistratesPage() {
           <thead className="govuk-table__head">
             <tr className="govuk-table__row">
               <th scope="col" className="govuk-table__header">
-                Name
+                {canViewNames ? "Name" : "Reference"}
               </th>
               <th scope="col" className="govuk-table__header">
                 Home court
@@ -64,7 +66,7 @@ export function MagistratesPage() {
             {magistrates.map((magistrate) => (
               <tr key={magistrate.id} className="govuk-table__row">
                 <td className="govuk-table__cell">
-                  <MagistrateLink id={magistrate.id} name={magistrate.full_name} />
+                  <MagistrateLink id={magistrate.id} name={magistrate.display_name} />
                 </td>
                 <td className="govuk-table__cell">{magistrate.home_courthouse?.name ?? "—"}</td>
                 <td className="govuk-table__cell">{magistrate.date_of_appointment ?? "—"}</td>

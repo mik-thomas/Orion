@@ -55,7 +55,8 @@ module Orion
     SHEFFIELD_AT_BARNSLEY_MIN_COUNT = 2
     SHEFFIELD_AT_BARNSLEY_MIN_PCT = 30
 
-    def home_court_movement_report_for(scope)
+    def home_court_movement_report_for(scope, role: Orion::Role::DEFAULT)
+      display_name = ->(magistrate) { Orion::Role.display_name(magistrate, role) }
       completed = scope.completed
         .joins(magistrate: :home_courthouse)
         .joins(:courthouse)
@@ -113,12 +114,12 @@ module Orion
         .map do |magistrate|
           {
             "magistrate_id" => magistrate.id,
-            "magistrate" => magistrate.full_name,
+            "magistrate" => display_name.call(magistrate),
             "home_courthouse" => magistrate.home_courthouse.name
           }
         end
 
-      sheffield_at_barnsley = sheffield_at_barnsley_flags(completed, magistrate_completed)
+      sheffield_at_barnsley = sheffield_at_barnsley_flags(completed, magistrate_completed, display_name)
 
       totals_at_home = pair_counts.sum { |(home, sitting), count| home == sitting ? count : 0 }
       totals_away = pair_counts.sum { |(home, sitting), count| home != sitting ? count : 0 }
@@ -143,7 +144,7 @@ module Orion
       }
     end
 
-    def sheffield_at_barnsley_flags(completed_scope, magistrate_completed_counts)
+    def sheffield_at_barnsley_flags(completed_scope, magistrate_completed_counts, display_name)
       sheffield_home = completed_scope.where(courthouses: { name: "Sheffield" })
 
       barnsley_sittings = sheffield_home
@@ -165,7 +166,7 @@ module Orion
 
           {
             "magistrate_id" => magistrate.id,
-            "magistrate" => magistrate.full_name,
+            "magistrate" => display_name.call(magistrate),
             "barnsley_sittings" => barnsley_count,
             "total_completed" => total,
             "barnsley_pct" => pct

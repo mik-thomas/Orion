@@ -6,6 +6,7 @@ import { ComplianceViolations } from "../components/ComplianceViolations";
 import { CourtRoomTable } from "../components/CourtRoomTable";
 import { DjCancellationSection } from "../components/DjCancellationSection";
 import { PeriodFilter } from "../components/PeriodFilter";
+import { useRole } from "../context/RoleContext";
 import {
   defaultPeriodFilter,
   periodFilterQuery,
@@ -32,6 +33,7 @@ function sittingStatusLabel(sitting: Sitting) {
 
 export function MagistrateProfilePage() {
   const { id } = useParams();
+  const { role, canViewNames } = useRole();
   const [magistrate, setMagistrate] = useState<MagistrateDetail | null>(null);
   const [periodFilter, setPeriodFilter] = useState<PeriodFilterState>(defaultPeriodFilter());
   const [availableYears, setAvailableYears] = useState<string[]>([]);
@@ -50,7 +52,7 @@ export function MagistrateProfilePage() {
       })
       .catch((err: unknown) => setError(err instanceof ApiError ? err.message : "Failed to load profile"))
       .finally(() => setLoading(false));
-  }, [id, periodFilter]);
+  }, [id, periodFilter, role]);
 
   if (loading) return <p className="govuk-body">Loading…</p>;
   if (error || !magistrate) {
@@ -74,12 +76,17 @@ export function MagistrateProfilePage() {
             </Link>
           </li>
           <li className="govuk-breadcrumbs__list-item" aria-current="page">
-            {magistrate.full_name}
+            {magistrate.display_name}
           </li>
         </ol>
       </nav>
 
-      <h1 className="govuk-heading-xl">{magistrate.full_name}</h1>
+      <h1 className="govuk-heading-xl">{magistrate.display_name}</h1>
+      {!canViewNames && (
+        <p className="govuk-body-l">
+          Reference <strong>{magistrate.reference_code}</strong> — personal details are hidden for your role.
+        </p>
+      )}
 
       <ComplianceViolations violations={magistrate.violations} />
 
@@ -103,6 +110,16 @@ export function MagistrateProfilePage() {
       )}
 
       <dl className="govuk-summary-list">
+        <div className="govuk-summary-list__row">
+          <dt className="govuk-summary-list__key">Reference code</dt>
+          <dd className="govuk-summary-list__value">{magistrate.reference_code}</dd>
+        </div>
+        {canViewNames && magistrate.full_name && (
+          <div className="govuk-summary-list__row">
+            <dt className="govuk-summary-list__key">Full name</dt>
+            <dd className="govuk-summary-list__value">{magistrate.full_name}</dd>
+          </div>
+        )}
         <div className="govuk-summary-list__row">
           <dt className="govuk-summary-list__key">Cluster / bench</dt>
           <dd className="govuk-summary-list__value">

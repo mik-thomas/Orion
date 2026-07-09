@@ -31,7 +31,7 @@ module Api
           away_from_home: away_from_home_counts(scoped_sittings),
           by_sitting_type: sitting_type_counts(scoped_sittings),
           dj_cancellations: Orion::SittingReports.dj_cancellation_report_for(scoped_sittings),
-          home_court_movement: Orion::SittingReports.home_court_movement_report_for(scoped_sittings),
+          home_court_movement: Orion::SittingReports.home_court_movement_report_for(scoped_sittings, role: current_role),
           login_report: login_report_rows,
           note: overview_note(filter)
         }
@@ -73,7 +73,7 @@ module Api
 
           entry = counts[sitting.magistrate_id] ||= {
             magistrate_id: sitting.magistrate_id,
-            magistrate: sitting.magistrate.full_name,
+            magistrate: magistrate_display_name(sitting.magistrate),
             away_sittings: 0
           }
           entry[:away_sittings] += 1
@@ -98,7 +98,7 @@ module Api
           .map do |magistrate|
             {
               magistrate_id: magistrate.id,
-              magistrate: magistrate.full_name,
+              magistrate: magistrate_display_name(magistrate),
               last_login_on: magistrate.last_login_on,
               days_since_login: magistrate.days_since_login
             }

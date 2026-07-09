@@ -9,14 +9,38 @@ module JsonRenderable
 
       def magistrate_summary_json(magistrate)
         violations = magistrate.compliance_violations
-        magistrate.as_json(only: %i[id first_name last_name email date_of_appointment reasonable_adjustments title frequency sitting_pattern leaving_date leaving_reason active cluster bench bench_role appraisal_status appraisal_cycle_years presiding_justice last_appraisal_on last_appraiser last_login_on days_since_login]).merge(
-          "full_name" => magistrate.full_name,
+        base = magistrate.as_json(
+          only: magistrate_summary_fields
+        ).merge(
+          "reference_code" => magistrate.reference_code,
+          "display_name" => magistrate_display_name(magistrate),
+          "name_visible" => names_visible?,
           "home_courthouse" => magistrate.home_courthouse && courthouse_json(magistrate.home_courthouse),
           "active_leave" => magistrate.active_leave?,
           "current_leaves" => magistrate.current_leaves.map { |leave| leave_json(leave) },
           "violations" => violations,
           "has_violations" => violations.any?
         )
+
+        if names_visible?
+          base.merge("full_name" => magistrate.full_name)
+        else
+          base.merge("full_name" => nil, "first_name" => nil, "last_name" => nil)
+        end
+      end
+
+      def magistrate_summary_fields
+        fields = %i[
+          id reference_code date_of_appointment reasonable_adjustments title frequency sitting_pattern
+          leaving_date leaving_reason active cluster bench bench_role appraisal_status appraisal_cycle_years
+          presiding_justice last_appraisal_on last_appraiser last_login_on days_since_login
+        ]
+        fields += %i[first_name last_name] if names_visible?
+        fields
+      end
+
+      def magistrate_display_name(magistrate)
+        Orion::Role.display_name(magistrate, current_role)
       end
 
       def magistrate_detail_json(magistrate, period: nil)
@@ -40,6 +64,16 @@ module JsonRenderable
           "sitting_summary" => magistrate_sitting_summary_json(magistrate, sittings: filtered_sittings),
           "sittings" => filtered_sittings.ordered.map { |sitting| sitting_json(sitting) }
         )
+      end
+
+      def magistrate_roster_json(magistrate)
+        {
+          "id" => magistrate.id,
+          "reference_code" => magistrate.reference_code,
+          "full_name" => magistrate.full_name,
+          "home_courthouse" => magistrate.home_courthouse&.name,
+          "email" => magistrate.email
+        }
       end
 
       def compliance_violations_for_period(magistrate, period)
@@ -128,7 +162,7 @@ module JsonRenderable
 
       def sitting_json(sitting)
         sitting.as_json(only: %i[id magistrate_id courthouse_id sitting_type_id session_date session status court_type sitting_position court_room starts_at ends_at vacated vacated_reason venue_name position panel business_type justice_area ad_hoc event_at notice_days action_reason action_by cancellation_category]).merge(
-          "magistrate_name" => sitting.magistrate.full_name,
+          "magistrate_name" => magistrate_display_name(sitting.magistrate),
           "courthouse" => courthouse_json(sitting.courthouse),
           "sitting_type" => sitting_type_json(sitting.sitting_type),
           "away_from_home_court" => sitting.magistrate.home_courthouse_id.present? && sitting.courthouse_id != sitting.magistrate.home_courthouse_id

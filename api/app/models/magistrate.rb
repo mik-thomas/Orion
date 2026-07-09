@@ -14,6 +14,10 @@ class Magistrate < ApplicationRecord
 
   validates :first_name, :last_name, presence: true
   validates :cluster, :bench, presence: true
+  validates :reference_code, uniqueness: true, allow_nil: true
+  validates :reference_code, presence: true, unless: :new_record?
+
+  after_create :ensure_reference_code!
 
   def full_name
     "#{first_name} #{last_name}"
@@ -42,5 +46,11 @@ class Magistrate < ApplicationRecord
 
   def compliance_violations(as_of: Date.current, fiscal_year_label: nil)
     Orion::MagistrateCompliance.violations_for(self, as_of:, fiscal_year_label:)
+  end
+
+  def ensure_reference_code!
+    return if reference_code.present?
+
+    update_column(:reference_code, "SY-#{format('%04d', id)}")
   end
 end
