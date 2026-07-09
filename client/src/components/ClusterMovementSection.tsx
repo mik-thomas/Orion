@@ -32,7 +32,7 @@ export function ClusterMovementSection({ report }: ClusterMovementSectionProps) 
       title="Movement across the cluster"
       tag={`${summary.away_pct}% away`}
       tagColour={summary.away_pct >= 30 ? "yellow" : "grey"}
-      description="Completed sittings in the current fiscal year, grouped by magistrate home court and actual sitting location. Diagonal cells are sittings at home; off-diagonal cells are away sittings."
+      description="Fiscal-year completed sittings by home court and sitting location (off-diagonal cells are away sittings)."
     >
       <div className="orion-dashboard-stats orion-dashboard-stats--primary orion-dashboard-stats--cols-4">
         <DashboardStat label="Completed sittings">{summary.total_completed_sittings}</DashboardStat>
@@ -46,7 +46,7 @@ export function ClusterMovementSection({ report }: ClusterMovementSectionProps) 
       </div>
 
       {summary.magistrates_missing_home_court > 0 && (
-        <p className="govuk-body govuk-hint govuk-!-margin-bottom-4">
+        <p className="orion-dashboard-footnote">
           {summary.magistrates_missing_home_court} magistrate
           {summary.magistrates_missing_home_court === 1 ? "" : "s"} without a recorded home court are excluded from
           this analysis.

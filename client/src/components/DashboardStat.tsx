@@ -35,7 +35,7 @@ export function DashboardStat({
   return (
     <div className={`orion-dashboard-stat${sizeClass}`}>
       <p
-        className={`orion-dashboard-stat__label govuk-body-s govuk-!-font-weight-bold govuk-!-margin-bottom-2${toneClass}`}
+        className={`orion-dashboard-stat__label govuk-body-s govuk-!-font-weight-bold govuk-!-margin-bottom-0${toneClass}`}
       >
         {label}
       </p>
