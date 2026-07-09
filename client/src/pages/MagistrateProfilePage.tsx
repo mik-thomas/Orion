@@ -36,6 +36,13 @@ import { SittingStatusCell } from "../lib/sittingStatus";
 import { isRetirementAlertDismissed, isRetiringSoon } from "../lib/retirement";
 import type { CourtRoomRow, LeaveOfAbsence, MagistrateDetail } from "../types/domain";
 
+function formatUkDate(value: string | null) {
+  if (!value) return null;
+  const date = new Date(`${value}T00:00:00`);
+  if (Number.isNaN(date.getTime())) return value;
+  return date.toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" });
+}
+
 function ProfileCourtRoomBreakdownTable({ rows }: { rows: CourtRoomRow[] }) {
   const sortColumns = useMemo(
     () => ({
@@ -351,7 +358,16 @@ export function MagistrateProfilePage() {
         </div>
         <div className="govuk-summary-list__row">
           <dt className="govuk-summary-list__key">Last rota login</dt>
-          <dd className="govuk-summary-list__value">{magistrate.last_login_on ?? "Not recorded"}</dd>
+          <dd className="govuk-summary-list__value">
+            {formatUkDate(magistrate.last_login_on) ?? (
+              <>
+                Not in rota login report
+                <span className="govuk-hint govuk-!-margin-top-1 govuk-!-margin-bottom-0">
+                  Login dates come from the Northeast Rota Last Login spreadsheet (77 magistrates).
+                </span>
+              </>
+            )}
+          </dd>
         </div>
         <div className="govuk-summary-list__row">
           <dt className="govuk-summary-list__key">Days since login</dt>
@@ -365,7 +381,7 @@ export function MagistrateProfilePage() {
                 magistrate.days_since_login
               )
             ) : (
-              "Not recorded"
+              "Not in rota login report"
             )}
           </dd>
         </div>

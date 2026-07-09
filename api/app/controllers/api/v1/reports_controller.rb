@@ -108,13 +108,13 @@ module Api
 
       def login_report_rows
         Magistrate.where.not(last_login_on: nil)
-          .order(days_since_login: :desc, last_login_on: :asc)
+          .sort_by { |magistrate| [-magistrate.computed_days_since_login.to_i, magistrate.last_login_on.to_s] }
           .map do |magistrate|
             {
               magistrate_id: magistrate.id,
               magistrate: magistrate_display_name(magistrate),
               last_login_on: magistrate.last_login_on,
-              days_since_login: magistrate.days_since_login
+              days_since_login: magistrate.computed_days_since_login
             }
           end
       end

@@ -22,7 +22,8 @@ module JsonRenderable
           "has_violations" => violations.any?,
           "sitting_commitment" => magistrate.sitting_commitment,
           "sitting_forecast" => magistrate.sitting_forecast,
-          "sitting_score" => magistrate.sitting_score
+          "sitting_score" => magistrate.sitting_score,
+          "days_since_login" => magistrate.computed_days_since_login
         )
 
         if names_visible?

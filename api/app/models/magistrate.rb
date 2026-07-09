@@ -87,4 +87,11 @@ class Magistrate < ApplicationRecord
     days = days_until_retirement(as_of:)
     days.present? && days >= 0 && days <= threshold_days
   end
+
+  def computed_days_since_login(as_of: Date.current)
+    return days_since_login if days_since_login.present?
+    return nil unless last_login_on
+
+    (as_of - last_login_on).to_i
+  end
 end
