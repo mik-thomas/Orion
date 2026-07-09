@@ -1,5 +1,5 @@
 import type { SittingDrillDownRow } from "../types/domain";
-import { cancellationCategoryLabel } from "./cancellationCategory";
+import { cancellationCategoryLabel, cancellationCategoryTagColour } from "./cancellationCategory";
 
 export function sittingStatusLabel(sitting: {
   status: string;
@@ -20,7 +20,10 @@ export function sittingStatusLabel(sitting: {
   }
 }
 
-function statusTagClass(status: string): string {
+function statusTagClass(status: string, cancellationCategory?: string | null): string {
+  const categoryColour = cancellationCategoryTagColour(status, cancellationCategory);
+  if (categoryColour) return `govuk-tag govuk-tag--${categoryColour}`;
+
   if (status === "vacated") return "govuk-tag govuk-tag--yellow";
   if (status === "cancelled") return "govuk-tag govuk-tag--red";
   return "govuk-tag";
@@ -37,5 +40,7 @@ export function SittingStatusCell({
     return <>{label}</>;
   }
 
-  return <strong className={statusTagClass(sitting.status)}>{label}</strong>;
+  return (
+    <strong className={statusTagClass(sitting.status, sitting.cancellation_category)}>{label}</strong>
+  );
 }
