@@ -1,9 +1,11 @@
-import { useId } from "react";
+import { useId, useMemo } from "react";
 import { MagistrateLink } from "./MagistrateLink";
 import { DashboardSection } from "./DashboardSection";
+import { SortableTableHeader } from "./SortableTableHeader";
 import { ChartTableToggle } from "./charts/ChartTableToggle";
 import { HorizontalBarChart } from "./charts/HorizontalBarChart";
 import { loginReportBucketRows } from "./charts/chartAggregations";
+import { useTableSort } from "../lib/useTableSort";
 
 export interface LoginReportRow {
   magistrate_id: number;
@@ -24,6 +26,21 @@ export function LoginReportTable({
   emptyMessage = "No login data recorded yet.",
 }: LoginReportTableProps) {
   const summaryId = useId();
+  const sortColumns = useMemo(
+    () => ({
+      magistrate: { getValue: (row: LoginReportRow) => row.magistrate },
+      last_login_on: { getValue: (row: LoginReportRow) => row.last_login_on, type: "date" as const },
+      days_since_login: {
+        getValue: (row: LoginReportRow) => row.days_since_login ?? -1,
+        type: "number" as const,
+      },
+    }),
+    []
+  );
+  const { sort, toggleSort, sortedData } = useTableSort(rows, sortColumns, {
+    key: "days_since_login",
+    direction: "desc",
+  });
   const staleCount = rows.filter((row) => row.days_since_login != null && row.days_since_login >= 90).length;
 
   return (
@@ -51,19 +68,19 @@ export function LoginReportTable({
             <>
               <thead className="govuk-table__head">
                 <tr className="govuk-table__row">
-                  <th scope="col" className="govuk-table__header">
+                  <SortableTableHeader columnKey="magistrate" sort={sort} onSort={toggleSort}>
                     Magistrate
-                  </th>
-                  <th scope="col" className="govuk-table__header">
+                  </SortableTableHeader>
+                  <SortableTableHeader columnKey="last_login_on" sort={sort} onSort={toggleSort}>
                     Last login
-                  </th>
-                  <th scope="col" className="govuk-table__header">
+                  </SortableTableHeader>
+                  <SortableTableHeader columnKey="days_since_login" sort={sort} onSort={toggleSort}>
                     Days since login
-                  </th>
+                  </SortableTableHeader>
                 </tr>
               </thead>
               <tbody className="govuk-table__body">
-                {rows.map((row) => (
+                {sortedData.map((row) => (
                   <tr key={row.magistrate_id} className="govuk-table__row">
                     <td className="govuk-table__cell">
                       <MagistrateLink id={row.magistrate_id} name={row.magistrate} />

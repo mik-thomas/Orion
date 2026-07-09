@@ -1,8 +1,10 @@
-import { useId } from "react";
+import { useId, useMemo } from "react";
 import type { DjCancellations } from "../types/domain";
 import type { PeriodFilterState } from "../lib/periodFilter";
+import { useTableSort } from "../lib/useTableSort";
 import { DashboardSection } from "./DashboardSection";
 import { DrillDownLink } from "./DrillDownLink";
+import { SortableTableHeader } from "./SortableTableHeader";
 import { ChartTableToggle } from "./charts/ChartTableToggle";
 import { HorizontalBarChart } from "./charts/HorizontalBarChart";
 
@@ -34,6 +36,17 @@ function DjBreakdownPanel({
   periodFilter?: PeriodFilterState;
 }) {
   const summaryId = useId();
+  const sortColumns = useMemo(
+    () => ({
+      label: { getValue: (row: DjBreakdownRow) => row.label },
+      value: { getValue: (row: DjBreakdownRow) => row.value, type: "number" as const },
+    }),
+    []
+  );
+  const { sort, toggleSort, sortedData } = useTableSort(rows, sortColumns, {
+    key: "value",
+    direction: "desc",
+  });
 
   if (rows.length === 0) {
     return (
@@ -67,16 +80,16 @@ function DjBreakdownPanel({
           <>
             <thead className="govuk-table__head">
               <tr className="govuk-table__row">
-                <th scope="col" className="govuk-table__header">
+                <SortableTableHeader columnKey="label" sort={sort} onSort={toggleSort}>
                   {title === "By court room" ? "Location" : title.replace("By ", "")}
-                </th>
-                <th scope="col" className="govuk-table__header">
+                </SortableTableHeader>
+                <SortableTableHeader columnKey="value" sort={sort} onSort={toggleSort}>
                   Cancelled
-                </th>
+                </SortableTableHeader>
               </tr>
             </thead>
             <tbody className="govuk-table__body">
-              {rows.map((row) => (
+              {sortedData.map((row) => (
                 <tr key={row.key} className="govuk-table__row">
                   <td className="govuk-table__cell">
                     {periodFilter ? (

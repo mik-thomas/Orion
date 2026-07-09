@@ -1,4 +1,4 @@
-import { useEffect, useId, useState, type FormEvent } from "react";
+import { useEffect, useId, useMemo, useState, type FormEvent } from "react";
 import { listMagistrates } from "../api/magistrates";
 import { getReportsOverview } from "../api/reports";
 import { ApiError } from "../api/http";
@@ -13,6 +13,7 @@ import { CourtRoomTable } from "../components/CourtRoomTable";
 import { DjCancellationSection } from "../components/DjCancellationSection";
 import { PeriodFilter } from "../components/PeriodFilter";
 import { RetiringSoonSection } from "../components/RetiringSoonSection";
+import { SortableTableHeader } from "../components/SortableTableHeader";
 import { ChartTableToggle } from "../components/charts/ChartTableToggle";
 import { DonutOrBarChart } from "../components/charts/DonutOrBarChart";
 import { HorizontalBarChart } from "../components/charts/HorizontalBarChart";
@@ -26,6 +27,13 @@ import {
 } from "../lib/periodFilter";
 import type { MagistrateSummary, ReportsOverview } from "../types/domain";
 import type { SittingsDrillDownFilters } from "../lib/sittingsDrillDown";
+import { useTableSort } from "../lib/useTableSort";
+
+const RISK_SORT_ORDER = {
+  unlikely_to_meet: 0,
+  at_risk: 1,
+  on_track: 2,
+} as const;
 
 function SittingStatLink({
   count,
@@ -104,6 +112,62 @@ export function DashboardPage() {
   const awayFromHomeSummaryId = useId();
   const commitmentRiskSummaryId = useId();
 
+  const searchSortColumns = useMemo(
+    () => ({
+      display_name: { getValue: (row: MagistrateSummary) => row.display_name },
+      home_court: { getValue: (row: MagistrateSummary) => row.home_courthouse?.name ?? "" },
+      bench: { getValue: (row: MagistrateSummary) => row.home_courthouse?.bench ?? "" },
+    }),
+    []
+  );
+  const {
+    sort: searchSort,
+    toggleSort: toggleSearchSort,
+    sortedData: sortedSearchResults,
+  } = useTableSort(results, searchSortColumns, { key: "display_name", direction: "asc" });
+
+  const awayFromHome = reports?.away_from_home ?? [];
+  const awaySortColumns = useMemo(
+    () => ({
+      magistrate: { getValue: (row: (typeof awayFromHome)[number]) => row.magistrate },
+      away_sittings: {
+        getValue: (row: (typeof awayFromHome)[number]) => row.away_sittings,
+        type: "number" as const,
+      },
+    }),
+    []
+  );
+  const {
+    sort: awaySort,
+    toggleSort: toggleAwaySort,
+    sortedData: sortedAwayFromHome,
+  } = useTableSort(awayFromHome, awaySortColumns, { key: "away_sittings", direction: "desc" });
+
+  const commitmentForecast = reports?.commitment_forecast ?? [];
+  const commitmentSortColumns = useMemo(
+    () => ({
+      display_name: { getValue: (row: (typeof commitmentForecast)[number]) => row.display_name },
+      risk_level: {
+        getValue: (row: (typeof commitmentForecast)[number]) => RISK_SORT_ORDER[row.risk_level],
+        type: "number" as const,
+      },
+      projected: {
+        getValue: (row: (typeof commitmentForecast)[number]) => row.projected_full_days_end_of_year,
+        type: "number" as const,
+      },
+      completion_rate: {
+        getValue: (row: (typeof commitmentForecast)[number]) => row.completion_rate ?? -1,
+        type: "number" as const,
+      },
+    }),
+    []
+  );
+  const {
+    sort: commitmentSort,
+    toggleSort: toggleCommitmentSort,
+    sortedData: sortedCommitmentForecast,
+  } = useTableSort(commitmentForecast, commitmentSortColumns, { key: "risk_level", direction: "asc" });
+
   return (
     <>
       <h1 className="govuk-heading-xl">Dashboard</h1>
@@ -157,19 +221,19 @@ export function DashboardPage() {
               <table className="govuk-table">
                 <thead className="govuk-table__head">
                   <tr className="govuk-table__row">
-                    <th scope="col" className="govuk-table__header">
+                    <SortableTableHeader columnKey="display_name" sort={searchSort} onSort={toggleSearchSort}>
                       {canViewNames ? "Name" : "Reference"}
-                    </th>
-                    <th scope="col" className="govuk-table__header">
+                    </SortableTableHeader>
+                    <SortableTableHeader columnKey="home_court" sort={searchSort} onSort={toggleSearchSort}>
                       Home court
-                    </th>
-                    <th scope="col" className="govuk-table__header">
+                    </SortableTableHeader>
+                    <SortableTableHeader columnKey="bench" sort={searchSort} onSort={toggleSearchSort}>
                       Bench
-                    </th>
+                    </SortableTableHeader>
                   </tr>
                 </thead>
                 <tbody className="govuk-table__body">
-                  {results.map((magistrate) => (
+                  {sortedSearchResults.map((magistrate) => (
                     <tr key={magistrate.id} className="govuk-table__row">
                       <td className="govuk-table__cell">
                         <MagistrateLink id={magistrate.id} name={magistrate.display_name} />
@@ -409,16 +473,16 @@ export function DashboardPage() {
                   <>
                     <thead className="govuk-table__head">
                       <tr className="govuk-table__row">
-                        <th scope="col" className="govuk-table__header">
+                        <SortableTableHeader columnKey="magistrate" sort={awaySort} onSort={toggleAwaySort}>
                           Magistrate
-                        </th>
-                        <th scope="col" className="govuk-table__header">
+                        </SortableTableHeader>
+                        <SortableTableHeader columnKey="away_sittings" sort={awaySort} onSort={toggleAwaySort}>
                           Away sittings
-                        </th>
+                        </SortableTableHeader>
                       </tr>
                     </thead>
                     <tbody className="govuk-table__body">
-                      {reports.away_from_home.map((row) => {
+                      {sortedAwayFromHome.map((row) => {
                         const tag = awaySittingsTag(row.away_sittings);
                         return (
                           <tr key={row.magistrate_id} className="govuk-table__row">
@@ -466,22 +530,30 @@ export function DashboardPage() {
                   <>
                     <thead className="govuk-table__head">
                       <tr className="govuk-table__row">
-                        <th scope="col" className="govuk-table__header">
+                        <SortableTableHeader
+                          columnKey="display_name"
+                          sort={commitmentSort}
+                          onSort={toggleCommitmentSort}
+                        >
                           Magistrate
-                        </th>
-                        <th scope="col" className="govuk-table__header">
+                        </SortableTableHeader>
+                        <SortableTableHeader columnKey="risk_level" sort={commitmentSort} onSort={toggleCommitmentSort}>
                           Risk
-                        </th>
-                        <th scope="col" className="govuk-table__header">
+                        </SortableTableHeader>
+                        <SortableTableHeader columnKey="projected" sort={commitmentSort} onSort={toggleCommitmentSort}>
                           Projected
-                        </th>
-                        <th scope="col" className="govuk-table__header">
+                        </SortableTableHeader>
+                        <SortableTableHeader
+                          columnKey="completion_rate"
+                          sort={commitmentSort}
+                          onSort={toggleCommitmentSort}
+                        >
                           Completion rate
-                        </th>
+                        </SortableTableHeader>
                       </tr>
                     </thead>
                     <tbody className="govuk-table__body">
-                      {reports.commitment_forecast.map((row) => {
+                      {sortedCommitmentForecast.map((row) => {
                         const tagColour =
                           row.risk_level === "unlikely_to_meet"
                             ? "red"

@@ -1054,3 +1054,57 @@
   color: #d4351c;
   font-weight: 700;
 }
+
+/* Sortable table column headers */
+
+.orion-sortable-table__header {
+  padding: 0;
+}
+
+.orion-sortable-table__button {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  width: 100%;
+  margin: 0;
+  padding: 0.75rem 1rem 0.625rem;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-weight: 700;
+  text-align: left;
+  cursor: pointer;
+}
+
+.orion-sortable-table__header--sorted .orion-sortable-table__button {
+  background-color: #f3f2f1;
+}
+
+.orion-sortable-table__header.govuk-table__header--numeric .orion-sortable-table__button {
+  justify-content: flex-end;
+  text-align: right;
+}
+
+.orion-sortable-table__button:hover {
+  background-color: #f3f2f1;
+}
+
+.orion-sortable-table__button:focus {
+  outline: 3px solid transparent;
+  background-color: #fd0;
+  box-shadow: 0 -2px #fd0, 0 4px #0b0c0c;
+  color: #0b0c0c;
+}
+
+.orion-sortable-table__indicator {
+  flex-shrink: 0;
+  font-size: 0.875rem;
+  line-height: 1;
+  opacity: 0.65;
+}
+
+.orion-sortable-table__header--sorted .orion-sortable-table__indicator {
+  opacity: 1;
+}

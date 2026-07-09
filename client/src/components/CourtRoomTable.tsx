@@ -1,7 +1,9 @@
-import { useId } from "react";
+import { useId, useMemo } from "react";
 import type { CourtRoomRow } from "../types/domain";
 import type { PeriodFilterState } from "../lib/periodFilter";
+import { useTableSort } from "../lib/useTableSort";
 import { DrillDownLink } from "./DrillDownLink";
+import { SortableTableHeader } from "./SortableTableHeader";
 import { ChartTableToggle } from "./charts/ChartTableToggle";
 import { StackedBarChart, courtRoomStackRow } from "./charts/StackedBarChart";
 
@@ -43,6 +45,22 @@ export function CourtRoomTable({
   embedded = false,
 }: CourtRoomTableProps) {
   const summaryId = useId();
+  const sortColumns = useMemo(
+    () => ({
+      courthouse: { getValue: (row: CourtRoomRow) => row.courthouse },
+      court_room: { getValue: (row: CourtRoomRow) => row.court_room },
+      sittings: { getValue: (row: CourtRoomRow) => row.sittings, type: "number" as const },
+      completed: { getValue: (row: CourtRoomRow) => row.completed, type: "number" as const },
+      vacated: { getValue: (row: CourtRoomRow) => row.vacated, type: "number" as const },
+      cancelled: { getValue: (row: CourtRoomRow) => row.cancelled, type: "number" as const },
+      cancelled_by_dj: { getValue: (row: CourtRoomRow) => row.cancelled_by_dj, type: "number" as const },
+    }),
+    []
+  );
+  const { sort, toggleSort, sortedData } = useTableSort(rows, sortColumns, {
+    key: "sittings",
+    direction: "desc",
+  });
 
   const content =
     rows.length === 0 ? (
@@ -69,31 +87,31 @@ export function CourtRoomTable({
           <>
             <thead className="govuk-table__head">
               <tr className="govuk-table__row">
-                <th scope="col" className="govuk-table__header">
+                <SortableTableHeader columnKey="courthouse" sort={sort} onSort={toggleSort}>
                   Courthouse
-                </th>
-                <th scope="col" className="govuk-table__header">
+                </SortableTableHeader>
+                <SortableTableHeader columnKey="court_room" sort={sort} onSort={toggleSort}>
                   Court room
-                </th>
-                <th scope="col" className="govuk-table__header">
+                </SortableTableHeader>
+                <SortableTableHeader columnKey="sittings" sort={sort} onSort={toggleSort}>
                   Total
-                </th>
-                <th scope="col" className="govuk-table__header">
+                </SortableTableHeader>
+                <SortableTableHeader columnKey="completed" sort={sort} onSort={toggleSort}>
                   Completed
-                </th>
-                <th scope="col" className="govuk-table__header">
+                </SortableTableHeader>
+                <SortableTableHeader columnKey="vacated" sort={sort} onSort={toggleSort}>
                   Vacated
-                </th>
-                <th scope="col" className="govuk-table__header">
+                </SortableTableHeader>
+                <SortableTableHeader columnKey="cancelled" sort={sort} onSort={toggleSort}>
                   Cancelled
-                </th>
-                <th scope="col" className="govuk-table__header">
+                </SortableTableHeader>
+                <SortableTableHeader columnKey="cancelled_by_dj" sort={sort} onSort={toggleSort}>
                   Cancelled by DJ
-                </th>
+                </SortableTableHeader>
               </tr>
             </thead>
             <tbody className="govuk-table__body">
-              {rows.map((row) => {
+              {sortedData.map((row) => {
                 const base = { courthouse: row.courthouse, court_room: row.court_room };
                 return (
                   <tr key={`${row.courthouse}-${row.court_room}`} className="govuk-table__row">

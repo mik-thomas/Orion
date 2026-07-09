@@ -17,6 +17,9 @@ import { HorizontalBarChart } from "../components/charts/HorizontalBarChart";
 import { ShowTableToggle } from "../components/charts/ShowTableToggle";
 import { homeAwaySegments, SimpleDonut } from "../components/charts/SimpleDonut";
 import { courtRoomStackRow, StackedBarChart } from "../components/charts/StackedBarChart";
+import { SortableTableHeader } from "../components/SortableTableHeader";
+import { SortableTwoColumnTable } from "../components/SortableTwoColumnTable";
+import { useTableSort } from "../lib/useTableSort";
 import { useRole } from "../context/RoleContext";
 import {
   defaultProfilePeriodFilter,
@@ -28,7 +31,69 @@ import {
 import { SittingPositionCell } from "../lib/sittingPosition";
 import { SittingStatusCell } from "../lib/sittingStatus";
 import { isRetirementAlertDismissed, isRetiringSoon } from "../lib/retirement";
-import type { LeaveOfAbsence, MagistrateDetail } from "../types/domain";
+import type { CourtRoomRow, LeaveOfAbsence, MagistrateDetail } from "../types/domain";
+
+function ProfileCourtRoomBreakdownTable({ rows }: { rows: CourtRoomRow[] }) {
+  const sortColumns = useMemo(
+    () => ({
+      courthouse: { getValue: (row: CourtRoomRow) => row.courthouse },
+      court_room: { getValue: (row: CourtRoomRow) => row.court_room },
+      sittings: { getValue: (row: CourtRoomRow) => row.sittings, type: "number" as const },
+      completed: { getValue: (row: CourtRoomRow) => row.completed, type: "number" as const },
+      vacated: { getValue: (row: CourtRoomRow) => row.vacated, type: "number" as const },
+      cancelled: { getValue: (row: CourtRoomRow) => row.cancelled, type: "number" as const },
+      cancelled_by_dj: { getValue: (row: CourtRoomRow) => row.cancelled_by_dj, type: "number" as const },
+    }),
+    []
+  );
+  const { sort, toggleSort, sortedData } = useTableSort(rows, sortColumns, {
+    key: "sittings",
+    direction: "desc",
+  });
+
+  return (
+    <>
+      <thead className="govuk-table__head">
+        <tr className="govuk-table__row">
+          <SortableTableHeader columnKey="courthouse" sort={sort} onSort={toggleSort}>
+            Courthouse
+          </SortableTableHeader>
+          <SortableTableHeader columnKey="court_room" sort={sort} onSort={toggleSort}>
+            Court room
+          </SortableTableHeader>
+          <SortableTableHeader columnKey="sittings" sort={sort} onSort={toggleSort}>
+            Total
+          </SortableTableHeader>
+          <SortableTableHeader columnKey="completed" sort={sort} onSort={toggleSort}>
+            Completed
+          </SortableTableHeader>
+          <SortableTableHeader columnKey="vacated" sort={sort} onSort={toggleSort}>
+            Vacated
+          </SortableTableHeader>
+          <SortableTableHeader columnKey="cancelled" sort={sort} onSort={toggleSort}>
+            Cancelled
+          </SortableTableHeader>
+          <SortableTableHeader columnKey="cancelled_by_dj" sort={sort} onSort={toggleSort}>
+            Cancelled by DJ
+          </SortableTableHeader>
+        </tr>
+      </thead>
+      <tbody className="govuk-table__body">
+        {sortedData.map((row) => (
+          <tr key={`${row.courthouse}-${row.court_room}`} className="govuk-table__row">
+            <td className="govuk-table__cell">{row.courthouse}</td>
+            <td className="govuk-table__cell">{row.court_room}</td>
+            <td className="govuk-table__cell">{row.sittings}</td>
+            <td className="govuk-table__cell">{row.completed}</td>
+            <td className="govuk-table__cell">{row.vacated}</td>
+            <td className="govuk-table__cell">{row.cancelled}</td>
+            <td className="govuk-table__cell">{row.cancelled_by_dj}</td>
+          </tr>
+        ))}
+      </tbody>
+    </>
+  );
+}
 
 export function MagistrateProfilePage() {
   const { id } = useParams();
@@ -83,6 +148,66 @@ export function MagistrateProfilePage() {
         : current
     );
   }
+
+  const sittings = magistrate?.sittings ?? [];
+  const leavesOfAbsence = magistrate?.leaves_of_absence ?? [];
+  const cases = magistrate?.cases ?? [];
+
+  const sittingSortColumns = useMemo(
+    () => ({
+      session_date: { getValue: (row: (typeof sittings)[number]) => row.session_date, type: "date" as const },
+      session: { getValue: (row: (typeof sittings)[number]) => row.session ?? "" },
+      location: {
+        getValue: (row: (typeof sittings)[number]) =>
+          `${row.courthouse.name}${row.away_from_home_court ? " (away)" : ""}`,
+      },
+      court_room: { getValue: (row: (typeof sittings)[number]) => row.court_room ?? "" },
+      sitting_type: { getValue: (row: (typeof sittings)[number]) => row.sitting_type.name },
+      court_type: { getValue: (row: (typeof sittings)[number]) => row.court_type ?? "" },
+      sitting_position: { getValue: (row: (typeof sittings)[number]) => row.sitting_position ?? "" },
+      status: { getValue: (row: (typeof sittings)[number]) => row.status },
+    }),
+    []
+  );
+  const {
+    sort: sittingSort,
+    toggleSort: toggleSittingSort,
+    sortedData: sortedSittings,
+  } = useTableSort(sittings, sittingSortColumns, { key: "session_date", direction: "desc" });
+
+  const leaveSortColumns = useMemo(
+    () => ({
+      starts_on: { getValue: (row: (typeof leavesOfAbsence)[number]) => row.starts_on, type: "date" as const },
+      ends_on: { getValue: (row: (typeof leavesOfAbsence)[number]) => row.ends_on ?? "Open-ended" },
+      reason: { getValue: (row: (typeof leavesOfAbsence)[number]) => row.reason ?? "" },
+      review_on: {
+        getValue: (row: (typeof leavesOfAbsence)[number]) => row.next_loa_review_on ?? "",
+        type: "date" as const,
+      },
+      status: { getValue: (row: (typeof leavesOfAbsence)[number]) => (row.active ? 1 : 0), type: "number" as const },
+    }),
+    []
+  );
+  const {
+    sort: leaveSort,
+    toggleSort: toggleLeaveSort,
+    sortedData: sortedLeaves,
+  } = useTableSort(leavesOfAbsence, leaveSortColumns, { key: "starts_on", direction: "desc" });
+
+  const caseSortColumns = useMemo(
+    () => ({
+      reference: { getValue: (row: (typeof cases)[number]) => row.reference ?? "" },
+      title: { getValue: (row: (typeof cases)[number]) => row.title },
+      status: { getValue: (row: (typeof cases)[number]) => row.status },
+      notes_count: { getValue: (row: (typeof cases)[number]) => row.notes_count, type: "number" as const },
+    }),
+    []
+  );
+  const {
+    sort: caseSort,
+    toggleSort: toggleCaseSort,
+    sortedData: sortedCases,
+  } = useTableSort(cases, caseSortColumns, { key: "reference", direction: "asc" });
 
   if (loading) return <p className="govuk-body">Loading…</p>;
   if (error || !magistrate) {
@@ -291,26 +416,14 @@ export function MagistrateProfilePage() {
                   tableCaption="Sittings by location"
                   hasData={summary.by_location.length > 0}
                   table={
-                    <>
-                      <thead className="govuk-table__head">
-                        <tr className="govuk-table__row">
-                          <th scope="col" className="govuk-table__header">
-                            Courthouse
-                          </th>
-                          <th scope="col" className="govuk-table__header">
-                            Sittings
-                          </th>
-                        </tr>
-                      </thead>
-                      <tbody className="govuk-table__body">
-                        {summary.by_location.map((row) => (
-                          <tr key={row.courthouse} className="govuk-table__row">
-                            <td className="govuk-table__cell">{row.courthouse}</td>
-                            <td className="govuk-table__cell">{row.sittings}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </>
+                    <SortableTwoColumnTable
+                      rows={summary.by_location}
+                      rowKey={(row) => row.courthouse}
+                      labelHeader="Courthouse"
+                      getLabel={(row) => row.courthouse}
+                      getLabelSortValue={(row) => row.courthouse}
+                      getValue={(row) => row.sittings}
+                    />
                   }
                 >
                   <HorizontalBarChart
@@ -335,26 +448,14 @@ export function MagistrateProfilePage() {
                   tableCaption="Sittings by court type"
                   hasData={summary.by_court_type.length > 0}
                   table={
-                    <>
-                      <thead className="govuk-table__head">
-                        <tr className="govuk-table__row">
-                          <th scope="col" className="govuk-table__header">
-                            Court type
-                          </th>
-                          <th scope="col" className="govuk-table__header">
-                            Sittings
-                          </th>
-                        </tr>
-                      </thead>
-                      <tbody className="govuk-table__body">
-                        {summary.by_court_type.map((row) => (
-                          <tr key={row.court_type} className="govuk-table__row">
-                            <td className="govuk-table__cell">{row.court_type}</td>
-                            <td className="govuk-table__cell">{row.sittings}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </>
+                    <SortableTwoColumnTable
+                      rows={summary.by_court_type}
+                      rowKey={(row) => row.court_type}
+                      labelHeader="Court type"
+                      getLabel={(row) => row.court_type}
+                      getLabelSortValue={(row) => row.court_type}
+                      getValue={(row) => row.sittings}
+                    />
                   }
                 >
                   <HorizontalBarChart
@@ -379,26 +480,14 @@ export function MagistrateProfilePage() {
                   tableCaption="Sittings by sitting type"
                   hasData={summary.by_sitting_type.length > 0}
                   table={
-                    <>
-                      <thead className="govuk-table__head">
-                        <tr className="govuk-table__row">
-                          <th scope="col" className="govuk-table__header">
-                            Type
-                          </th>
-                          <th scope="col" className="govuk-table__header">
-                            Sittings
-                          </th>
-                        </tr>
-                      </thead>
-                      <tbody className="govuk-table__body">
-                        {summary.by_sitting_type.map((row) => (
-                          <tr key={row.sitting_type} className="govuk-table__row">
-                            <td className="govuk-table__cell">{row.sitting_type}</td>
-                            <td className="govuk-table__cell">{row.sittings}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </>
+                    <SortableTwoColumnTable
+                      rows={summary.by_sitting_type}
+                      rowKey={(row) => row.sitting_type}
+                      labelHeader="Type"
+                      getLabel={(row) => row.sitting_type}
+                      getLabelSortValue={(row) => row.sitting_type}
+                      getValue={(row) => row.sittings}
+                    />
                   }
                 >
                   <HorizontalBarChart
@@ -430,48 +519,7 @@ export function MagistrateProfilePage() {
               <ShowTableToggle
                 tableCaption="Sittings by court room"
                 hasData={summary.by_court_room.length > 0}
-                table={
-                  <>
-                    <thead className="govuk-table__head">
-                      <tr className="govuk-table__row">
-                        <th scope="col" className="govuk-table__header">
-                          Courthouse
-                        </th>
-                        <th scope="col" className="govuk-table__header">
-                          Court room
-                        </th>
-                        <th scope="col" className="govuk-table__header">
-                          Total
-                        </th>
-                        <th scope="col" className="govuk-table__header">
-                          Completed
-                        </th>
-                        <th scope="col" className="govuk-table__header">
-                          Vacated
-                        </th>
-                        <th scope="col" className="govuk-table__header">
-                          Cancelled
-                        </th>
-                        <th scope="col" className="govuk-table__header">
-                          Cancelled by DJ
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody className="govuk-table__body">
-                      {summary.by_court_room.map((row) => (
-                        <tr key={`${row.courthouse}-${row.court_room}`} className="govuk-table__row">
-                          <td className="govuk-table__cell">{row.courthouse}</td>
-                          <td className="govuk-table__cell">{row.court_room}</td>
-                          <td className="govuk-table__cell">{row.sittings}</td>
-                          <td className="govuk-table__cell">{row.completed}</td>
-                          <td className="govuk-table__cell">{row.vacated}</td>
-                          <td className="govuk-table__cell">{row.cancelled}</td>
-                          <td className="govuk-table__cell">{row.cancelled_by_dj}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </>
-                }
+                table={<ProfileCourtRoomBreakdownTable rows={summary.by_court_room} />}
               >
                 <StackedBarChart
                   rows={summary.by_court_room.map((row) =>
@@ -491,40 +539,40 @@ export function MagistrateProfilePage() {
             <SittingHistoryChart sittings={magistrate.sittings} periodLabel={periodLabel} />
       </>
 
-      {magistrate.sittings.length === 0 ? (
+      {sittings.length === 0 ? (
         <p className="govuk-body">No individual sittings recorded.</p>
       ) : (
         <table className="govuk-table">
           <thead className="govuk-table__head">
             <tr className="govuk-table__row">
-              <th scope="col" className="govuk-table__header">
+              <SortableTableHeader columnKey="session_date" sort={sittingSort} onSort={toggleSittingSort}>
                 Date
-              </th>
-              <th scope="col" className="govuk-table__header">
+              </SortableTableHeader>
+              <SortableTableHeader columnKey="session" sort={sittingSort} onSort={toggleSittingSort}>
                 Session
-              </th>
-              <th scope="col" className="govuk-table__header">
+              </SortableTableHeader>
+              <SortableTableHeader columnKey="location" sort={sittingSort} onSort={toggleSittingSort}>
                 Location
-              </th>
-              <th scope="col" className="govuk-table__header">
+              </SortableTableHeader>
+              <SortableTableHeader columnKey="court_room" sort={sittingSort} onSort={toggleSittingSort}>
                 Court room
-              </th>
-              <th scope="col" className="govuk-table__header">
+              </SortableTableHeader>
+              <SortableTableHeader columnKey="sitting_type" sort={sittingSort} onSort={toggleSittingSort}>
                 Type
-              </th>
-              <th scope="col" className="govuk-table__header">
+              </SortableTableHeader>
+              <SortableTableHeader columnKey="court_type" sort={sittingSort} onSort={toggleSittingSort}>
                 Court type
-              </th>
-              <th scope="col" className="govuk-table__header">
+              </SortableTableHeader>
+              <SortableTableHeader columnKey="sitting_position" sort={sittingSort} onSort={toggleSittingSort}>
                 Role
-              </th>
-              <th scope="col" className="govuk-table__header">
+              </SortableTableHeader>
+              <SortableTableHeader columnKey="status" sort={sittingSort} onSort={toggleSittingSort}>
                 Status
-              </th>
+              </SortableTableHeader>
             </tr>
           </thead>
           <tbody className="govuk-table__body">
-            {magistrate.sittings.map((sitting) => (
+            {sortedSittings.map((sitting) => (
               <tr key={sitting.id} className="govuk-table__row">
                 <td className="govuk-table__cell">{sitting.session_date}</td>
                 <td className="govuk-table__cell">{sitting.session ?? "—"}</td>
@@ -548,31 +596,31 @@ export function MagistrateProfilePage() {
       )}
 
       <h2 className="govuk-heading-l">Leave of absence</h2>
-      {magistrate.leaves_of_absence.length === 0 ? (
+      {leavesOfAbsence.length === 0 ? (
         <p className="govuk-body">No leave recorded.</p>
       ) : (
         <table className="govuk-table">
           <thead className="govuk-table__head">
             <tr className="govuk-table__row">
-              <th scope="col" className="govuk-table__header">
+              <SortableTableHeader columnKey="starts_on" sort={leaveSort} onSort={toggleLeaveSort}>
                 From
-              </th>
-              <th scope="col" className="govuk-table__header">
+              </SortableTableHeader>
+              <SortableTableHeader columnKey="ends_on" sort={leaveSort} onSort={toggleLeaveSort}>
                 To
-              </th>
-              <th scope="col" className="govuk-table__header">
+              </SortableTableHeader>
+              <SortableTableHeader columnKey="reason" sort={leaveSort} onSort={toggleLeaveSort}>
                 Reason
-              </th>
-              <th scope="col" className="govuk-table__header">
+              </SortableTableHeader>
+              <SortableTableHeader columnKey="review_on" sort={leaveSort} onSort={toggleLeaveSort}>
                 Next LOA review
-              </th>
-              <th scope="col" className="govuk-table__header">
+              </SortableTableHeader>
+              <SortableTableHeader columnKey="status" sort={leaveSort} onSort={toggleLeaveSort}>
                 Status
-              </th>
+              </SortableTableHeader>
             </tr>
           </thead>
           <tbody className="govuk-table__body">
-            {magistrate.leaves_of_absence.map((leave) => (
+            {sortedLeaves.map((leave) => (
               <tr key={leave.id} className="govuk-table__row">
                 <td className="govuk-table__cell">{leave.starts_on}</td>
                 <td className="govuk-table__cell">{leave.ends_on ?? "Open-ended"}</td>
@@ -598,28 +646,28 @@ export function MagistrateProfilePage() {
       )}
 
       <h2 className="govuk-heading-l">Cases</h2>
-      {magistrate.cases.length === 0 ? (
+      {cases.length === 0 ? (
         <p className="govuk-body">No cases recorded.</p>
       ) : (
         <table className="govuk-table">
           <thead className="govuk-table__head">
             <tr className="govuk-table__row">
-              <th scope="col" className="govuk-table__header">
+              <SortableTableHeader columnKey="reference" sort={caseSort} onSort={toggleCaseSort}>
                 Reference
-              </th>
-              <th scope="col" className="govuk-table__header">
+              </SortableTableHeader>
+              <SortableTableHeader columnKey="title" sort={caseSort} onSort={toggleCaseSort}>
                 Title
-              </th>
-              <th scope="col" className="govuk-table__header">
+              </SortableTableHeader>
+              <SortableTableHeader columnKey="status" sort={caseSort} onSort={toggleCaseSort}>
                 Status
-              </th>
-              <th scope="col" className="govuk-table__header">
+              </SortableTableHeader>
+              <SortableTableHeader columnKey="notes_count" sort={caseSort} onSort={toggleCaseSort}>
                 Notes
-              </th>
+              </SortableTableHeader>
             </tr>
           </thead>
           <tbody className="govuk-table__body">
-            {magistrate.cases.map((kase) => (
+            {sortedCases.map((kase) => (
               <tr key={kase.id} className="govuk-table__row">
                 <td className="govuk-table__cell">{kase.reference ?? "—"}</td>
                 <td className="govuk-table__cell">{kase.title}</td>

@@ -1,12 +1,14 @@
-import { useEffect, useId, useState } from "react";
+import { useEffect, useId, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { listMagistrates } from "../api/magistrates";
 import { ApiError } from "../api/http";
 import { MagistrateLink } from "../components/MagistrateLink";
 import { DashboardSection } from "../components/DashboardSection";
+import { SortableTableHeader } from "../components/SortableTableHeader";
 import { HorizontalBarChart } from "../components/charts/HorizontalBarChart";
 import { magistrateComplianceRows } from "../components/charts/chartAggregations";
 import { useRole } from "../context/RoleContext";
+import { useTableSort } from "../lib/useTableSort";
 import type { MagistrateSummary } from "../types/domain";
 
 export function MagistratesPage() {
@@ -22,6 +24,30 @@ export function MagistratesPage() {
       .catch((err: unknown) => setError(err instanceof ApiError ? err.message : "Failed to load magistrates"))
       .finally(() => setLoading(false));
   }, [role]);
+
+  const sortColumns = useMemo(
+    () => ({
+      display_name: { getValue: (row: MagistrateSummary) => row.display_name },
+      home_court: { getValue: (row: MagistrateSummary) => row.home_courthouse?.name ?? "" },
+      appointed: {
+        getValue: (row: MagistrateSummary) => row.date_of_appointment ?? "",
+        type: "date" as const,
+      },
+      leave: { getValue: (row: MagistrateSummary) => (row.active_leave ? 1 : 0), type: "number" as const },
+      compliance: {
+        getValue: (row: MagistrateSummary) =>
+          row.has_violations
+            ? row.violations.length
+            : row.sitting_commitment?.full_days_completed ?? -1,
+        type: "number" as const,
+      },
+    }),
+    []
+  );
+  const { sort, toggleSort, sortedData } = useTableSort(magistrates, sortColumns, {
+    key: "display_name",
+    direction: "asc",
+  });
 
   return (
     <>
@@ -64,25 +90,25 @@ export function MagistratesPage() {
           <table className="govuk-table">
             <thead className="govuk-table__head">
               <tr className="govuk-table__row">
-                <th scope="col" className="govuk-table__header">
+                <SortableTableHeader columnKey="display_name" sort={sort} onSort={toggleSort}>
                   {canViewNames ? "Name" : "Reference"}
-                </th>
-                <th scope="col" className="govuk-table__header">
+                </SortableTableHeader>
+                <SortableTableHeader columnKey="home_court" sort={sort} onSort={toggleSort}>
                   Home court
-                </th>
-                <th scope="col" className="govuk-table__header">
+                </SortableTableHeader>
+                <SortableTableHeader columnKey="appointed" sort={sort} onSort={toggleSort}>
                   Appointed
-                </th>
-                <th scope="col" className="govuk-table__header">
+                </SortableTableHeader>
+                <SortableTableHeader columnKey="leave" sort={sort} onSort={toggleSort}>
                   Leave
-                </th>
-                <th scope="col" className="govuk-table__header">
+                </SortableTableHeader>
+                <SortableTableHeader columnKey="compliance" sort={sort} onSort={toggleSort}>
                   Compliance
-                </th>
+                </SortableTableHeader>
               </tr>
             </thead>
             <tbody className="govuk-table__body">
-              {magistrates.map((magistrate) => (
+              {sortedData.map((magistrate) => (
                 <tr key={magistrate.id} className="govuk-table__row">
                   <td className="govuk-table__cell">
                     <MagistrateLink id={magistrate.id} name={magistrate.display_name} />

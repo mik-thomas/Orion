@@ -1,10 +1,12 @@
-import { useId } from "react";
+import { useId, useMemo } from "react";
 import { MagistrateLink } from "./MagistrateLink";
 import { DashboardSection } from "./DashboardSection";
 import { DashboardStat } from "./DashboardStat";
+import { SortableTableHeader } from "./SortableTableHeader";
 import { ChartTableToggle } from "./charts/ChartTableToggle";
 import { HorizontalBarChart } from "./charts/HorizontalBarChart";
 import { SimpleDonut, homeAwaySegments } from "./charts/SimpleDonut";
+import { useTableSort } from "../lib/useTableSort";
 import type { HomeCourtMovementReport } from "../types/domain";
 
 interface ClusterMovementSectionProps {
@@ -33,6 +35,97 @@ export function ClusterMovementSection({ report }: ClusterMovementSectionProps) 
   }, 0);
 
   const barnsleyZero = flags.zero_completed_sittings.filter((row) => row.home_courthouse === "Barnsley");
+
+  const homeCourtSortColumns = useMemo(
+    () => ({
+      home_courthouse: { getValue: (row: (typeof by_home_court)[number]) => row.home_courthouse },
+      magistrates: { getValue: (row: (typeof by_home_court)[number]) => row.magistrates, type: "number" as const },
+      completed_at_home: {
+        getValue: (row: (typeof by_home_court)[number]) => row.completed_at_home,
+        type: "number" as const,
+      },
+      completed_away: {
+        getValue: (row: (typeof by_home_court)[number]) => row.completed_away,
+        type: "number" as const,
+      },
+      completed_total: {
+        getValue: (row: (typeof by_home_court)[number]) => row.completed_total,
+        type: "number" as const,
+      },
+      away_pct: { getValue: (row: (typeof by_home_court)[number]) => row.away_pct, type: "number" as const },
+    }),
+    []
+  );
+  const {
+    sort: homeCourtSort,
+    toggleSort: toggleHomeCourtSort,
+    sortedData: sortedByHomeCourt,
+  } = useTableSort(by_home_court, homeCourtSortColumns, { key: "completed_total", direction: "desc" });
+
+  const matrixSortColumns = useMemo(() => {
+    const columns: Record<string, { getValue: (row: (typeof matrix)[number]) => unknown; type?: "number" | "string" }> =
+      {
+        home_courthouse: { getValue: (row) => row.home_courthouse },
+        total: { getValue: (row) => row.total, type: "number" },
+      };
+    for (const courthouse of courthouses) {
+      columns[courthouse] = {
+        getValue: (row) => row.cells[courthouse] ?? 0,
+        type: "number",
+      };
+    }
+    return columns;
+  }, [courthouses]);
+  const {
+    sort: matrixSort,
+    toggleSort: toggleMatrixSort,
+    sortedData: sortedMatrix,
+  } = useTableSort(matrix, matrixSortColumns, { key: "home_courthouse", direction: "asc" });
+
+  const sheffieldSortColumns = useMemo(
+    () => ({
+      magistrate: { getValue: (row: (typeof flags.sheffield_at_barnsley)[number]) => row.magistrate },
+      barnsley_sittings: {
+        getValue: (row: (typeof flags.sheffield_at_barnsley)[number]) => row.barnsley_sittings,
+        type: "number" as const,
+      },
+      total_completed: {
+        getValue: (row: (typeof flags.sheffield_at_barnsley)[number]) => row.total_completed,
+        type: "number" as const,
+      },
+      barnsley_pct: {
+        getValue: (row: (typeof flags.sheffield_at_barnsley)[number]) => row.barnsley_pct,
+        type: "number" as const,
+      },
+    }),
+    []
+  );
+  const {
+    sort: sheffieldSort,
+    toggleSort: toggleSheffieldSort,
+    sortedData: sortedSheffield,
+  } = useTableSort(flags.sheffield_at_barnsley, sheffieldSortColumns, {
+    key: "barnsley_sittings",
+    direction: "desc",
+  });
+
+  const zeroSittingSortColumns = useMemo(
+    () => ({
+      magistrate: { getValue: (row: (typeof flags.zero_completed_sittings)[number]) => row.magistrate },
+      home_courthouse: {
+        getValue: (row: (typeof flags.zero_completed_sittings)[number]) => row.home_courthouse,
+      },
+    }),
+    []
+  );
+  const {
+    sort: zeroSittingSort,
+    toggleSort: toggleZeroSittingSort,
+    sortedData: sortedZeroSittings,
+  } = useTableSort(flags.zero_completed_sittings, zeroSittingSortColumns, {
+    key: "home_courthouse",
+    direction: "asc",
+  });
 
   return (
     <DashboardSection
@@ -114,28 +207,40 @@ export function ClusterMovementSection({ report }: ClusterMovementSectionProps) 
               <>
                 <thead className="govuk-table__head">
                   <tr className="govuk-table__row">
-                    <th scope="col" className="govuk-table__header">
+                    <SortableTableHeader
+                      columnKey="home_courthouse"
+                      sort={homeCourtSort}
+                      onSort={toggleHomeCourtSort}
+                    >
                       Home court
-                    </th>
-                    <th scope="col" className="govuk-table__header">
+                    </SortableTableHeader>
+                    <SortableTableHeader columnKey="magistrates" sort={homeCourtSort} onSort={toggleHomeCourtSort}>
                       Magistrates
-                    </th>
-                    <th scope="col" className="govuk-table__header">
+                    </SortableTableHeader>
+                    <SortableTableHeader
+                      columnKey="completed_at_home"
+                      sort={homeCourtSort}
+                      onSort={toggleHomeCourtSort}
+                    >
                       At home
-                    </th>
-                    <th scope="col" className="govuk-table__header">
+                    </SortableTableHeader>
+                    <SortableTableHeader columnKey="completed_away" sort={homeCourtSort} onSort={toggleHomeCourtSort}>
                       Away
-                    </th>
-                    <th scope="col" className="govuk-table__header">
+                    </SortableTableHeader>
+                    <SortableTableHeader
+                      columnKey="completed_total"
+                      sort={homeCourtSort}
+                      onSort={toggleHomeCourtSort}
+                    >
                       Total
-                    </th>
-                    <th scope="col" className="govuk-table__header">
+                    </SortableTableHeader>
+                    <SortableTableHeader columnKey="away_pct" sort={homeCourtSort} onSort={toggleHomeCourtSort}>
                       Away %
-                    </th>
+                    </SortableTableHeader>
                   </tr>
                 </thead>
                 <tbody className="govuk-table__body">
-                  {by_home_court.map((row) => (
+                  {sortedByHomeCourt.map((row) => (
                     <tr key={row.home_courthouse} className="govuk-table__row">
                       <th scope="row" className="govuk-table__header">
                         {row.home_courthouse}
@@ -164,21 +269,30 @@ export function ClusterMovementSection({ report }: ClusterMovementSectionProps) 
             <table className="govuk-table">
               <thead className="govuk-table__head">
                 <tr className="govuk-table__row">
-                  <th scope="col" className="govuk-table__header">
+                  <SortableTableHeader
+                    columnKey="home_courthouse"
+                    sort={matrixSort}
+                    onSort={toggleMatrixSort}
+                  >
                     Home → Sitting
-                  </th>
+                  </SortableTableHeader>
                   {courthouses.map((courthouse) => (
-                    <th key={courthouse} scope="col" className="govuk-table__header">
+                    <SortableTableHeader
+                      key={courthouse}
+                      columnKey={courthouse}
+                      sort={matrixSort}
+                      onSort={toggleMatrixSort}
+                    >
                       {courthouse}
-                    </th>
+                    </SortableTableHeader>
                   ))}
-                  <th scope="col" className="govuk-table__header">
+                  <SortableTableHeader columnKey="total" sort={matrixSort} onSort={toggleMatrixSort}>
                     Total
-                  </th>
+                  </SortableTableHeader>
                 </tr>
               </thead>
               <tbody className="govuk-table__body">
-                {matrix.map((row) => (
+                {sortedMatrix.map((row) => (
                   <tr key={row.home_courthouse} className="govuk-table__row">
                     <th scope="row" className="govuk-table__header">
                       {row.home_courthouse}
@@ -212,22 +326,26 @@ export function ClusterMovementSection({ report }: ClusterMovementSectionProps) 
           <table className="govuk-table">
             <thead className="govuk-table__head">
               <tr className="govuk-table__row">
-                <th scope="col" className="govuk-table__header">
+                <SortableTableHeader columnKey="magistrate" sort={sheffieldSort} onSort={toggleSheffieldSort}>
                   Magistrate
-                </th>
-                <th scope="col" className="govuk-table__header">
+                </SortableTableHeader>
+                <SortableTableHeader
+                  columnKey="barnsley_sittings"
+                  sort={sheffieldSort}
+                  onSort={toggleSheffieldSort}
+                >
                   Barnsley sittings
-                </th>
-                <th scope="col" className="govuk-table__header">
+                </SortableTableHeader>
+                <SortableTableHeader columnKey="total_completed" sort={sheffieldSort} onSort={toggleSheffieldSort}>
                   Total completed
-                </th>
-                <th scope="col" className="govuk-table__header">
+                </SortableTableHeader>
+                <SortableTableHeader columnKey="barnsley_pct" sort={sheffieldSort} onSort={toggleSheffieldSort}>
                   Barnsley %
-                </th>
+                </SortableTableHeader>
               </tr>
             </thead>
             <tbody className="govuk-table__body">
-              {flags.sheffield_at_barnsley.map((row) => (
+              {sortedSheffield.map((row) => (
                 <tr key={row.magistrate_id} className="govuk-table__row">
                   <td className="govuk-table__cell">
                     <MagistrateLink id={row.magistrate_id} name={row.magistrate} />
@@ -258,16 +376,20 @@ export function ClusterMovementSection({ report }: ClusterMovementSectionProps) 
           <table className="govuk-table">
             <thead className="govuk-table__head">
               <tr className="govuk-table__row">
-                <th scope="col" className="govuk-table__header">
+                <SortableTableHeader columnKey="magistrate" sort={zeroSittingSort} onSort={toggleZeroSittingSort}>
                   Magistrate
-                </th>
-                <th scope="col" className="govuk-table__header">
+                </SortableTableHeader>
+                <SortableTableHeader
+                  columnKey="home_courthouse"
+                  sort={zeroSittingSort}
+                  onSort={toggleZeroSittingSort}
+                >
                   Home court
-                </th>
+                </SortableTableHeader>
               </tr>
             </thead>
             <tbody className="govuk-table__body">
-              {flags.zero_completed_sittings.map((row) => (
+              {sortedZeroSittings.map((row) => (
                 <tr key={row.magistrate_id} className="govuk-table__row">
                   <td className="govuk-table__cell">
                     <MagistrateLink id={row.magistrate_id} name={row.magistrate} />

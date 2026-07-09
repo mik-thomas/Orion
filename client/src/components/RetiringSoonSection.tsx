@@ -1,9 +1,11 @@
-import { useId } from "react";
+import { useId, useMemo } from "react";
 import { DashboardSection } from "./DashboardSection";
 import { MagistrateLink } from "./MagistrateLink";
+import { SortableTableHeader } from "./SortableTableHeader";
 import { ChartTableToggle } from "./charts/ChartTableToggle";
 import { HorizontalBarChart } from "./charts/HorizontalBarChart";
 import { retiringSoonRows } from "./charts/chartAggregations";
+import { useTableSort } from "../lib/useTableSort";
 import type { RetiringSoonRow } from "../types/domain";
 
 interface RetiringSoonSectionProps {
@@ -13,6 +15,21 @@ interface RetiringSoonSectionProps {
 
 export function RetiringSoonSection({ rows, canViewNames }: RetiringSoonSectionProps) {
   const summaryId = useId();
+  const sortColumns = useMemo(
+    () => ({
+      display_name: { getValue: (row: RetiringSoonRow) => row.display_name },
+      retirement_on: { getValue: (row: RetiringSoonRow) => row.retirement_on, type: "date" as const },
+      days_until_retirement: {
+        getValue: (row: RetiringSoonRow) => row.days_until_retirement,
+        type: "number" as const,
+      },
+    }),
+    []
+  );
+  const { sort, toggleSort, sortedData } = useTableSort(rows, sortColumns, {
+    key: "retirement_on",
+    direction: "asc",
+  });
 
   if (rows.length === 0) return null;
 
@@ -38,19 +55,19 @@ export function RetiringSoonSection({ rows, canViewNames }: RetiringSoonSectionP
           <>
             <thead className="govuk-table__head">
               <tr className="govuk-table__row">
-                <th scope="col" className="govuk-table__header">
+                <SortableTableHeader columnKey="display_name" sort={sort} onSort={toggleSort}>
                   {canViewNames ? "Name" : "Reference"}
-                </th>
-                <th scope="col" className="govuk-table__header">
+                </SortableTableHeader>
+                <SortableTableHeader columnKey="retirement_on" sort={sort} onSort={toggleSort}>
                   Retirement date
-                </th>
-                <th scope="col" className="govuk-table__header">
+                </SortableTableHeader>
+                <SortableTableHeader columnKey="days_until_retirement" sort={sort} onSort={toggleSort}>
                   Days until retirement
-                </th>
+                </SortableTableHeader>
               </tr>
             </thead>
             <tbody className="govuk-table__body">
-              {rows.map((row) => (
+              {sortedData.map((row) => (
                 <tr key={row.magistrate_id} className="govuk-table__row">
                   <td className="govuk-table__cell">
                     <MagistrateLink id={row.magistrate_id} name={row.display_name} />

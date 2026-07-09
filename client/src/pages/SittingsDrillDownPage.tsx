@@ -5,11 +5,13 @@ import { ApiError } from "../api/http";
 import { MagistrateLink } from "../components/MagistrateLink";
 import { PeriodFilter } from "../components/PeriodFilter";
 import { DashboardSection } from "../components/DashboardSection";
+import { SortableTableHeader } from "../components/SortableTableHeader";
 import { DonutOrBarChart } from "../components/charts/DonutOrBarChart";
 import { HorizontalBarChart } from "../components/charts/HorizontalBarChart";
 import { SittingPositionCell } from "../lib/sittingPosition";
 import { SittingStatusCell } from "../lib/sittingStatus";
 import { useRole } from "../context/RoleContext";
+import { useTableSort } from "../lib/useTableSort";
 import {
   periodFilterFromResponse,
   periodFilterLabel,
@@ -63,6 +65,28 @@ export function SittingsDrillDownPage() {
 
   const heading = sittingsDrillDownHeading(filters);
   const periodLabel = data?.period.label ?? periodFilterLabel(periodFilter);
+  const sittings = data?.sittings ?? [];
+  const sortColumns = useMemo(
+    () => ({
+      session_date: { getValue: (row: (typeof sittings)[number]) => row.session_date, type: "date" as const },
+      session: { getValue: (row: (typeof sittings)[number]) => row.session ?? "" },
+      magistrate: { getValue: (row: (typeof sittings)[number]) => row.display_name },
+      location: {
+        getValue: (row: (typeof sittings)[number]) =>
+          `${row.courthouse}${row.away_from_home ? " (away)" : ""}`,
+      },
+      court_room: { getValue: (row: (typeof sittings)[number]) => row.court_room ?? "" },
+      sitting_type: { getValue: (row: (typeof sittings)[number]) => row.sitting_type },
+      court_type: { getValue: (row: (typeof sittings)[number]) => row.court_type ?? "" },
+      sitting_position: { getValue: (row: (typeof sittings)[number]) => row.sitting_position ?? "" },
+      status: { getValue: (row: (typeof sittings)[number]) => row.status },
+    }),
+    []
+  );
+  const { sort, toggleSort, sortedData } = useTableSort(sittings, sortColumns, {
+    key: "session_date",
+    direction: "desc",
+  });
 
   return (
     <>
@@ -137,37 +161,37 @@ export function SittingsDrillDownPage() {
                 <caption className="govuk-table__caption govuk-table__caption--m">{heading}</caption>
                 <thead className="govuk-table__head">
                   <tr className="govuk-table__row">
-                    <th scope="col" className="govuk-table__header">
+                    <SortableTableHeader columnKey="session_date" sort={sort} onSort={toggleSort}>
                       Date
-                    </th>
-                    <th scope="col" className="govuk-table__header">
+                    </SortableTableHeader>
+                    <SortableTableHeader columnKey="session" sort={sort} onSort={toggleSort}>
                       Session
-                    </th>
-                    <th scope="col" className="govuk-table__header">
+                    </SortableTableHeader>
+                    <SortableTableHeader columnKey="magistrate" sort={sort} onSort={toggleSort}>
                       Magistrate
-                    </th>
-                    <th scope="col" className="govuk-table__header">
+                    </SortableTableHeader>
+                    <SortableTableHeader columnKey="location" sort={sort} onSort={toggleSort}>
                       Location
-                    </th>
-                    <th scope="col" className="govuk-table__header">
+                    </SortableTableHeader>
+                    <SortableTableHeader columnKey="court_room" sort={sort} onSort={toggleSort}>
                       Court room
-                    </th>
-                    <th scope="col" className="govuk-table__header">
+                    </SortableTableHeader>
+                    <SortableTableHeader columnKey="sitting_type" sort={sort} onSort={toggleSort}>
                       Business type
-                    </th>
-                    <th scope="col" className="govuk-table__header">
+                    </SortableTableHeader>
+                    <SortableTableHeader columnKey="court_type" sort={sort} onSort={toggleSort}>
                       Court type
-                    </th>
-                    <th scope="col" className="govuk-table__header">
+                    </SortableTableHeader>
+                    <SortableTableHeader columnKey="sitting_position" sort={sort} onSort={toggleSort}>
                       Role
-                    </th>
-                    <th scope="col" className="govuk-table__header">
+                    </SortableTableHeader>
+                    <SortableTableHeader columnKey="status" sort={sort} onSort={toggleSort}>
                       Status
-                    </th>
+                    </SortableTableHeader>
                   </tr>
                 </thead>
                 <tbody className="govuk-table__body">
-                  {data.sittings.map((sitting) => (
+                  {sortedData.map((sitting) => (
                     <tr key={sitting.id} className="govuk-table__row">
                       <td className="govuk-table__cell">{sitting.session_date}</td>
                       <td className="govuk-table__cell">{sitting.session ?? "—"}</td>

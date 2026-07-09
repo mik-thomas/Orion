@@ -1,5 +1,7 @@
-import { useId, useState } from "react";
+import { useId, useMemo, useState } from "react";
 import type { SittingScore, SittingScoreRating } from "../types/domain";
+import { SortableTableHeader } from "./SortableTableHeader";
+import { useTableSort } from "../lib/useTableSort";
 
 interface SittingScoreMeterProps {
   sittingScore: SittingScore | null;
@@ -34,6 +36,19 @@ export function SittingScoreMeter({ sittingScore }: SittingScoreMeterProps) {
   const [expanded, setExpanded] = useState(false);
   const breakdownId = useId();
   const headingId = useId();
+  const breakdown = sittingScore?.breakdown ?? [];
+  const sortColumns = useMemo(
+    () => ({
+      label: { getValue: (item: (typeof breakdown)[number]) => item.label },
+      points: { getValue: (item: (typeof breakdown)[number]) => item.points, type: "number" as const },
+      detail: { getValue: (item: (typeof breakdown)[number]) => item.detail ?? "" },
+    }),
+    []
+  );
+  const { sort, toggleSort, sortedData } = useTableSort(breakdown, sortColumns, {
+    key: "points",
+    direction: "desc",
+  });
 
   if (!sittingScore) return null;
 
@@ -103,19 +118,19 @@ export function SittingScoreMeter({ sittingScore }: SittingScoreMeterProps) {
           <table className="govuk-table govuk-!-margin-bottom-0">
             <thead className="govuk-table__head">
               <tr className="govuk-table__row">
-                <th scope="col" className="govuk-table__header">
+                <SortableTableHeader columnKey="label" sort={sort} onSort={toggleSort}>
                   Factor
-                </th>
-                <th scope="col" className="govuk-table__header govuk-table__header--numeric">
+                </SortableTableHeader>
+                <SortableTableHeader columnKey="points" sort={sort} onSort={toggleSort} numeric>
                   Points
-                </th>
-                <th scope="col" className="govuk-table__header">
+                </SortableTableHeader>
+                <SortableTableHeader columnKey="detail" sort={sort} onSort={toggleSort}>
                   Detail
-                </th>
+                </SortableTableHeader>
               </tr>
             </thead>
             <tbody className="govuk-table__body">
-              {sittingScore.breakdown.map((item) => (
+              {sortedData.map((item) => (
                 <tr className="govuk-table__row" key={item.factor}>
                   <td className="govuk-table__cell">{item.label}</td>
                   <td

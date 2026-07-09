@@ -1,9 +1,11 @@
-import { useId, type ReactNode } from "react";
+import { useId, useMemo, type ReactNode } from "react";
 import { DrillDownLink } from "./DrillDownLink";
+import { SortableTableHeader } from "./SortableTableHeader";
 import { ChartTableToggle } from "./charts/ChartTableToggle";
 import { HorizontalBarChart } from "./charts/HorizontalBarChart";
 import type { PeriodFilterState } from "../lib/periodFilter";
 import type { SittingsDrillDownFilters } from "../lib/sittingsDrillDown";
+import { useTableSort } from "../lib/useTableSort";
 
 type BreakdownRow = {
   key: string;
@@ -35,6 +37,17 @@ export function DashboardBreakdownPanel({
   heading,
 }: DashboardBreakdownPanelProps) {
   const summaryId = useId();
+  const sortColumns = useMemo(
+    () => ({
+      label: { getValue: (row: BreakdownRow) => row.label },
+      value: { getValue: (row: BreakdownRow) => row.value, type: "number" as const },
+    }),
+    []
+  );
+  const { sort, toggleSort, sortedData } = useTableSort(rows, sortColumns, {
+    key: "value",
+    direction: "desc",
+  });
 
   if (rows.length === 0) {
     return (
@@ -67,16 +80,16 @@ export function DashboardBreakdownPanel({
           <>
             <thead className="govuk-table__head">
               <tr className="govuk-table__row">
-                <th scope="col" className="govuk-table__header">
+                <SortableTableHeader columnKey="label" sort={sort} onSort={toggleSort}>
                   {labelHeader}
-                </th>
-                <th scope="col" className="govuk-table__header">
+                </SortableTableHeader>
+                <SortableTableHeader columnKey="value" sort={sort} onSort={toggleSort}>
                   {valueHeader}
-                </th>
+                </SortableTableHeader>
               </tr>
             </thead>
             <tbody className="govuk-table__body">
-              {rows.map((row) => {
+              {sortedData.map((row) => {
                 const filters = filterForRow(row);
                 return (
                   <tr key={row.key} className="govuk-table__row">

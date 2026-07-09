@@ -5,6 +5,7 @@ import { ApiError } from "../api/http";
 import { LoaReviewDateEditor } from "../components/LoaReviewDateEditor";
 import { MagistrateLink } from "../components/MagistrateLink";
 import { DashboardSection } from "../components/DashboardSection";
+import { SortableTableHeader } from "../components/SortableTableHeader";
 import { HorizontalBarChart } from "../components/charts/HorizontalBarChart";
 import {
   loaReasonRows,
@@ -12,11 +13,24 @@ import {
   loaTimelineRows,
 } from "../components/charts/chartAggregations";
 import { useRole } from "../context/RoleContext";
+import { useTableSort } from "../lib/useTableSort";
 import type { LeaveOfAbsence, MagistrateSummary } from "../types/domain";
 
 function formatLeaveEnd(leave: LeaveOfAbsence) {
   return leave.ends_on ?? "Open-ended";
 }
+
+type OnLeaveTableRow = {
+  key: string;
+  magistrate: MagistrateSummary;
+  leave: LeaveOfAbsence;
+  display_name: string;
+  home_court: string;
+  starts_on: string;
+  ends_on: string;
+  review_on: string;
+  reason: string;
+};
 
 export function OnLeavePage() {
   const { role, canViewNames } = useRole();
@@ -38,6 +52,39 @@ export function OnLeavePage() {
     () => magistrates.flatMap((magistrate) => magistrate.current_leaves),
     [magistrates]
   );
+
+  const leaveRows = useMemo<OnLeaveTableRow[]>(
+    () =>
+      magistrates.flatMap((magistrate) =>
+        magistrate.current_leaves.map((leave) => ({
+          key: `${magistrate.id}-${leave.id}`,
+          magistrate,
+          leave,
+          display_name: magistrate.display_name,
+          home_court: magistrate.home_courthouse?.name ?? "",
+          starts_on: leave.starts_on,
+          ends_on: formatLeaveEnd(leave),
+          review_on: leave.next_loa_review_on ?? "",
+          reason: leave.reason ?? "",
+        }))
+      ),
+    [magistrates]
+  );
+  const sortColumns = useMemo(
+    () => ({
+      display_name: { getValue: (row: OnLeaveTableRow) => row.display_name },
+      home_court: { getValue: (row: OnLeaveTableRow) => row.home_court },
+      starts_on: { getValue: (row: OnLeaveTableRow) => row.starts_on, type: "date" as const },
+      ends_on: { getValue: (row: OnLeaveTableRow) => row.ends_on },
+      review_on: { getValue: (row: OnLeaveTableRow) => row.review_on, type: "date" as const },
+      reason: { getValue: (row: OnLeaveTableRow) => row.reason },
+    }),
+    []
+  );
+  const { sort, toggleSort, sortedData } = useTableSort(leaveRows, sortColumns, {
+    key: "starts_on",
+    direction: "desc",
+  });
 
   function handleLeaveUpdated(magistrateId: number, updated: LeaveOfAbsence) {
     setMagistrates((current) =>
@@ -120,30 +167,29 @@ export function OnLeavePage() {
             <caption className="govuk-table__caption govuk-table__caption--m">Magistrates on leave</caption>
             <thead className="govuk-table__head">
                   <tr className="govuk-table__row">
-                    <th scope="col" className="govuk-table__header">
+                    <SortableTableHeader columnKey="display_name" sort={sort} onSort={toggleSort}>
                       {canViewNames ? "Name" : "Reference"}
-                    </th>
-                    <th scope="col" className="govuk-table__header">
+                    </SortableTableHeader>
+                    <SortableTableHeader columnKey="home_court" sort={sort} onSort={toggleSort}>
                       Home court
-                    </th>
-                    <th scope="col" className="govuk-table__header">
+                    </SortableTableHeader>
+                    <SortableTableHeader columnKey="starts_on" sort={sort} onSort={toggleSort}>
                       Leave from
-                    </th>
-                    <th scope="col" className="govuk-table__header">
+                    </SortableTableHeader>
+                    <SortableTableHeader columnKey="ends_on" sort={sort} onSort={toggleSort}>
                       Leave to
-                    </th>
-                    <th scope="col" className="govuk-table__header">
+                    </SortableTableHeader>
+                    <SortableTableHeader columnKey="review_on" sort={sort} onSort={toggleSort}>
                       Next LOA review
-                    </th>
-                    <th scope="col" className="govuk-table__header">
+                    </SortableTableHeader>
+                    <SortableTableHeader columnKey="reason" sort={sort} onSort={toggleSort}>
                       Reason
-                    </th>
+                    </SortableTableHeader>
                   </tr>
                 </thead>
                 <tbody className="govuk-table__body">
-                  {magistrates.flatMap((magistrate) =>
-                    magistrate.current_leaves.map((leave) => (
-                      <tr key={`${magistrate.id}-${leave.id}`} className="govuk-table__row">
+                  {sortedData.map(({ key, magistrate, leave }) => (
+                      <tr key={key} className="govuk-table__row">
                         <td className="govuk-table__cell">
                           <MagistrateLink id={magistrate.id} name={magistrate.display_name} />
                         </td>
@@ -160,8 +206,7 @@ export function OnLeavePage() {
                         </td>
                         <td className="govuk-table__cell">{leave.reason ?? "—"}</td>
                       </tr>
-                    ))
-                  )}
+                  ))}
                 </tbody>
           </table>
         </>
