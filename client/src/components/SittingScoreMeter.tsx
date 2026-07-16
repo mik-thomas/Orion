@@ -58,6 +58,16 @@ function arcSegmentPath(fromScore: number, toScore: number): string {
   return `M ${start.x.toFixed(2)} ${start.y.toFixed(2)} A ${ARC_R} ${ARC_R} 0 ${largeArc} 1 ${end.x.toFixed(2)} ${end.y.toFixed(2)}`;
 }
 
+/** Slight overlap hides anti-aliased hairline gaps between abutting strokes. */
+function zoneSegmentPath(index: number): string {
+  const from = ZONE_BREAKS[index];
+  const to = ZONE_BREAKS[index + 1];
+  const overlap = 2;
+  const fromAdj = index === 0 ? from : from - overlap;
+  const toAdj = index === ZONE_KEYS.length - 1 ? to : to + overlap;
+  return arcSegmentPath(fromAdj, toAdj);
+}
+
 function formatPoints(points: number): string {
   if (points > 0) return `+${points}`;
   return String(points);
@@ -112,13 +122,16 @@ export function SittingScoreMeter({ sittingScore }: SittingScoreMeterProps) {
               <path
                 key={key}
                 className={`orion-sitting-score__arc-zone orion-sitting-score__arc-zone--${key}`}
-                d={arcSegmentPath(ZONE_BREAKS[index], ZONE_BREAKS[index + 1])}
+                d={zoneSegmentPath(index)}
               />
             ))}
+            {/* Rounded outer caps (half stroke-width) without rounding zone joins */}
+            <circle className="orion-sitting-score__arc-cap--poor" cx={minLabel.x} cy={minLabel.y} r="5" />
+            <circle className="orion-sitting-score__arc-cap--excellent" cx={maxLabel.x} cy={maxLabel.y} r="5" />
             <text
               className="orion-sitting-score__arc-label"
               x={minLabel.x - 2}
-              y={minLabel.y + 14}
+              y={minLabel.y + 16}
               textAnchor="start"
             >
               {SCORE_MIN}
@@ -126,7 +139,7 @@ export function SittingScoreMeter({ sittingScore }: SittingScoreMeterProps) {
             <text
               className="orion-sitting-score__arc-label"
               x={maxLabel.x + 2}
-              y={maxLabel.y + 14}
+              y={maxLabel.y + 16}
               textAnchor="end"
             >
               {SCORE_MAX}

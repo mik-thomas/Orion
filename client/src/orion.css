@@ -1003,19 +1003,14 @@
   display: block;
   width: 100%;
   height: auto;
-}
-
-.orion-sitting-score__arc-bg {
-  fill: none;
-  stroke: #dee0e2;
-  stroke-width: 6;
-  stroke-linecap: butt;
+  overflow: visible;
 }
 
 .orion-sitting-score__arc-zone {
   fill: none;
-  stroke-width: 6;
+  stroke-width: 10;
   stroke-linecap: butt;
+  stroke-linejoin: round;
 }
 
 .orion-sitting-score__arc-zone--poor {
@@ -1034,15 +1029,24 @@
   stroke: #00703c;
 }
 
+.orion-sitting-score__arc-cap--poor {
+  fill: #d4351c;
+}
+
+.orion-sitting-score__arc-cap--excellent {
+  fill: #00703c;
+}
+
 .orion-sitting-score__arc-label {
   fill: #505a5f;
   font-family: "GDS Transport", arial, sans-serif;
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 400;
 }
 
 .orion-sitting-score__needle-group {
-  transform-origin: 100px 96px;
+  transform-box: view-box;
+  transform-origin: 100px 98px;
   transform: rotate(calc(-90deg + var(--needle-angle, 0deg)));
 }
 
@@ -1071,7 +1075,7 @@
 }
 
 .orion-sitting-score__value {
-  margin: -0.25rem 0 0;
+  margin: -0.15rem 0 0;
   text-align: center;
   line-height: 1;
   color: #0b0c0c;
