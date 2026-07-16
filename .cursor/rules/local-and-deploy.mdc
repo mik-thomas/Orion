@@ -1,5 +1,5 @@
 ---
-description: Local dev in Cursor and git-based deploy to Railway staging
+description: Local dev in Cursor and git-based deploy to Railway production
 alwaysApply: true
 ---
 
@@ -15,11 +15,11 @@ alwaysApply: true
 
 ## Git and deploy (single path)
 
-- **Only `main`** is deployed. There is no `staging` git branch and no Railway production environment.
+- **Only `main`** is deployed. There is no `staging` git branch and no Railway staging environment.
 - When the user says **deploy**, run `npm run deploy` (see `deploy-command.mdc`) — do not hand them manual git steps.
 - **Never** use `railway up` for routine releases; deploys come from **git push to `main`** (GitHub → Railway auto-deploy).
-- Railway environment is named `staging` (URLs `*-staging.up.railway.app`) but tracks **`main`** on GitHub.
+- Railway environment is named **`production`** (URLs `*-production*.up.railway.app`) and tracks **`main`** on GitHub.
 
 ## When changing hosting or CI
 
-- Staging API URL for client builds: `https://orion-staging.up.railway.app` (`VITE_API_URL` on Railway `orion-client`).
+- Production API URL for client builds: `https://orion-production-7f9f.up.railway.app` (`VITE_API_URL` on Railway `orion-client`).

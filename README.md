@@ -15,9 +15,8 @@ UK magistrate bench and court management for HMCTS clusters (South Yorkshire / N
 | Environment | Client | API |
 | --- | --- | --- |
 | Production | https://orion-client-production.up.railway.app | https://orion-production-7f9f.up.railway.app |
-| Staging | https://orion-client-staging.up.railway.app | https://orion-staging.up.railway.app |
 
-Both Railway services deploy from `main` on GitHub.
+Both Railway services deploy from `main` on GitHub. There is no separate Railway staging environment — only **`production`**.
 
 ## Laptop / local setup
 

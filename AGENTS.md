@@ -15,7 +15,7 @@ Import ~13k sitting rows. Typical duration: ~5–15 min local Postgres, ~15–45
 Resume without a checkpoint file infers completed phases from the DB; sittings dedupe by `import_key`.
 ```
 
-## Ship to staging (Railway)
+## Ship to Railway (production)
 
 **Deploy by default** after shippable implementation work (unless the user says not to). Also deploy when they say “deploy”, “ship”, or “release”. Run `npm run deploy -- -m "…"` and report the result (see `.cursor/rules/deploy-command.mdc`).
 
@@ -23,7 +23,7 @@ That script: `npm run check` → commit (if needed) → push → PR → wait for
 
 Manual equivalent: branch off `main` → PR → CI green → merge → Railway.
 
-Do not use `railway up` for normal releases.
+Do not use `railway up` for normal releases. There is no Railway staging environment — only **`production`**.
 
 ## Role-based magistrate visibility (MVP)
 

@@ -5,7 +5,7 @@ WORKDIR /app
 
 ARG VITE_API_URL
 ARG RAILWAY_GIT_COMMIT_SHA
-ENV VITE_API_URL=${VITE_API_URL:-https://orion-staging.up.railway.app}
+ENV VITE_API_URL=${VITE_API_URL:-https://orion-production-7f9f.up.railway.app}
 ENV VITE_APP_BUILD=${RAILWAY_GIT_COMMIT_SHA:-local}
 
 COPY package.json package-lock.json ./

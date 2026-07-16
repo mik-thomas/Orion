@@ -1,11 +1,11 @@
 ---
-description: When the user says deploy, ship, or release — run the full staging deploy flow
+description: When the user says deploy, ship, or release — run the full Railway deploy flow
 alwaysApply: true
 ---
 
 # Deploy by default
 
-**Default:** after you finish implementation work that should reach staging, **run the deploy yourself** without waiting for the user to say "deploy". Only skip deploy when the user explicitly says not to (e.g. "don't deploy", "local only", "no ship"), or when there are no code changes to ship.
+**Default:** after you finish implementation work that should reach Railway, **run the deploy yourself** without waiting for the user to say "deploy". Only skip deploy when the user explicitly says not to (e.g. "don't deploy", "local only", "no ship"), or when there are no code changes to ship.
 
 Also deploy when the user says **deploy**, **ship**, **release**, **push to staging**, or similar (and is not asking a hypothetical question). Do not give them a checklist of manual git/gh steps.
 
@@ -32,7 +32,7 @@ Report in plain language:
 1. Whether commit/push/PR/merge succeeded
 2. PR URL (if any)
 3. CI result
-4. Staging URLs: https://orion-client-staging.up.railway.app and https://orion-staging.up.railway.app
+4. Production URLs: https://orion-client-production.up.railway.app and https://orion-production-7f9f.up.railway.app (Railway has no staging environment)
 5. If merge failed (e.g. GitHub requires human approval), say what they need to click on GitHub
 
 ## Failures

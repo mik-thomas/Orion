@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Ship to Railway staging via git: check → commit → push → PR → CI → merge main.
+# Ship to Railway production via git: check → commit → push → PR → CI → merge main.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -85,14 +85,14 @@ fi
 echo "==> Push $BRANCH"
 git push -u origin HEAD
 
-STAGING_API="https://orion-staging.up.railway.app"
-STAGING_CLIENT="https://orion-client-staging.up.railway.app"
+PROD_API="https://orion-production-7f9f.up.railway.app"
+PROD_CLIENT="https://orion-client-production.up.railway.app"
 
 if [[ "$BRANCH" == "main" ]]; then
   echo ""
-  echo "Pushed main. GitHub CI will run; Railway deploys staging after CI (if Wait for CI is on)."
-  echo "  API:    $STAGING_API"
-  echo "  Client: $STAGING_CLIENT"
+  echo "Pushed main. GitHub CI will run; Railway deploys production after CI (if Wait for CI is on)."
+  echo "  API:    $PROD_API"
+  echo "  Client: $PROD_CLIENT"
   gh run list --branch main --limit 3 2>/dev/null || true
   exit 0
 fi
@@ -122,9 +122,9 @@ if gh pr merge --merge --delete-branch; then
   git checkout main
   git pull origin main
   echo ""
-  echo "Merged to main. Railway will deploy staging (usually within a few minutes)."
-  echo "  API:    $STAGING_API"
-  echo "  Client: $STAGING_CLIENT"
+  echo "Merged to main. Railway will deploy production (usually within a few minutes)."
+  echo "  API:    $PROD_API"
+  echo "  Client: $PROD_CLIENT"
 else
   echo ""
   echo "Could not merge automatically (approval or branch rules may be required)."

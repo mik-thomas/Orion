@@ -21,7 +21,7 @@ Node 20+, Ruby 3.x, Docker Desktop, Git. `laptop-setup` checks these and prints 
 export ORION_IMPORT_ROOT=~/Desktop/Courts
 npm run import:south-yorkshire
 
-# Ship to staging (after changes):
+# Ship to Railway production (after changes):
 npm run deploy -- -m "your message"
 ```
 
@@ -30,7 +30,8 @@ npm run deploy -- -m "your message"
 | Environment | Client | API |
 | --- | --- | --- |
 | Local | http://localhost:5173 | http://127.0.0.1:3001 |
-| Staging | https://orion-client-staging.up.railway.app | https://orion-staging.up.railway.app |
 | Production | https://orion-client-production.up.railway.app | https://orion-production-7f9f.up.railway.app |
+
+Railway has a single **`production`** environment (no staging hostnames).
 
 **Railway note:** `orion-client` service must have **Root Directory** = `client` (not repo root), or it builds the Rails API by mistake.
