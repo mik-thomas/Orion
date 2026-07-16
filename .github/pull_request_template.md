@@ -9,9 +9,9 @@
 
 ## Deploy
 
-Merging to **`main`** triggers GitHub **CI**, then Railway deploys to staging when **Wait for CI** is enabled:
+Merging to **`main`** triggers GitHub **CI**, then Railway deploys **production** when **Wait for CI** is enabled:
 
-- API: https://orion-staging.up.railway.app
-- Client: https://orion-client-staging.up.railway.app
+- API: https://orion-production-7f9f.up.railway.app
+- Client: https://orion-client-production.up.railway.app
 
 Do not merge until CI is green and the change is approved.

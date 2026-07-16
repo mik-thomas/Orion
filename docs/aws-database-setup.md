@@ -1,6 +1,6 @@
 # AWS database setup for Orion (optional)
 
-> **Default:** Orion does **not** require AWS. Use **Docker Postgres** locally and **Railway Postgres** (or another managed Postgres) for staging. Only follow this guide if you explicitly want a separate AWS RDS instance.
+> **Default:** Orion does **not** require AWS. Use **Docker Postgres** locally and **Railway Postgres** (or another managed Postgres) for Railway production. Only follow this guide if you explicitly want a separate AWS RDS instance.
 
 Orion can use the same AWS account pattern as Lara, with a **separate** RDS database and credentials. All settings below are constrained to **AWS Free Tier** where possible — deviating from them can incur charges.
 
@@ -34,11 +34,11 @@ npm run db:setup
 
 Postgres runs on host port **5434** (user `orion`, database `orion_development`). No AWS involved.
 
-## 2. Staging on Railway (default — no AWS)
+## 2. Railway production (default — no AWS)
 
-Recommended: add a **Postgres** plugin/service in Railway (staging environment) and link it to the **orion** API service. Railway sets `DATABASE_URL` automatically.
+Recommended: add a **Postgres** plugin/service in Railway (**production** environment) and link it to the **orion** API service. Railway sets `DATABASE_URL` automatically.
 
-Import against staging:
+Import against Railway production:
 
 ```bash
 npm run import:south-yorkshire -- --production
@@ -107,7 +107,7 @@ Set on the **orion** API service:
 | `DATABASE_URL` | Full URL above |
 | `RAILS_ENV` | `production` |
 | `SECRET_KEY_BASE` | `cd api && bin/rails secret` |
-| `ORION_CLIENT_URL` | `https://orion-client-staging.up.railway.app` |
+| `ORION_CLIENT_URL` | `https://orion-client-production.up.railway.app` |
 
 Helper script (after exporting `DATABASE_URL`):
 
@@ -129,5 +129,5 @@ Migrations run automatically on deploy via `db:prepare` in `railway.json`.
 | Environment | Database (default) |
 |-------------|-------------------|
 | Local dev | Docker Postgres on `:5434` |
-| Railway staging | **Railway Postgres** (recommended) |
-| Railway staging (optional) | AWS RDS `orion_staging` — free tier only, see above |
+| Railway production | **Railway Postgres** (recommended) |
+| Railway production (optional) | AWS RDS `orion_staging` — free tier only, see above |

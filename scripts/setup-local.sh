@@ -24,6 +24,6 @@ Local setup complete.
   npm run dev          → API http://127.0.0.1:3001 + client http://localhost:5173
   npm run check        → same checks as GitHub CI (run before opening a PR)
 
-Deploy: merge an approved PR to main → GitHub CI → Railway (staging) auto-deploy.
+Deploy: merge an approved PR to main → GitHub CI → Railway (production) auto-deploy.
 
 EOF
