@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, type ReactNode } from "react";
+import { createContext, useCallback, useContext, useState, type ReactNode } from "react";
 import {
   DEFAULT_ROLE,
   loadStoredRole,
@@ -20,11 +20,11 @@ const RoleContext = createContext<RoleContextValue | null>(null);
 export function RoleProvider({ children }: { children: ReactNode }) {
   const [role, setRoleState] = useState<Role>(() => loadStoredRole());
 
-  const setRole = (next: Role) => {
+  const setRole = useCallback((next: Role) => {
     setRoleState(next);
     localStorage.setItem(STORAGE_KEY, next);
     window.dispatchEvent(new CustomEvent("orion-role-change", { detail: next }));
-  };
+  }, []);
 
   return (
     <RoleContext.Provider

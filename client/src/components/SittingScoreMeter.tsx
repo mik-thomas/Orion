@@ -11,6 +11,15 @@ interface SittingScoreMeterProps {
 const SCORE_MIN = 300;
 const SCORE_MAX = 850;
 
+/** Matches Orion::MagistrateSittingScore::RATINGS thresholds. */
+const ZONE_BREAKS = [SCORE_MIN, 550, 650, 750, SCORE_MAX] as const;
+const ZONE_KEYS = ["poor", "fair", "good", "excellent"] as const;
+
+const ARC_CX = 100;
+const ARC_CY = 98;
+const ARC_R = 74;
+const NEEDLE_LENGTH = 58;
+
 function ratingTagClass(rating: SittingScoreRating): string {
   switch (rating) {
     case "Excellent":
@@ -24,8 +33,29 @@ function ratingTagClass(rating: SittingScoreRating): string {
   }
 }
 
+function scoreFraction(score: number): number {
+  const clamped = Math.min(SCORE_MAX, Math.max(SCORE_MIN, score));
+  return (clamped - SCORE_MIN) / (SCORE_MAX - SCORE_MIN);
+}
+
 function scorePosition(score: number): number {
-  return ((score - SCORE_MIN) / (SCORE_MAX - SCORE_MIN)) * 100;
+  return scoreFraction(score) * 100;
+}
+
+/** Point on the semicircle: score min at left (−π), max at right (0), arc above the diameter. */
+function arcPoint(score: number): { x: number; y: number } {
+  const theta = Math.PI * (1 - scoreFraction(score));
+  return {
+    x: ARC_CX + ARC_R * Math.cos(theta),
+    y: ARC_CY - ARC_R * Math.sin(theta),
+  };
+}
+
+function arcSegmentPath(fromScore: number, toScore: number): string {
+  const start = arcPoint(fromScore);
+  const end = arcPoint(toScore);
+  const largeArc = scoreFraction(toScore) - scoreFraction(fromScore) > 0.5 ? 1 : 0;
+  return `M ${start.x.toFixed(2)} ${start.y.toFixed(2)} A ${ARC_R} ${ARC_R} 0 ${largeArc} 1 ${end.x.toFixed(2)} ${end.y.toFixed(2)}`;
 }
 
 function formatPoints(points: number): string {
@@ -55,6 +85,9 @@ export function SittingScoreMeter({ sittingScore }: SittingScoreMeterProps) {
   const position = scorePosition(sittingScore.score);
   const needleAngle = (position / 100) * 180;
   const gaugeStyle = { "--needle-angle": `${needleAngle}deg` } as CSSProperties;
+  const minLabel = arcPoint(SCORE_MIN);
+  const maxLabel = arcPoint(SCORE_MAX);
+  const needleTipY = ARC_CY - NEEDLE_LENGTH;
 
   return (
     <section className="orion-sitting-score govuk-!-margin-bottom-6" aria-labelledby={headingId}>
@@ -74,24 +107,42 @@ export function SittingScoreMeter({ sittingScore }: SittingScoreMeterProps) {
           role="img"
           aria-label={`Sitting score ${sittingScore.score} out of ${SCORE_MAX}, rated ${sittingScore.rating}`}
         >
-          <svg className="orion-sitting-score__arc" viewBox="0 0 200 108" aria-hidden="true">
-            <path className="orion-sitting-score__arc-bg" d="M 24 96 A 76 76 0 0 1 176 96" />
-            <path className="orion-sitting-score__arc-zone orion-sitting-score__arc-zone--poor" d="M 24 96 A 76 76 0 0 1 70 38" />
-            <path className="orion-sitting-score__arc-zone orion-sitting-score__arc-zone--fair" d="M 70 38 A 76 76 0 0 1 108 24" />
-            <path className="orion-sitting-score__arc-zone orion-sitting-score__arc-zone--good" d="M 108 24 A 76 76 0 0 1 146 38" />
-            <path
-              className="orion-sitting-score__arc-zone orion-sitting-score__arc-zone--excellent"
-              d="M 146 38 A 76 76 0 0 1 176 96"
-            />
-            <text className="orion-sitting-score__arc-label" x="18" y="106">
+          <svg className="orion-sitting-score__arc" viewBox="0 0 200 118" aria-hidden="true">
+            {ZONE_KEYS.map((key, index) => (
+              <path
+                key={key}
+                className={`orion-sitting-score__arc-zone orion-sitting-score__arc-zone--${key}`}
+                d={arcSegmentPath(ZONE_BREAKS[index], ZONE_BREAKS[index + 1])}
+              />
+            ))}
+            <text
+              className="orion-sitting-score__arc-label"
+              x={minLabel.x - 2}
+              y={minLabel.y + 14}
+              textAnchor="start"
+            >
               {SCORE_MIN}
             </text>
-            <text className="orion-sitting-score__arc-label" x="182" y="106" textAnchor="end">
+            <text
+              className="orion-sitting-score__arc-label"
+              x={maxLabel.x + 2}
+              y={maxLabel.y + 14}
+              textAnchor="end"
+            >
               {SCORE_MAX}
             </text>
-            <g className="orion-sitting-score__needle-group orion-sitting-score__needle-group--animate" style={gaugeStyle}>
-              <line className="orion-sitting-score__needle" x1="100" y1="96" x2="100" y2="34" />
-              <circle className="orion-sitting-score__hub" cx="100" cy="96" r="4" />
+            <g
+              className="orion-sitting-score__needle-group orion-sitting-score__needle-group--animate"
+              style={gaugeStyle}
+            >
+              <line
+                className="orion-sitting-score__needle"
+                x1={ARC_CX}
+                y1={ARC_CY}
+                x2={ARC_CX}
+                y2={needleTipY}
+              />
+              <circle className="orion-sitting-score__hub" cx={ARC_CX} cy={ARC_CY} r="3.5" />
             </g>
           </svg>
 
