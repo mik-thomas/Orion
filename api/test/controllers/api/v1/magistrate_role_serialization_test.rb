@@ -6,7 +6,7 @@ class MagistrateRoleSerializationTest < ActionDispatch::IntegrationTest
   test "deputy role hides magistrate names and email" do
     magistrate = magistrates(:alice)
 
-    get api_v1_magistrate_path(magistrate), headers: { "X-Orion-Role" => "Deputy" }
+    get api_v1_magistrate_path(magistrate), headers: auth_headers(:deputy)
     assert_response :success
 
     body = JSON.parse(response.body)
@@ -22,7 +22,7 @@ class MagistrateRoleSerializationTest < ActionDispatch::IntegrationTest
   test "developer role shows full names and reference code" do
     magistrate = magistrates(:alice)
 
-    get api_v1_magistrate_path(magistrate), headers: { "X-Orion-Role" => "Developer" }
+    get api_v1_magistrate_path(magistrate), headers: auth_headers(:developer)
     assert_response :success
 
     body = JSON.parse(response.body)
@@ -34,12 +34,12 @@ class MagistrateRoleSerializationTest < ActionDispatch::IntegrationTest
   end
 
   test "roster is forbidden for bench chair" do
-    get roster_api_v1_magistrates_path, headers: { "X-Orion-Role" => "Bench Chair" }
+    get roster_api_v1_magistrates_path, headers: auth_headers(:bench_chair)
     assert_response :forbidden
   end
 
   test "roster returns names for hmcts slm" do
-    get roster_api_v1_magistrates_path, headers: { "X-Orion-Role" => "HMCTS-SLM" }
+    get roster_api_v1_magistrates_path, headers: auth_headers(:hmcts_slm)
     assert_response :success
 
     body = JSON.parse(response.body)
@@ -49,8 +49,20 @@ class MagistrateRoleSerializationTest < ActionDispatch::IntegrationTest
     assert_equal "alice@example.com", alice["email"]
   end
 
-  test "defaults to deputy when role header missing" do
-    get api_v1_magistrate_path(magistrates(:alice))
+  test "role comes from authenticated user not spoofed header" do
+    # Bench Chair session with spoofed Developer header must stay restricted.
+    get api_v1_magistrate_path(magistrates(:alice)),
+        headers: auth_headers(:bench_chair).merge("X-Orion-Role" => "Developer")
+    assert_response :success
+
+    body = JSON.parse(response.body)
+    assert_equal false, body["name_visible"]
+    assert_equal "SY-0001", body["display_name"]
+  end
+
+  test "developer may preview another role via header" do
+    get api_v1_magistrate_path(magistrates(:alice)),
+        headers: auth_headers(:developer, role_override: "Deputy")
     assert_response :success
 
     body = JSON.parse(response.body)

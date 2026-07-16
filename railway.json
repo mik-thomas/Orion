@@ -6,7 +6,7 @@
     "watchPatterns": ["api/**"]
   },
   "deploy": {
-    "preDeployCommand": ["./bin/rails db:prepare"],
+    "preDeployCommand": ["./bin/rails db:prepare db:seed"],
     "healthcheckPath": "/health",
     "healthcheckTimeout": 300,
     "restartPolicyType": "ON_FAILURE"

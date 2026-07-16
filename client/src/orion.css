@@ -53,6 +53,7 @@
   flex-direction: column;
   gap: 0.125rem;
   line-height: 1.1;
+  font-family: Helvetica, Arial, sans-serif;
 }
 
 .orion-app-header__brand-name {
@@ -1219,6 +1220,7 @@
   flex-direction: column;
   gap: 0.125rem;
   line-height: 1.1;
+  font-family: Helvetica, Arial, sans-serif;
 }
 
 .orion-login__brand-name {

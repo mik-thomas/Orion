@@ -1,0 +1,29 @@
+# frozen_string_literal: true
+
+bench_chair:
+  username: bench.chair
+  email: bench.chair@orion.test
+  password_digest: <%= BCrypt::Password.create("BenchChair-Demo-2026", cost: 4) %>
+  role: bench_chair
+  display_name: Bench Chair
+
+developer:
+  username: developer
+  email: developer@orion.test
+  password_digest: <%= BCrypt::Password.create("Developer-Demo-2026", cost: 4) %>
+  role: developer
+  display_name: Developer
+
+hmcts_slm:
+  username: hmcts.slm
+  email: hmcts.slm@orion.test
+  password_digest: <%= BCrypt::Password.create("HmctsSlm-Demo-2026", cost: 4) %>
+  role: hmcts_slm
+  display_name: HMCTS-SLM
+
+deputy:
+  username: deputy
+  email: deputy@orion.test
+  password_digest: <%= BCrypt::Password.create("Deputy-Demo-2026", cost: 4) %>
+  role: deputy
+  display_name: Deputy

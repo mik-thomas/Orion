@@ -6,7 +6,8 @@ class LeaveOfAbsenceSerializationTest < ActionDispatch::IntegrationTest
   test "leave json exposes next_loa_review_on" do
     leave = leaves_of_absence(:alice_active)
 
-    get api_v1_magistrate_leaves_of_absence_index_path(magistrates(:alice))
+    get api_v1_magistrate_leaves_of_absence_index_path(magistrates(:alice)),
+        headers: auth_headers(:developer)
     assert_response :success
 
     body = JSON.parse(response.body)
@@ -16,7 +17,7 @@ class LeaveOfAbsenceSerializationTest < ActionDispatch::IntegrationTest
   end
 
   test "on leave list includes next_loa_review_on" do
-    get on_leave_api_v1_magistrates_path, headers: { "X-Orion-Role" => "Developer" }
+    get on_leave_api_v1_magistrates_path, headers: auth_headers(:developer)
     assert_response :success
 
     body = JSON.parse(response.body)
@@ -29,7 +30,7 @@ class LeaveOfAbsenceSerializationTest < ActionDispatch::IntegrationTest
     magistrate = magistrates(:alice)
     leaves_of_absence(:alice_active).update!(next_review_on: nil)
 
-    get api_v1_magistrate_path(magistrate), headers: { "X-Orion-Role" => "Developer" }
+    get api_v1_magistrate_path(magistrate), headers: auth_headers(:developer)
     assert_response :success
 
     body = JSON.parse(response.body)
@@ -41,7 +42,7 @@ class LeaveOfAbsenceSerializationTest < ActionDispatch::IntegrationTest
   test "overdue loa review raises violation" do
     magistrate = magistrates(:bob)
 
-    get api_v1_magistrate_path(magistrate), headers: { "X-Orion-Role" => "Developer" }
+    get api_v1_magistrate_path(magistrate), headers: auth_headers(:developer)
     assert_response :success
 
     body = JSON.parse(response.body)
@@ -55,6 +56,7 @@ class LeaveOfAbsenceSerializationTest < ActionDispatch::IntegrationTest
 
     patch api_v1_magistrate_leaves_of_absence_path(magistrates(:alice), leave),
           params: { leave_of_absence: { next_review_on: "2026-08-15" } },
+          headers: auth_headers(:developer),
           as: :json
     assert_response :success
 

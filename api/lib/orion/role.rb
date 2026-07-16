@@ -8,9 +8,20 @@ module Orion
 
     LABELS = {
       "hmcts-slm" => "HMCTS-SLM",
+      "hmcts_slm" => "HMCTS-SLM",
       "developer" => "Developer",
       "bench-chair" => "Bench Chair",
+      "bench_chair" => "Bench Chair",
       "deputy" => "Deputy"
+    }.freeze
+
+    SLUGS = {
+      "hmcts-slm" => "hmcts_slm",
+      "hmcts_slm" => "hmcts_slm",
+      "developer" => "developer",
+      "bench-chair" => "bench_chair",
+      "bench_chair" => "bench_chair",
+      "deputy" => "deputy"
     }.freeze
 
     module_function
@@ -22,8 +33,17 @@ module Orion
       LABELS.fetch(normalized, DEFAULT)
     end
 
+    def label_for(slug_or_label)
+      parse(slug_or_label)
+    end
+
+    def slug_for(value)
+      normalized = normalize(value)
+      SLUGS.fetch(normalized, "deputy")
+    end
+
     def normalize(value)
-      value.to_s.strip.downcase.gsub(/\s+/, "-")
+      value.to_s.strip.downcase.gsub(/\s+/, "-").tr("_", "-")
     end
 
     def names_visible?(role)

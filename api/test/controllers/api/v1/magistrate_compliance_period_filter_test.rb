@@ -25,12 +25,12 @@ class MagistrateCompliancePeriodFilterTest < ActionDispatch::IntegrationTest
 
   test "period filter does not change compliance violations or sitting commitment" do
     travel_to Date.new(2025, 10, 1) do
-      get api_v1_magistrate_path(@magistrate), headers: { "X-Orion-Role" => "Developer" }
+      get api_v1_magistrate_path(@magistrate), headers: auth_headers(:developer)
       assert_response :success
       current = JSON.parse(response.body)
 
       get api_v1_magistrate_path(@magistrate, fiscal_year: "2023-24"),
-          headers: { "X-Orion-Role" => "Developer" }
+          headers: auth_headers(:developer)
       assert_response :success
       historical = JSON.parse(response.body)
 

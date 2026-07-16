@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2026_07_09_100000) do
+ActiveRecord::Schema[7.1].define(version: 2026_07_16_210000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
 
@@ -163,6 +163,29 @@ ActiveRecord::Schema[7.1].define(version: 2026_07_09_100000) do
     t.index ["magistrate_id"], name: "index_training_records_on_magistrate_id"
   end
 
+  create_table "user_sessions", force: :cascade do |t|
+    t.bigint "user_id", null: false
+    t.string "token_digest", null: false
+    t.datetime "expires_at", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["expires_at"], name: "index_user_sessions_on_expires_at"
+    t.index ["token_digest"], name: "index_user_sessions_on_token_digest", unique: true
+    t.index ["user_id"], name: "index_user_sessions_on_user_id"
+  end
+
+  create_table "users", force: :cascade do |t|
+    t.string "username", null: false
+    t.string "email"
+    t.string "password_digest", null: false
+    t.string "role", default: "deputy", null: false
+    t.string "display_name", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["email"], name: "index_users_on_email", unique: true, where: "(email IS NOT NULL)"
+    t.index ["username"], name: "index_users_on_username", unique: true
+  end
+
   add_foreign_key "cases", "magistrates"
   add_foreign_key "leaves_of_absence", "magistrates"
   add_foreign_key "magistrate_sitting_locations", "courthouses"
@@ -173,4 +196,5 @@ ActiveRecord::Schema[7.1].define(version: 2026_07_09_100000) do
   add_foreign_key "sittings", "magistrates"
   add_foreign_key "sittings", "sitting_types"
   add_foreign_key "training_records", "magistrates"
+  add_foreign_key "user_sessions", "users"
 end

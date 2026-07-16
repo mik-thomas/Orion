@@ -52,7 +52,7 @@ export function LoginPage() {
             <OrionLogo className="orion-login__logo" />
             <div className="orion-login__brand-text">
               <span className="orion-login__brand-name">Orion</span>
-              <span className="orion-login__brand-tagline">Court management</span>
+              <span className="orion-login__brand-tagline">Bench management</span>
             </div>
           </div>
         </div>

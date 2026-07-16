@@ -3,7 +3,7 @@
 require "test_helper"
 
 class SessionsControllerTest < ActionDispatch::IntegrationTest
-  test "bench chair can sign in with demo credentials" do
+  test "bench chair can sign in with seeded credentials" do
     post api_v1_session_path, params: {
       username: "bench.chair",
       password: "BenchChair-Demo-2026"
@@ -41,6 +41,25 @@ class SessionsControllerTest < ActionDispatch::IntegrationTest
 
   test "show rejects missing token" do
     get api_v1_session_path
+    assert_response :unauthorized
+  end
+
+  test "destroy invalidates the session token" do
+    post api_v1_session_path, params: {
+      username: "bench.chair",
+      password: "BenchChair-Demo-2026"
+    }, as: :json
+    token = JSON.parse(response.body)["token"]
+
+    delete api_v1_session_path, headers: { "X-Orion-Session" => token }
+    assert_response :no_content
+
+    get api_v1_session_path, headers: { "X-Orion-Session" => token }
+    assert_response :unauthorized
+  end
+
+  test "protected endpoints reject requests without a session" do
+    get api_v1_magistrate_path(magistrates(:alice))
     assert_response :unauthorized
   end
 end

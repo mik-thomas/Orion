@@ -7,7 +7,7 @@ class MagistrateRetiringSoonTest < ActionDispatch::IntegrationTest
     magistrates(:alice).update!(retirement_on: Date.current + 45.days)
     magistrates(:bob).update!(retirement_on: Date.current + 8.months)
 
-    get retiring_soon_api_v1_magistrates_path, headers: { "X-Orion-Role" => "Developer" }
+    get retiring_soon_api_v1_magistrates_path, headers: auth_headers(:developer)
     assert_response :success
 
     body = JSON.parse(response.body)
@@ -21,7 +21,7 @@ class MagistrateRetiringSoonTest < ActionDispatch::IntegrationTest
   test "retiring_soon hides names for deputy role" do
     magistrates(:alice).update!(retirement_on: Date.current + 30.days)
 
-    get retiring_soon_api_v1_magistrates_path, headers: { "X-Orion-Role" => "Deputy" }
+    get retiring_soon_api_v1_magistrates_path, headers: auth_headers(:deputy)
     assert_response :success
 
     body = JSON.parse(response.body)
@@ -31,7 +31,7 @@ class MagistrateRetiringSoonTest < ActionDispatch::IntegrationTest
   test "reports overview includes retiring_soon" do
     magistrates(:alice).update!(retirement_on: Date.current + 60.days)
 
-    get api_v1_reports_overview_path, headers: { "X-Orion-Role" => "Developer" }
+    get api_v1_reports_overview_path, headers: auth_headers(:developer)
     assert_response :success
 
     body = JSON.parse(response.body)
@@ -42,7 +42,7 @@ class MagistrateRetiringSoonTest < ActionDispatch::IntegrationTest
   test "magistrate detail exposes retirement_on" do
     magistrates(:alice).update!(retirement_on: Date.current + 90.days)
 
-    get api_v1_magistrate_path(magistrates(:alice)), headers: { "X-Orion-Role" => "Developer" }
+    get api_v1_magistrate_path(magistrates(:alice)), headers: auth_headers(:developer)
     assert_response :success
 
     body = JSON.parse(response.body)

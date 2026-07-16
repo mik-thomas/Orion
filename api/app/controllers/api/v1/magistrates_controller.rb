@@ -100,11 +100,16 @@ module Api
           .where(magistrate_sitting_locations: { courthouse_id: courthouse_ids })
           .pluck(:id)
 
+        name_clause =
+          if names_visible?
+            "magistrates.first_name ILIKE :q OR magistrates.last_name ILIKE :q OR magistrates.email ILIKE :q OR "
+          else
+            ""
+          end
+
         scope.where(
-          "magistrates.first_name ILIKE :q OR magistrates.last_name ILIKE :q " \
-          "OR magistrates.reference_code ILIKE :q " \
-          "OR magistrates.home_courthouse_id IN (:court_ids) OR magistrates.id IN (:magistrate_ids)" \
-          "#{names_visible? ? ' OR magistrates.email ILIKE :q' : ''}",
+          "#{name_clause}magistrates.reference_code ILIKE :q " \
+          "OR magistrates.home_courthouse_id IN (:court_ids) OR magistrates.id IN (:magistrate_ids)",
           q: pattern,
           court_ids: courthouse_ids.presence || [0],
           magistrate_ids: sitting_magistrate_ids.presence || [0]
