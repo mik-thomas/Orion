@@ -9,12 +9,14 @@ module JsonRenderable
 
       def magistrate_summary_json(magistrate)
         violations = magistrate.compliance_violations
+        identity = magistrate_identity_fields(magistrate)
         base = magistrate.as_json(
           only: magistrate_summary_fields
         ).merge(
-          "reference_code" => magistrate.reference_code,
-          "display_name" => magistrate_display_name(magistrate),
-          "name_visible" => names_visible?,
+          "reference_code" => identity["reference_code"],
+          "display_name" => identity["display_name"],
+          "name_visible" => real_pii?,
+          "pii_anonymized" => !real_pii?,
           "home_courthouse" => magistrate.home_courthouse && courthouse_json(magistrate.home_courthouse),
           "active_leave" => magistrate.active_leave?,
           "current_leaves" => magistrate.current_leaves.map { |leave| leave_json(leave) },
@@ -26,29 +28,36 @@ module JsonRenderable
           "days_since_login" => magistrate.computed_days_since_login
         )
 
-        if names_visible?
-          base.merge("full_name" => magistrate.full_name)
+        if real_pii?
+          base.merge(
+            "full_name" => magistrate.full_name,
+            "first_name" => magistrate.first_name,
+            "last_name" => magistrate.last_name
+          )
         else
-          base.merge("full_name" => nil, "first_name" => nil, "last_name" => nil)
+          base.merge(
+            "full_name" => identity["full_name"],
+            "first_name" => identity["first_name"],
+            "last_name" => identity["last_name"]
+          )
         end
       end
 
       def magistrate_summary_fields
-        fields = %i[
-          id reference_code date_of_appointment reasonable_adjustments title frequency sitting_pattern
+        %i[
+          id date_of_appointment reasonable_adjustments title frequency sitting_pattern
           leaving_date leaving_reason retirement_on active cluster bench bench_role appraisal_status appraisal_cycle_years
           presiding_justice last_appraisal_on last_appraiser last_login_on days_since_login
         ]
-        fields += %i[first_name last_name] if names_visible?
-        fields
       end
 
       def retiring_soon_json(magistrate)
+        identity = magistrate_identity_fields(magistrate)
         days = magistrate.days_until_retirement
         {
           "magistrate_id" => magistrate.id,
-          "display_name" => magistrate_display_name(magistrate),
-          "reference_code" => magistrate.reference_code,
+          "display_name" => identity["display_name"],
+          "reference_code" => identity["reference_code"],
           "retirement_on" => magistrate.retirement_on,
           "days_until_retirement" => days,
           "imminent" => magistrate.retirement_imminent?
@@ -60,7 +69,22 @@ module JsonRenderable
       end
 
       def magistrate_display_name(magistrate)
-        Orion::Role.display_name(magistrate, current_role)
+        magistrate_identity_fields(magistrate)["display_name"]
+      end
+
+      def magistrate_identity_fields(magistrate)
+        if real_pii?
+          {
+            "first_name" => magistrate.first_name,
+            "last_name" => magistrate.last_name,
+            "full_name" => magistrate.full_name,
+            "display_name" => magistrate.full_name,
+            "reference_code" => magistrate.reference_code,
+            "email" => magistrate.email
+          }
+        else
+          Orion::PiiAnonymizer.for_magistrate(magistrate)
+        end
       end
 
       def magistrate_detail_json(magistrate, period: nil)
@@ -79,12 +103,13 @@ module JsonRenderable
       end
 
       def magistrate_roster_json(magistrate)
+        identity = magistrate_identity_fields(magistrate)
         {
           "id" => magistrate.id,
-          "reference_code" => magistrate.reference_code,
-          "full_name" => magistrate.full_name,
+          "reference_code" => identity["reference_code"],
+          "full_name" => identity["full_name"],
           "home_courthouse" => magistrate.home_courthouse&.name,
-          "email" => magistrate.email
+          "email" => real_pii? ? magistrate.email : nil
         }
       end
 
@@ -157,6 +182,40 @@ module JsonRenderable
 
   def note_json(note)
     note.as_json(only: %i[id case_id body author_name created_at updated_at])
+  end
+
+  def task_user_json(user)
+    return nil unless user
+
+    {
+      "id" => user.id,
+      "username" => user.username,
+      "display_name" => user.display_name,
+      "role" => user.role_label
+    }
+  end
+
+  def task_json(task)
+    task.as_json(
+      only: %i[id title description status priority due_on completed_at report_notes created_at updated_at]
+    ).merge(
+      "created_by_user_id" => task.created_by_id,
+      "assigned_to_user_id" => task.assigned_to_id,
+      "created_by" => task_user_json(task.created_by),
+      "assigned_to" => task_user_json(task.assigned_to),
+      "overdue" => task.overdue?
+    )
+  end
+
+  def task_summary_json(scope)
+    {
+      "open" => scope.where(status: "open").count,
+      "in_progress" => scope.where(status: "in_progress").count,
+      "done" => scope.where(status: "done").count,
+      "cancelled" => scope.where(status: "cancelled").count,
+      "overdue" => scope.overdue.count,
+      "total" => scope.count
+    }
   end
 
   def sitting_type_json(sitting_type)

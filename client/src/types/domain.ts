@@ -139,6 +139,7 @@ export interface MagistrateSummary {
   reference_code: string;
   display_name: string;
   name_visible: boolean;
+  pii_anonymized?: boolean;
   first_name: string | null;
   last_name: string | null;
   full_name: string | null;
@@ -392,4 +393,46 @@ export interface MagistrateRosterEntry {
   full_name: string;
   home_courthouse: string | null;
   email: string | null;
+}
+
+export type TaskStatus = "open" | "in_progress" | "done" | "cancelled";
+export type TaskPriority = "low" | "normal" | "high";
+
+export interface TaskUser {
+  id: number;
+  username: string;
+  display_name: string;
+  role: string;
+}
+
+export interface Task {
+  id: number;
+  title: string;
+  description: string | null;
+  status: TaskStatus;
+  priority: TaskPriority;
+  due_on: string | null;
+  completed_at: string | null;
+  report_notes: string | null;
+  created_at: string;
+  updated_at: string;
+  created_by_user_id: number;
+  assigned_to_user_id: number;
+  created_by: TaskUser;
+  assigned_to: TaskUser;
+  overdue: boolean;
+}
+
+export interface TaskSummary {
+  open: number;
+  in_progress: number;
+  done: number;
+  cancelled: number;
+  overdue: number;
+  total: number;
+}
+
+export interface TaskListResponse {
+  tasks: Task[];
+  summary: TaskSummary;
 }

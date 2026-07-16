@@ -10,7 +10,7 @@ module Api
 
       def index
         magistrates = Magistrate.includes(:home_courthouse, :leaves_of_absence, :sitting_locations)
-          .order(:last_name, :first_name)
+        magistrates = order_magistrates(magistrates)
         magistrates = magistrates.on_leave if params[:on_leave] == "1"
         magistrates = apply_search(magistrates, params[:q])
         render json: magistrates.map { |magistrate| magistrate_summary_json(magistrate) }
@@ -19,7 +19,7 @@ module Api
       def on_leave
         magistrates = Magistrate.on_leave
           .includes(:home_courthouse, :leaves_of_absence)
-          .order(:last_name, :first_name)
+        magistrates = order_magistrates(magistrates)
 
         render json: magistrates.map { |magistrate| magistrate_summary_json(magistrate) }
       end
@@ -30,7 +30,7 @@ module Api
 
       def roster
         magistrates = Magistrate.includes(:home_courthouse)
-          .order(:reference_code)
+        magistrates = real_pii? ? magistrates.order(:reference_code) : magistrates.order(:id)
 
         render json: magistrates.map { |magistrate| magistrate_roster_json(magistrate) }
       end
@@ -90,6 +90,11 @@ module Api
         end
       end
 
+      def order_magistrates(scope)
+        # Avoid leaking real surname order when responses use anonymised names.
+        real_pii? ? scope.order(:last_name, :first_name) : scope.order(:id)
+      end
+
       def apply_search(scope, query)
         q = query.to_s.strip
         return scope if q.blank?
@@ -100,17 +105,20 @@ module Api
           .where(magistrate_sitting_locations: { courthouse_id: courthouse_ids })
           .pluck(:id)
 
-        name_clause =
-          if names_visible?
-            "magistrates.first_name ILIKE :q OR magistrates.last_name ILIKE :q OR magistrates.email ILIKE :q OR "
-          else
-            ""
-          end
+        # Non-authorised roles must not search real names, emails, or reference codes.
+        if real_pii?
+          return scope.where(
+            "magistrates.first_name ILIKE :q OR magistrates.last_name ILIKE :q OR magistrates.email ILIKE :q OR " \
+            "magistrates.reference_code ILIKE :q OR magistrates.home_courthouse_id IN (:court_ids) OR " \
+            "magistrates.id IN (:magistrate_ids)",
+            q: pattern,
+            court_ids: courthouse_ids.presence || [0],
+            magistrate_ids: sitting_magistrate_ids.presence || [0]
+          )
+        end
 
         scope.where(
-          "#{name_clause}magistrates.reference_code ILIKE :q " \
-          "OR magistrates.home_courthouse_id IN (:court_ids) OR magistrates.id IN (:magistrate_ids)",
-          q: pattern,
+          "magistrates.home_courthouse_id IN (:court_ids) OR magistrates.id IN (:magistrate_ids)",
           court_ids: courthouse_ids.presence || [0],
           magistrate_ids: sitting_magistrate_ids.presence || [0]
         )

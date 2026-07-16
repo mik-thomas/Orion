@@ -1,7 +1,6 @@
 ENV["RAILS_ENV"] ||= "test"
-# Controller tests assert role visibility via X-Orion-Role without a session.
-# Production never sets this; see RoleAuthorizable#allow_dev_role_header_fallback?
-ENV["ORION_ALLOW_ROLE_HEADER"] ||= "1"
+# Never enable ORION_ALLOW_ROLE_HEADER in tests — production auth must be exercised.
+ENV.delete("ORION_ALLOW_ROLE_HEADER")
 require_relative "../config/environment"
 require "rails/test_help"
 

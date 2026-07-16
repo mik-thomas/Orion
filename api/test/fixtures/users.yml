@@ -12,7 +12,7 @@ developer:
   email: developer@orion.test
   password_digest: <%= BCrypt::Password.create("Developer-Demo-2026", cost: 4) %>
   role: developer
-  display_name: Developer
+  display_name: Michael Thomas
 
 hmcts_slm:
   username: hmcts.slm

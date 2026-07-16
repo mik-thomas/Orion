@@ -24,7 +24,11 @@ class User < ApplicationRecord
   end
 
   def manager?
-    Orion::Role.names_visible?(role_label)
+    Orion::Role.real_pii?(role_label)
+  end
+
+  def real_pii?
+    Orion::Role.real_pii?(role_label)
   end
 
   private

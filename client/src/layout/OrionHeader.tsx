@@ -1,5 +1,6 @@
 import { useEffect, useId, useRef, useState } from "react";
 import { Link, NavLink, useLocation, useNavigate } from "react-router-dom";
+import { RoleSelector } from "../components/RoleSelector";
 import { OrionLogo } from "../components/OrionLogo";
 import { useAuth } from "../context/AuthContext";
 import { useRole } from "../context/RoleContext";
@@ -166,7 +167,11 @@ export function OrionHeader() {
               </li>
               <li className="orion-app-header__nav-item orion-app-header__nav-item--role">
                 <div className="orion-session-chip">
-                  <span className="orion-session-chip__role">{role}</span>
+                  {session?.role === "Developer" ? (
+                    <RoleSelector />
+                  ) : (
+                    <span className="orion-session-chip__role">{role}</span>
+                  )}
                   {session?.displayName && (
                     <span className="orion-session-chip__user">{session.displayName}</span>
                   )}

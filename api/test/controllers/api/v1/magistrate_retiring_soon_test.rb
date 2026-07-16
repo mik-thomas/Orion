@@ -18,14 +18,16 @@ class MagistrateRetiringSoonTest < ActionDispatch::IntegrationTest
     assert_equal true, body.first["imminent"]
   end
 
-  test "retiring_soon hides names for deputy role" do
+  test "retiring_soon anonymises names for deputy role" do
     magistrates(:alice).update!(retirement_on: Date.current + 30.days)
+    fake = Orion::PiiAnonymizer.for_magistrate(magistrates(:alice))
 
     get retiring_soon_api_v1_magistrates_path, headers: auth_headers(:deputy)
     assert_response :success
 
     body = JSON.parse(response.body)
-    assert_equal "SY-0001", body.first["display_name"]
+    assert_equal fake["display_name"], body.first["display_name"]
+    assert_equal fake["reference_code"], body.first["reference_code"]
   end
 
   test "reports overview includes retiring_soon" do

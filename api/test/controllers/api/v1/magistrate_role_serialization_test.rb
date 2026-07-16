@@ -3,19 +3,19 @@
 require "test_helper"
 
 class MagistrateRoleSerializationTest < ActionDispatch::IntegrationTest
-  test "deputy role hides magistrate names and email" do
+  test "deputy role anonymises magistrate names and email" do
     magistrate = magistrates(:alice)
+    fake = Orion::PiiAnonymizer.for_magistrate(magistrate)
 
     get api_v1_magistrate_path(magistrate), headers: auth_headers(:deputy)
     assert_response :success
 
     body = JSON.parse(response.body)
-    assert_equal "SY-0001", body["reference_code"]
-    assert_equal "SY-0001", body["display_name"]
+    assert_equal fake["reference_code"], body["reference_code"]
+    assert_equal fake["display_name"], body["display_name"]
     assert_equal false, body["name_visible"]
-    assert_nil body["full_name"]
-    assert_nil body["first_name"]
-    assert_nil body["last_name"]
+    assert_equal true, body["pii_anonymized"]
+    assert_equal fake["full_name"], body["full_name"]
     assert_nil body["email"]
   end
 
@@ -29,6 +29,7 @@ class MagistrateRoleSerializationTest < ActionDispatch::IntegrationTest
     assert_equal "Alice Example", body["display_name"]
     assert_equal "Alice Example", body["full_name"]
     assert_equal true, body["name_visible"]
+    assert_equal false, body["pii_anonymized"]
     assert_equal "SY-0001", body["reference_code"]
     assert_nil body["email"]
   end
@@ -38,8 +39,13 @@ class MagistrateRoleSerializationTest < ActionDispatch::IntegrationTest
     assert_response :forbidden
   end
 
-  test "roster returns names for hmcts slm" do
+  test "roster is forbidden for hmcts slm by default" do
     get roster_api_v1_magistrates_path, headers: auth_headers(:hmcts_slm)
+    assert_response :forbidden
+  end
+
+  test "roster returns names for developer" do
+    get roster_api_v1_magistrates_path, headers: auth_headers(:developer)
     assert_response :success
 
     body = JSON.parse(response.body)
@@ -49,24 +55,59 @@ class MagistrateRoleSerializationTest < ActionDispatch::IntegrationTest
     assert_equal "alice@example.com", alice["email"]
   end
 
+  test "hmcts slm anonymises names by default" do
+    magistrate = magistrates(:alice)
+    fake = Orion::PiiAnonymizer.for_magistrate(magistrate)
+
+    get api_v1_magistrate_path(magistrate), headers: auth_headers(:hmcts_slm)
+    assert_response :success
+
+    body = JSON.parse(response.body)
+    assert_equal false, body["name_visible"]
+    assert_equal fake["display_name"], body["display_name"]
+  end
+
   test "role comes from authenticated user not spoofed header" do
-    # Bench Chair session with spoofed Developer header must stay restricted.
-    get api_v1_magistrate_path(magistrates(:alice)),
+    magistrate = magistrates(:alice)
+    fake = Orion::PiiAnonymizer.for_magistrate(magistrate)
+
+    get api_v1_magistrate_path(magistrate),
         headers: auth_headers(:bench_chair).merge("X-Orion-Role" => "Developer")
     assert_response :success
 
     body = JSON.parse(response.body)
     assert_equal false, body["name_visible"]
-    assert_equal "SY-0001", body["display_name"]
+    assert_equal fake["display_name"], body["display_name"]
   end
 
-  test "developer may preview another role via header" do
-    get api_v1_magistrate_path(magistrates(:alice)),
+  test "developer may preview another role via header and hide PII" do
+    magistrate = magistrates(:alice)
+    fake = Orion::PiiAnonymizer.for_magistrate(magistrate)
+
+    get api_v1_magistrate_path(magistrate),
         headers: auth_headers(:developer, role_override: "Deputy")
     assert_response :success
 
     body = JSON.parse(response.body)
     assert_equal false, body["name_visible"]
-    assert_equal "SY-0001", body["display_name"]
+    assert_equal fake["display_name"], body["display_name"]
+  end
+
+  test "ORION_SHOW_REAL_PII_ROLES can authorise additional roles" do
+    previous = ENV["ORION_SHOW_REAL_PII_ROLES"]
+    ENV["ORION_SHOW_REAL_PII_ROLES"] = "developer,hmcts_slm"
+    begin
+      get api_v1_magistrate_path(magistrates(:alice)), headers: auth_headers(:hmcts_slm)
+      assert_response :success
+      body = JSON.parse(response.body)
+      assert_equal true, body["name_visible"]
+      assert_equal "Alice Example", body["display_name"]
+    ensure
+      if previous.nil?
+        ENV.delete("ORION_SHOW_REAL_PII_ROLES")
+      else
+        ENV["ORION_SHOW_REAL_PII_ROLES"] = previous
+      end
+    end
   end
 end

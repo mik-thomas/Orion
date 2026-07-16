@@ -8,6 +8,9 @@ export interface OrionSession {
   username: string;
   role: Role;
   displayName: string;
+  namesVisible: boolean;
+  rosterAccess: boolean;
+  piiRoles: Role[];
 }
 
 export function loadStoredSession(): OrionSession | null {
@@ -23,6 +26,11 @@ export function loadStoredSession(): OrionSession | null {
     ) {
       return null;
     }
+    const piiRoles = Array.isArray(parsed.piiRoles)
+      ? parsed.piiRoles.filter((role): role is Role => ROLES.includes(role as Role))
+      : parsed.role === "Developer"
+        ? (["Developer"] as Role[])
+        : [];
     return {
       token: parsed.token,
       username: parsed.username,
@@ -31,6 +39,9 @@ export function loadStoredSession(): OrionSession | null {
         typeof parsed.displayName === "string" && parsed.displayName
           ? parsed.displayName
           : parsed.username,
+      namesVisible: Boolean(parsed.namesVisible),
+      rosterAccess: Boolean(parsed.rosterAccess),
+      piiRoles,
     };
   } catch {
     return null;

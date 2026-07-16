@@ -1,7 +1,10 @@
 # frozen_string_literal: true
 
 # Authenticates API requests via X-Orion-Session and derives role from the user.
-# Developer accounts may send X-Orion-Role to preview visibility as another role.
+# Real PII is gated by ORION_SHOW_REAL_PII_ROLES (default: developer only).
+# Visibility requires the authenticated account role AND the effective viewing role
+# to be allowlisted — client headers alone cannot elevate to real names.
+# Developer accounts may send X-Orion-Role to preview as a more restricted role.
 # In development only, ORION_ALLOW_ROLE_HEADER=1 allows unauthenticated role
 # header fallback (documented in docs/login.md) — never used in production.
 module RoleAuthorizable
@@ -20,12 +23,21 @@ module RoleAuthorizable
     @current_role
   end
 
-  def names_visible?
-    Orion::Role.names_visible?(@current_role)
+  # Real identifiable magistrate data (names, emails, real reference codes).
+  def real_pii?
+    return false unless @current_user
+
+    Orion::Role.real_pii?(@current_user.role_label) &&
+      Orion::Role.real_pii?(@current_role)
   end
 
+  def names_visible?
+    real_pii?
+  end
+
+  # Roster includes emails — same gate as real PII.
   def roster_access?
-    Orion::Role.roster_access?(@current_role)
+    real_pii?
   end
 
   private
@@ -63,7 +75,9 @@ module RoleAuthorizable
   def require_roster_access!
     return if roster_access?
 
-    render json: { error: "Roster access requires HMCTS-SLM or Developer role" }, status: :forbidden
+    render json: {
+      error: "Roster access requires a role authorised for real identifiable data"
+    }, status: :forbidden
   end
 
   def session_token

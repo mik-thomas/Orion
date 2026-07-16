@@ -6,10 +6,12 @@ export const DEFAULT_ROLE: Role = "Deputy";
 
 export const STORAGE_KEY = "orion-role";
 
+/** Real identifiable magistrate names — default: Developer only (matches API). */
 export function canViewNames(role: Role): boolean {
-  return role === "HMCTS-SLM" || role === "Developer";
+  return role === "Developer";
 }
 
+/** Roster with emails — same gate as real PII. */
 export function canViewRoster(role: Role): boolean {
   return canViewNames(role);
 }

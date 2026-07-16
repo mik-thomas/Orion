@@ -54,36 +54,33 @@ npm run deploy -- -m "short summary of changes"
 
 Runs checks → commit (if needed) → push → PR → CI → merge to `main` → Railway auto-deploy. Do **not** use `railway up` for routine releases.
 
-## Sign-in (MVP demo)
+## Sign-in
 
-The app is gated behind `/login`. Demo auth issues a signed session token and sets the signed-in role (Bench Chair by default).
+The app is gated behind `/login`. Username/password auth issues a revocable server session token. Role and PII access come from the authenticated user — not from a client-spoofable header.
 
-| Username | Password | Role |
-| --- | --- | --- |
-| `bench.chair` | `BenchChair-Demo-2026` | Bench Chair |
+| Username | Password | Role | Real PII |
+| --- | --- | --- | --- |
+| `bench.chair` | `BenchChair-Demo-2026` | Bench Chair | **No** — randomised demo names (**share with colleagues**) |
+| `developer` | `Developer-Demo-2026` | Developer | **Yes** — Michael only |
 
-These are **demo credentials** (also the API default when `ORION_DEMO_USERS` is unset). Override in production with Railway env:
-
-```bash
-ORION_DEMO_USERS='[{"username":"bench.chair","password":"choose-a-password","role":"Bench Chair","display_name":"Bench Chair"}]'
-```
+Full details and other seed accounts: [docs/login.md](docs/login.md).
 
 Production: https://orion-client-production.up.railway.app/login
 
-## Role visibility (MVP)
+## Role visibility / PII gate
 
-After sign-in, the client sends `X-Orion-Role` from the session (Bench Chair for the demo user). Not real SSO — production needs proper authentication.
+**Only Developer sees real identifiable data by default** (`ORION_SHOW_REAL_PII_ROLES=developer`). Other roles get **stable randomised** fake names and `DEMO-****` codes in API JSON; sitting stats stay real. Expand the allowlist via env if needed (e.g. `developer,hmcts-slm`).
 
-| Role | Sees names | Roster |
-| --- | --- | --- |
-| HMCTS-SLM, Developer | Yes | Yes |
-| Bench Chair, Deputy | Reference codes only | No (403) |
+| Role | Real PII | What they see | Roster |
+| --- | --- | --- | --- |
+| Developer | Yes | Real names / codes / emails | Yes |
+| HMCTS-SLM, Bench Chair, Deputy | No | Fake names + `DEMO-****` | No (403) |
 
-API default when the role header is missing: **Deputy** (most restrictive). Logged-out users cannot use the app UI.
+Verify: `npm run verify:pii-gate`. This is Orion app login, not HMCTS SSO yet.
 
 ## About
 
-Created by Michael Thomas. Identifiable magistrate details are access-controlled; Bench Chair and Deputy users see reference codes only, not names.
+Created by Michael Thomas. Identifiable magistrate details are API-enforced; non-authorised roles see randomised demo names, not real PII.
 
 ## Agent notes
 

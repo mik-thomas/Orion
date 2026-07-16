@@ -33,7 +33,10 @@ module Api
           away_from_home: away_from_home_counts(scoped_sittings),
           by_sitting_type: sitting_type_counts(scoped_sittings),
           dj_cancellations: Orion::SittingReports.dj_cancellation_report_for(scoped_sittings),
-          home_court_movement: Orion::SittingReports.home_court_movement_report_for(scoped_sittings, role: current_role),
+          home_court_movement: Orion::SittingReports.home_court_movement_report_for(
+            scoped_sittings,
+            display_name: method(:magistrate_display_name)
+          ),
           login_report: login_report_rows,
           commitment_forecast: commitment_forecast_rows,
           retiring_soon: retiring_soon_rows,

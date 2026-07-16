@@ -18,6 +18,7 @@
     "laptop-setup": "bash scripts/laptop-setup.sh",
     "check": "bash scripts/check.sh",
     "deploy": "bash scripts/deploy.sh",
+    "verify:pii-gate": "cd api && bin/rails orion:verify_pii_gate",
     "import:south-yorkshire": "bash scripts/import-south-yorkshire.sh",
     "test": "node --test test/*.test.js",
     "test:client": "cd client && npm run build"

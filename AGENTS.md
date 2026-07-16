@@ -25,18 +25,23 @@ Manual equivalent: branch off `main` → PR → CI green → merge → Railway.
 
 Do not use `railway up` for normal releases. There is no Railway staging environment — only **`production`**.
 
-## Role-based magistrate visibility (MVP)
+## Role-based magistrate visibility
 
-UI is gated at `/login` (demo session token in `localStorage`). After Bench Chair sign-in, role defaults to **Bench Chair** and is sent as `X-Orion-Role`. This is **not** real SSO — production needs proper authentication.
+UI is gated at `/login` (server session token in `localStorage`). Role and PII access come from the authenticated `User` — **not** from a spoofable `X-Orion-Role` header.
 
-Demo user (see README): `bench.chair` / `BenchChair-Demo-2026`.
+**Only Developer sees real identifiable data by default** (`ORION_SHOW_REAL_PII_ROLES=developer`). Other roles get stable randomised demo names in API JSON. See [docs/login.md](docs/login.md).
 
-| Role | Sees names | Roster (`/magistrates/roster`) |
+| Username | Password | Role |
 | --- | --- | --- |
-| HMCTS-SLM, Developer | Yes | Yes |
-| Bench Chair, Deputy | Reference codes only | No (403) |
+| `developer` | `Developer-Demo-2026` | Developer (Michael — real PII) |
+| `bench.chair` | `BenchChair-Demo-2026` | Bench Chair (anonymised — share with colleagues) |
 
-API default when the role header is missing: **Deputy** (most restrictive). Logged-out users are redirected to `/login`.
+| Role | Real PII | Roster (`/magistrates/roster`) |
+| --- | --- | --- |
+| Developer | Yes | Yes |
+| HMCTS-SLM, Bench Chair, Deputy | No (fake names / `DEMO-****`) | No (403) |
+
+This is Orion app login, not HMCTS SSO. Logged-out users are redirected to `/login`.
 
 ## Railway production (monorepo)
 

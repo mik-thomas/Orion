@@ -15,7 +15,7 @@
     email: "developer@orion.local",
     password: "Developer-Demo-2026",
     role: "developer",
-    display_name: "Developer"
+    display_name: "Michael Thomas"
   },
   {
     username: "hmcts.slm",

@@ -16,7 +16,8 @@ export async function request<T>(path: string, options?: RequestInit): Promise<T
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
     Accept: "application/json",
-    "X-Orion-Role": session?.role ?? loadStoredRole(),
+    // Viewing role (Developers may preview); server enforces account role for everyone else.
+    "X-Orion-Role": loadStoredRole(),
     ...(options?.headers as Record<string, string> | undefined),
   };
   if (session?.token) {

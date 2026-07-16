@@ -63,8 +63,7 @@ export function LoginPage() {
           <div className="orion-login__panel">
             <h1 className="govuk-heading-l">Sign in to Orion</h1>
             <p className="govuk-body">
-              Bench Chair access for magistrate sittings, leave and reports. Sign in with your Orion
-              account.
+              Sign in with your Orion username and password. This is Orion app login (not HMCTS SSO).
             </p>
 
             {error && (

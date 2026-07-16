@@ -6,11 +6,22 @@ export interface SessionResponse {
   username: string;
   role: Role;
   display_name: string;
+  names_visible?: boolean;
+  real_pii?: boolean;
+  pii_anonymized?: boolean;
+  roster_access?: boolean;
+  pii_roles?: Role[];
 }
 
 export interface SessionStatusResponse {
   username: string;
   role: Role;
+  display_name?: string;
+  names_visible?: boolean;
+  real_pii?: boolean;
+  pii_anonymized?: boolean;
+  roster_access?: boolean;
+  pii_roles?: Role[];
 }
 
 export async function createSession(username: string, password: string): Promise<SessionResponse> {

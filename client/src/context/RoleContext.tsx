@@ -3,14 +3,13 @@ import {
   DEFAULT_ROLE,
   loadStoredRole,
   STORAGE_KEY,
-  canViewNames,
-  canViewRoster,
   type Role,
 } from "../lib/role";
 
 interface RoleContextValue {
   role: Role;
   setRole: (role: Role) => void;
+  setPiiAllowlist: (roles: Role[]) => void;
   canViewNames: boolean;
   canViewRoster: boolean;
 }
@@ -19,6 +18,7 @@ const RoleContext = createContext<RoleContextValue | null>(null);
 
 export function RoleProvider({ children }: { children: ReactNode }) {
   const [role, setRoleState] = useState<Role>(() => loadStoredRole());
+  const [piiAllowlist, setPiiAllowlistState] = useState<Role[]>([]);
 
   const setRole = useCallback((next: Role) => {
     setRoleState(next);
@@ -26,13 +26,20 @@ export function RoleProvider({ children }: { children: ReactNode }) {
     window.dispatchEvent(new CustomEvent("orion-role-change", { detail: next }));
   }, []);
 
+  const setPiiAllowlist = useCallback((roles: Role[]) => {
+    setPiiAllowlistState(roles);
+  }, []);
+
+  const canView = piiAllowlist.includes(role);
+
   return (
     <RoleContext.Provider
       value={{
         role,
         setRole,
-        canViewNames: canViewNames(role),
-        canViewRoster: canViewRoster(role),
+        setPiiAllowlist,
+        canViewNames: canView,
+        canViewRoster: canView,
       }}
     >
       {children}
@@ -46,6 +53,7 @@ export function useRole() {
     return {
       role: DEFAULT_ROLE,
       setRole: () => {},
+      setPiiAllowlist: () => {},
       canViewNames: false,
       canViewRoster: false,
     };

@@ -261,7 +261,9 @@ export function MagistrateProfilePage() {
       <h1 className="govuk-heading-xl">{magistrate.display_name}</h1>
       {!canViewNames && (
         <p className="govuk-body-l">
-          Reference <strong>{magistrate.reference_code}</strong> — personal details are hidden for your role.
+          Demo identity <strong>{magistrate.display_name}</strong> (
+          <strong>{magistrate.reference_code}</strong>) — real names and emails are hidden for your
+          role.
         </p>
       )}
 
