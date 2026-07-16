@@ -20,10 +20,16 @@ module Orion
       rota: "Removed Magistrates/South Yorkshire-Rota Jul 26.xlsx"
     }.freeze
 
-    def initialize(root: DATA_ROOT, clear: true, resume: false, progress: ImportProgressReporter.new)
+    # Required for any import. Companion packs are optional so a sitting-summary-only
+    # drop can still load magistrates, home courts, and leaves additively.
+    REQUIRED_FILES = %i[summary].freeze
+    OPTIONAL_FILES = %i[cancelled vacancy vacated rota].freeze
+
+    def initialize(root: DATA_ROOT, clear: true, resume: false, additive: false, progress: ImportProgressReporter.new)
       @root = Pathname(root)
-      @resume = resume
-      @clear = clear && !resume
+      @additive = additive
+      @resume = resume && !additive
+      @clear = clear && !resume && !additive
       @progress = progress
       @magistrates_by_email = {}
       @magistrates_by_name = {}
@@ -45,12 +51,12 @@ module Orion
 
       @progress.message("Starting South Yorkshire import from #{@root}")
       @progress.message("Importer: #{importer_version}")
-      @progress.message("Mode: #{@resume ? 'resume' : (@clear ? 'full (clear existing)' : 'incremental')}")
+      @progress.message("Mode: #{import_mode_label}")
 
       if @clear
         run_transaction_phase("clear_existing", "clearing existing data") { clear_existing! }
-      elsif @resume
-        @progress.message("Skipping clear — resume mode preserves existing data")
+      elsif @resume || @additive
+        @progress.message("Skipping clear — existing data will be preserved (import_key upsert)")
       end
 
       run_transaction_phase("seed_canonical_courthouses", "seeding courthouses") do
@@ -75,9 +81,29 @@ module Orion
 
     private
 
+    def import_mode_label
+      return "additive (no truncate; all phases; import_key dedup)" if @additive
+      return "resume" if @resume
+      return "full (clear existing)" if @clear
+
+      "incremental"
+    end
+
     def validate_files!
-      missing = FILES.filter_map { |key, rel| "#{key}: #{rel}" unless (@root + rel).exist? }
-      raise "Missing import files under #{@root}:\n#{missing.join("\n")}" if missing.any?
+      missing_required = REQUIRED_FILES.filter_map do |key|
+        "#{key}: #{FILES.fetch(key)}" unless file_present?(key)
+      end
+      raise "Missing required import files under #{@root}:\n#{missing_required.join("\n")}" if missing_required.any?
+
+      OPTIONAL_FILES.each do |key|
+        next if file_present?(key)
+
+        @progress.message("Optional file missing — skipping #{key}: #{FILES.fetch(key)}")
+      end
+    end
+
+    def file_present?(key)
+      (@root + FILES.fetch(key)).exist?
     end
 
     def clear_existing!
@@ -108,7 +134,7 @@ module Orion
     end
 
     def importer_version
-      "2026-07-09e (rota login row fix)"
+      "2026-07-16a (additive + optional packs)"
     end
 
     def setup_checkpoint!
@@ -186,25 +212,25 @@ module Orion
         checkpoint,
         "import_completed_sittings_populated_by_ra",
         "populated_by_ra",
-        surname_rows(open_sheet(:vacancy, "Populated by RA")).size
+        file_present?(:vacancy) ? surname_rows(open_sheet(:vacancy, "Populated by RA")).size : 0
       )
       infer_sitting_phase_complete!(
         checkpoint,
         "import_completed_sittings_accepted_by_magistrate",
         "accepted_by_magistrate",
-        surname_rows(open_sheet(:vacancy, "Accepted by Magistrate - in LJA")).size
+        file_present?(:vacancy) ? surname_rows(open_sheet(:vacancy, "Accepted by Magistrate - in LJA")).size : 0
       )
       infer_sitting_phase_complete!(
         checkpoint,
         "import_vacated_sittings",
         "vacated",
-        report_rows(open_sheet(:vacated, "Report")).size
+        file_present?(:vacated) ? report_rows(open_sheet(:vacated, "Report")).size : 0
       )
       infer_sitting_phase_complete!(
         checkpoint,
         "import_cancelled_sittings",
         "cancelled",
-        report_rows(open_sheet(:cancelled, "Report")).size
+        file_present?(:cancelled) ? report_rows(open_sheet(:cancelled, "Report")).size : 0
       )
 
       %w[warm_lookup_caches_1 warm_lookup_caches_2 warm_lookup_caches_3].each do |key|
@@ -833,10 +859,14 @@ module Orion
     end
 
     def rota_login_rows
+      return [] unless file_present?(:rota)
+
       open_sheet(:rota, "Northeast Rota Last Login").parse.reject { |row| row.compact.blank? }
     end
 
     def rota_login_import_incomplete?
+      return false unless file_present?(:rota)
+
       rows = rota_login_rows
       return false if rows.empty?
 
@@ -844,6 +874,11 @@ module Orion
     end
 
     def enrich_from_rota!
+      unless file_present?(:rota)
+        @progress.message("Skipping rota enrichment — file not present")
+        return
+      end
+
       rows = rota_login_rows
 
       with_checkpointed_rows("enriching magistrates from rota", rows, phase_key: "enrich_from_rota") do |row|
@@ -929,19 +964,28 @@ module Orion
         starts_on = parse_date(row[18])
         ends_on = parse_date(row[19])
         if starts_on.present?
-          LeaveOfAbsence.create!(
-            magistrate:,
+          leave = magistrate.leaves_of_absence.find_or_initialize_by(
             starts_on:,
             ends_on:,
-            reason: normalize_name(row[20]),
-            notes: normalize_name(row[21])
+            reason: normalize_name(row[20])
           )
-          stats[:leaves] += 1
+          if leave.new_record?
+            leave.notes = normalize_name(row[21])
+            leave.save!
+            stats[:leaves] += 1
+          else
+            stats[:leaves_skipped] += 1
+          end
         end
       end
     end
 
     def import_completed_sittings!(kind)
+      unless file_present?(:vacancy)
+        @progress.message("Skipping completed sittings (#{kind}) — vacancy file not present")
+        return
+      end
+
       case kind
       when :populated_by_ra
         sheet = open_sheet(:vacancy, "Populated by RA")
@@ -962,6 +1006,11 @@ module Orion
     end
 
     def import_vacated_sittings!
+      unless file_present?(:vacated)
+        @progress.message("Skipping vacated sittings — file not present")
+        return
+      end
+
       sheet = open_sheet(:vacated, "Report")
       rows = report_rows(sheet)
 
@@ -976,6 +1025,11 @@ module Orion
     end
 
     def import_cancelled_sittings!
+      unless file_present?(:cancelled)
+        @progress.message("Skipping cancelled sittings — file not present")
+        return
+      end
+
       sheet = open_sheet(:cancelled, "Report")
       rows = report_rows(sheet)
 
