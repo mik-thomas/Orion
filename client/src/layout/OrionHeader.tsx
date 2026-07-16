@@ -1,7 +1,7 @@
 import { useEffect, useId, useRef, useState } from "react";
-import { Link, NavLink, useLocation } from "react-router-dom";
+import { Link, NavLink, useLocation, useNavigate } from "react-router-dom";
 import { OrionLogo } from "../components/OrionLogo";
-import { RoleSelector } from "../components/RoleSelector";
+import { useAuth } from "../context/AuthContext";
 import { useRole } from "../context/RoleContext";
 
 type NavDropdownItem = {
@@ -91,10 +91,23 @@ function NavDropdown({
 }
 
 export function OrionHeader() {
-  const { canViewRoster } = useRole();
+  const { canViewRoster, role } = useRole();
+  const { session, logout } = useAuth();
+  const navigate = useNavigate();
   const location = useLocation();
   const navId = useId();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [signingOut, setSigningOut] = useState(false);
+
+  async function handleSignOut() {
+    setSigningOut(true);
+    try {
+      await logout();
+      navigate("/login", { replace: true });
+    } finally {
+      setSigningOut(false);
+    }
+  }
 
   useEffect(() => {
     setMobileOpen(false);
@@ -152,7 +165,20 @@ export function OrionHeader() {
                 </NavLink>
               </li>
               <li className="orion-app-header__nav-item orion-app-header__nav-item--role">
-                <RoleSelector />
+                <div className="orion-session-chip">
+                  <span className="orion-session-chip__role">{role}</span>
+                  {session?.displayName && (
+                    <span className="orion-session-chip__user">{session.displayName}</span>
+                  )}
+                  <button
+                    type="button"
+                    className="orion-session-chip__sign-out"
+                    onClick={() => void handleSignOut()}
+                    disabled={signingOut}
+                  >
+                    {signingOut ? "Signing out…" : "Sign out"}
+                  </button>
+                </div>
               </li>
             </ul>
           </nav>

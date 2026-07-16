@@ -27,14 +27,16 @@ Do not use `railway up` for normal releases. There is no Railway staging environ
 
 ## Role-based magistrate visibility (MVP)
 
-Access is controlled by the `X-Orion-Role` request header (set from the client role dropdown, persisted in `localStorage`). This is **not** real authentication — production needs proper SSO and server-side authorization.
+UI is gated at `/login` (demo session token in `localStorage`). After Bench Chair sign-in, role defaults to **Bench Chair** and is sent as `X-Orion-Role`. This is **not** real SSO — production needs proper authentication.
+
+Demo user (see README): `bench.chair` / `BenchChair-Demo-2026`.
 
 | Role | Sees names | Roster (`/magistrates/roster`) |
 | --- | --- | --- |
 | HMCTS-SLM, Developer | Yes | Yes |
 | Bench Chair, Deputy | Reference codes only | No (403) |
 
-Default role when the header is missing: **Deputy** (most restrictive).
+API default when the role header is missing: **Deputy** (most restrictive). Logged-out users are redirected to `/login`.
 
 ## Railway production (monorepo)
 

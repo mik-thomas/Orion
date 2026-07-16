@@ -6,6 +6,7 @@ Rails.application.routes.draw do
   namespace :api do
     namespace :v1 do
       get "status", to: "status#show"
+      resource :session, only: %i[create show destroy]
       get "reports/overview", to: "reports#overview"
 
       resources :magistrates do

@@ -54,16 +54,36 @@ npm run deploy -- -m "short summary of changes"
 
 Runs checks → commit (if needed) → push → PR → CI → merge to `main` → Railway auto-deploy. Do **not** use `railway up` for routine releases.
 
+## Sign-in (MVP demo)
+
+The app is gated behind `/login`. Demo auth issues a signed session token and sets the signed-in role (Bench Chair by default).
+
+| Username | Password | Role |
+| --- | --- | --- |
+| `bench.chair` | `BenchChair-Demo-2026` | Bench Chair |
+
+These are **demo credentials** (also the API default when `ORION_DEMO_USERS` is unset). Override in production with Railway env:
+
+```bash
+ORION_DEMO_USERS='[{"username":"bench.chair","password":"choose-a-password","role":"Bench Chair","display_name":"Bench Chair"}]'
+```
+
+Production: https://orion-client-production.up.railway.app/login
+
 ## Role visibility (MVP)
 
-Access uses the `X-Orion-Role` header (client role dropdown → `localStorage`). Not real auth — production needs SSO.
+After sign-in, the client sends `X-Orion-Role` from the session (Bench Chair for the demo user). Not real SSO — production needs proper authentication.
 
 | Role | Sees names | Roster |
 | --- | --- | --- |
 | HMCTS-SLM, Developer | Yes | Yes |
 | Bench Chair, Deputy | Reference codes only | No (403) |
 
-Default when the header is missing: **Deputy**.
+API default when the role header is missing: **Deputy** (most restrictive). Logged-out users cannot use the app UI.
+
+## About
+
+Created by Michael Thomas. Identifiable magistrate details are access-controlled; Bench Chair and Deputy users see reference codes only, not names.
 
 ## Agent notes
 

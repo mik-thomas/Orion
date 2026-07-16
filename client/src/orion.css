@@ -1175,3 +1175,117 @@
 .orion-sortable-table__header--sorted .orion-sortable-table__indicator {
   opacity: 1;
 }
+
+/* Login (Bench Chair MVP) */
+
+.orion-login {
+  min-height: 100vh;
+  background:
+    linear-gradient(180deg, rgba(0, 48, 120, 0.06) 0%, transparent 18rem),
+    #ffffff;
+}
+
+.orion-login__header {
+  background-color: #003078;
+  border-bottom: 4px solid #1d70b8;
+  color: #ffffff;
+}
+
+.orion-login__header-inner {
+  display: flex;
+  align-items: center;
+  padding-top: 0.75rem;
+  padding-bottom: 0.75rem;
+}
+
+.orion-login__brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.orion-login__logo {
+  width: 2.5rem;
+  height: 2.5rem;
+  color: #ffffff;
+}
+
+.orion-login__brand-text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+  line-height: 1.1;
+}
+
+.orion-login__brand-name {
+  font-size: 1.5rem;
+  font-weight: 700;
+}
+
+.orion-login__brand-tagline {
+  font-size: 0.875rem;
+  opacity: 0.92;
+}
+
+.orion-login__panel {
+  max-width: 28rem;
+  margin-top: 2rem;
+  margin-bottom: 3rem;
+}
+
+.orion-session-chip {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.75rem;
+  color: #ffffff;
+  font-size: 0.875rem;
+}
+
+.orion-session-chip__role {
+  font-weight: 700;
+}
+
+.orion-session-chip__user {
+  opacity: 0.9;
+}
+
+.orion-session-chip__sign-out {
+  margin: 0;
+  padding: 0.35rem 0.65rem;
+  border: 2px solid #ffffff;
+  border-radius: 0;
+  background: transparent;
+  color: #ffffff;
+  font: inherit;
+  font-size: 0.875rem;
+  line-height: 1.25;
+  cursor: pointer;
+}
+
+.orion-session-chip__sign-out:hover {
+  background-color: rgba(255, 255, 255, 0.15);
+}
+
+.orion-session-chip__sign-out:focus {
+  outline: 3px solid transparent;
+  background-color: #fd0;
+  box-shadow: 0 -2px #fd0, 0 4px #0b0c0c;
+  color: #0b0c0c;
+  border-color: #0b0c0c;
+}
+
+.orion-session-chip__sign-out:disabled {
+  opacity: 0.7;
+  cursor: wait;
+}
+
+@media (max-width: 48.0625em) {
+  .orion-session-chip {
+    width: 100%;
+  }
+
+  .orion-session-chip__sign-out {
+    margin-left: auto;
+  }
+}

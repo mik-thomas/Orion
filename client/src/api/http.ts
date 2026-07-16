@@ -1,5 +1,6 @@
 import { apiUrl } from "./apiUrl";
 import { loadStoredRole } from "../lib/role";
+import { loadStoredSession } from "../lib/session";
 
 export class ApiError extends Error {
   status: number;
@@ -11,12 +12,16 @@ export class ApiError extends Error {
 }
 
 export async function request<T>(path: string, options?: RequestInit): Promise<T> {
+  const session = loadStoredSession();
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
     Accept: "application/json",
-    "X-Orion-Role": loadStoredRole(),
+    "X-Orion-Role": session?.role ?? loadStoredRole(),
     ...(options?.headers as Record<string, string> | undefined),
   };
+  if (session?.token) {
+    headers["X-Orion-Session"] = session.token;
+  }
 
   let response: Response;
   try {
