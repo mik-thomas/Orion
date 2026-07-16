@@ -71,23 +71,34 @@ if [[ "$PRODUCTION" == true ]]; then
       exit 1
     fi
     RAILWAY_ENV="${RAILWAY_ENVIRONMENT:-production}"
-    kv="$(railway variables -s orion -e "$RAILWAY_ENV" -k 2>/dev/null || true)"
-    DATABASE_URL="$(printf '%s\n' "$kv" | grep -E '^DATABASE_PUBLIC_URL=' | head -1 | cut -d= -f2- || true)"
-    if [[ -z "$DATABASE_URL" ]]; then
-      DATABASE_URL="$(printf '%s\n' "$kv" | grep -E '^DATABASE_URL=' | head -1 | cut -d= -f2- || true)"
+    # Prefer DATABASE_PUBLIC_URL from the Postgres plugin (TCP proxy), then orion.
+    fetch_railway_db_url() {
+      local svc="$1"
+      local kv url
+      kv="$(railway variables -s "$svc" -e "$RAILWAY_ENV" -k 2>/dev/null || true)"
+      url="$(printf '%s\n' "$kv" | grep -E '^DATABASE_PUBLIC_URL=' | head -1 | cut -d= -f2- || true)"
+      if [[ -z "$url" ]]; then
+        url="$(printf '%s\n' "$kv" | grep -E '^DATABASE_URL=' | head -1 | cut -d= -f2- || true)"
+      fi
+      printf '%s' "$url"
+    }
+    DATABASE_URL="$(fetch_railway_db_url Postgres)"
+    if [[ -z "$DATABASE_URL" || "$DATABASE_URL" == *".railway.internal"* ]]; then
+      DATABASE_URL="$(fetch_railway_db_url orion)"
     fi
     if [[ -z "$DATABASE_URL" ]]; then
-      echo "Could not fetch DATABASE_PUBLIC_URL from Railway (orion/$RAILWAY_ENV)." >&2
-      echo "Export a public DATABASE_URL manually from the Railway orion service variables." >&2
+      echo "Could not fetch DATABASE_PUBLIC_URL from Railway (Postgres or orion / $RAILWAY_ENV)." >&2
+      echo "Export a public DATABASE_URL manually, or enable TCP proxy on the Postgres service." >&2
       exit 1
     fi
     if [[ "$DATABASE_URL" == *".railway.internal"* ]]; then
       echo "Railway only exposed an internal DATABASE_URL (*.railway.internal)." >&2
-      echo "Add DATABASE_PUBLIC_URL on the Postgres service, or export a public URL:" >&2
+      echo "Enable TCP proxy on the Postgres service (exposes DATABASE_PUBLIC_URL), or export:" >&2
       echo "  export DATABASE_URL='postgresql://...'" >&2
       exit 1
     fi
     export DATABASE_URL
+    echo "==> Using Railway public Postgres ($RAILWAY_ENV)"
   fi
   export RAILS_ENV=production
 elif [[ -n "${DATABASE_URL:-}" ]]; then
