@@ -1,4 +1,5 @@
 import { Outlet } from "react-router-dom";
+import { DemoDisclaimerModal } from "../components/DemoDisclaimerModal";
 import { OrionHeader } from "./OrionHeader";
 import { useAuth } from "../context/AuthContext";
 import { useRole } from "../context/RoleContext";
@@ -13,6 +14,8 @@ export function GovUkLayout() {
       <a href="#main-content" className="govuk-skip-link" data-module="govuk-skip-link">
         Skip to main content
       </a>
+
+      <DemoDisclaimerModal />
 
       <OrionHeader />
 
