@@ -161,6 +161,11 @@ export function OrionHeader() {
               </li>
               <NavDropdown label="Magistrates" items={magistrateItems} isSectionActive={magistratesActive} />
               <li className="orion-app-header__nav-item">
+                <NavLink to="/tasks" className={({ isActive }) => navLinkClassName(isActive)}>
+                  Tasks
+                </NavLink>
+              </li>
+              <li className="orion-app-header__nav-item">
                 <NavLink to="/reports" className={({ isActive }) => navLinkClassName(isActive)}>
                   Reports
                 </NavLink>

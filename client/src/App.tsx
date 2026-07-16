@@ -11,6 +11,8 @@ import { MagistratesPage } from "./pages/MagistratesPage";
 import { OnLeavePage } from "./pages/OnLeavePage";
 import { ReportsPage } from "./pages/ReportsPage";
 import { SittingsDrillDownPage } from "./pages/SittingsDrillDownPage";
+import { TaskDetailPage } from "./pages/TaskDetailPage";
+import { TasksPage } from "./pages/TasksPage";
 
 export default function App() {
   return (
@@ -31,6 +33,8 @@ export default function App() {
               <Route path="magistrates/on-leave" element={<OnLeavePage />} />
               <Route path="magistrates/roster" element={<MagistrateRosterPage />} />
               <Route path="magistrates/:id" element={<MagistrateProfilePage />} />
+              <Route path="tasks" element={<TasksPage />} />
+              <Route path="tasks/:id" element={<TaskDetailPage />} />
               <Route path="reports" element={<ReportsPage />} />
               <Route path="reports/sittings" element={<SittingsDrillDownPage />} />
               <Route path="*" element={<Navigate to="/" replace />} />

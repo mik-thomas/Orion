@@ -30,6 +30,12 @@ Rails.application.routes.draw do
           get :drill_down
         end
       end
+
+      resources :tasks do
+        collection do
+          get :summary
+        end
+      end
     end
   end
 end

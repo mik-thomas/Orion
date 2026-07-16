@@ -78,6 +78,18 @@ Production: https://orion-client-production.up.railway.app/login
 
 Verify: `npm run verify:pii-gate`. This is Orion app login, not HMCTS SSO yet.
 
+## Tasks (delegation)
+
+Bench Chair creates tasks and delegates them to the Deputy (`/tasks`). Deputies update status and report notes; Bench Chair and Developer see all tasks and summary counts. Seeded demo tasks appear after `db:seed`.
+
+| Who | Can do |
+| --- | --- |
+| Bench Chair / Developer | Create, assign (defaults to Deputy), list all, update, cancel |
+| Deputy | List assigned tasks, update status + report notes |
+| HMCTS-SLM | List / view all (read-only) |
+
+Local: http://localhost:5173/tasks — Production: https://orion-client-production.up.railway.app/tasks
+
 ## About
 
 Created by Michael Thomas. Identifiable magistrate details are API-enforced; non-authorised roles see randomised demo names, not real PII.

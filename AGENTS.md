@@ -43,6 +43,10 @@ UI is gated at `/login` (server session token in `localStorage`). Role and PII a
 
 This is Orion app login, not HMCTS SSO. Logged-out users are redirected to `/login`.
 
+## Tasks
+
+Bench Chair creates tasks at `/tasks` (assigned to Deputy by default). Deputies update status and `report_notes`. Developer has full access. Seeded demo tasks: rota coverage, appraisals follow-up, LOA return report.
+
 ## Railway production (monorepo)
 
 Both services deploy from `main` on GitHub (`mik-thomas/Orion`):

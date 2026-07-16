@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2026_07_16_210000) do
+ActiveRecord::Schema[7.1].define(version: 2026_07_16_220000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
 
@@ -152,6 +152,25 @@ ActiveRecord::Schema[7.1].define(version: 2026_07_16_210000) do
     t.index ["vacated"], name: "index_sittings_on_vacated"
   end
 
+  create_table "tasks", force: :cascade do |t|
+    t.string "title", null: false
+    t.text "description"
+    t.string "status", default: "open", null: false
+    t.string "priority", default: "normal", null: false
+    t.bigint "created_by_id", null: false
+    t.bigint "assigned_to_id", null: false
+    t.date "due_on"
+    t.datetime "completed_at"
+    t.text "report_notes"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["assigned_to_id"], name: "index_tasks_on_assigned_to_id"
+    t.index ["completed_at"], name: "index_tasks_on_completed_at"
+    t.index ["created_by_id"], name: "index_tasks_on_created_by_id"
+    t.index ["due_on"], name: "index_tasks_on_due_on"
+    t.index ["status"], name: "index_tasks_on_status"
+  end
+
   create_table "training_records", force: :cascade do |t|
     t.bigint "magistrate_id", null: false
     t.date "session_date", null: false
@@ -195,6 +214,8 @@ ActiveRecord::Schema[7.1].define(version: 2026_07_16_210000) do
   add_foreign_key "sittings", "courthouses"
   add_foreign_key "sittings", "magistrates"
   add_foreign_key "sittings", "sitting_types"
+  add_foreign_key "tasks", "users", column: "assigned_to_id"
+  add_foreign_key "tasks", "users", column: "created_by_id"
   add_foreign_key "training_records", "magistrates"
   add_foreign_key "user_sessions", "users"
 end

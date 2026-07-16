@@ -4,6 +4,8 @@ class User < ApplicationRecord
   has_secure_password
 
   has_many :user_sessions, dependent: :destroy
+  has_many :created_tasks, class_name: "Task", foreign_key: :created_by_id, dependent: :restrict_with_exception, inverse_of: :created_by
+  has_many :assigned_tasks, class_name: "Task", foreign_key: :assigned_to_id, dependent: :restrict_with_exception, inverse_of: :assigned_to
 
   ROLES = %w[deputy bench_chair hmcts_slm developer].freeze
 
@@ -21,6 +23,22 @@ class User < ApplicationRecord
 
   def developer?
     role == "developer"
+  end
+
+  def bench_chair?
+    role == "bench_chair"
+  end
+
+  def deputy?
+    role == "deputy"
+  end
+
+  def can_manage_tasks?
+    developer? || bench_chair?
+  end
+
+  def can_report_on_tasks?
+    developer? || deputy? || bench_chair?
   end
 
   def manager?

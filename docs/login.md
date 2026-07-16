@@ -77,3 +77,8 @@ cd api && bin/rails runner 'User.create!(username: "new.user", password: "Choose
 ```
 
 Roles: `deputy`, `bench_chair`, `hmcts_slm`, `developer`.
+
+## Tasks
+
+Bench Chair (and Developer) create tasks via `POST /api/v1/tasks` — assigned to the Deputy user by default. Deputies list only their assigned tasks and update `status` / `report_notes`. UI: `/tasks`. Seed creates three demo tasks after users.
+

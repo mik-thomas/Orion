@@ -1,0 +1,34 @@
+# frozen_string_literal: true
+
+rota_coverage:
+  title: Confirm next month's rota coverage
+  description: Check vacancies for adult and family sittings and flag gaps to HMCTS-SLM.
+  status: open
+  priority: high
+  created_by: bench_chair
+  assigned_to: deputy
+  due_on: <%= Date.current + 7 %>
+  report_notes:
+  completed_at:
+
+appraisal_followup:
+  title: Follow up overdue appraisals
+  description: List magistrates with appraisal due within 30 days.
+  status: in_progress
+  priority: normal
+  created_by: bench_chair
+  assigned_to: deputy
+  due_on: <%= Date.current + 14 %>
+  report_notes: Started contacting clerks for availability.
+  completed_at:
+
+loa_report:
+  title: Report on LOA return readiness
+  description: Summarise magistrates due to return from leave this quarter.
+  status: done
+  priority: normal
+  created_by: bench_chair
+  assigned_to: deputy
+  due_on: <%= Date.current - 3 %>
+  report_notes: Three returns confirmed; one extended.
+  completed_at: <%= 2.days.ago %>
