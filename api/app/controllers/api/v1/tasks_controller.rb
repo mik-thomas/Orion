@@ -10,7 +10,11 @@ module Api
 
       def index
         render json: {
-          tasks: scoped_tasks.includes(:created_by, :assigned_to, :updated_by, :case, :note).then { |scope|
+          tasks: scoped_tasks.includes(
+            :created_by, :assigned_to, :updated_by,
+            { case: :magistrate },
+            { note: { case: :magistrate } }
+          ).then { |scope|
             params[:status] == "open" ? scope.open_tasks : scope.ordered
           }.map { |task| task_json(task) },
           summary: task_summary_json(base_scope)
@@ -83,7 +87,11 @@ module Api
       end
 
       def set_task
-        @task = Task.includes(:created_by, :assigned_to, :updated_by, :case, :note)
+        @task = Task.includes(
+          :created_by, :assigned_to, :updated_by,
+          { case: :magistrate },
+          { note: { case: :magistrate } }
+        )
           .find_by_id_or_public_id!(params[:id])
         return if can_view_task?(@task)
 

@@ -261,6 +261,7 @@ module JsonRenderable
     related = []
     related << related_item_json("case", task.case) if task.case
     related << related_item_json("note", task.note) if task.note
+    magistrate = task.linked_magistrate
 
     task.as_json(
       only: %i[id title description status priority due_on reminder_on completed_at report_notes public_id
@@ -275,6 +276,8 @@ module JsonRenderable
       "case" => related_item_json("case", task.case),
       "note" => related_item_json("note", task.note),
       "related_items" => related.compact,
+      "magistrate_id" => magistrate&.id,
+      "magistrate_name" => magistrate && magistrate_display_name(magistrate),
       "overdue" => task.overdue?
     )
   end

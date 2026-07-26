@@ -464,6 +464,8 @@ export interface Task {
   case?: RelatedItem | null;
   note?: RelatedItem | null;
   related_items?: RelatedItem[];
+  magistrate_id?: number | null;
+  magistrate_name?: string | null;
   overdue: boolean;
 }
 

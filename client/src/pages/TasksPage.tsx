@@ -286,6 +286,9 @@ export function TasksPage() {
                 Title
               </th>
               <th scope="col" className="govuk-table__header">
+                Magistrate
+              </th>
+              <th scope="col" className="govuk-table__header">
                 Status
               </th>
               <th scope="col" className="govuk-table__header">
@@ -312,6 +315,19 @@ export function TasksPage() {
                   <TaskTitleLink task={task} />
                   {task.overdue && (
                     <strong className="govuk-tag govuk-tag--red govuk-!-margin-left-2">Overdue</strong>
+                  )}
+                </td>
+                <td className="govuk-table__cell">
+                  {task.magistrate_name ? (
+                    task.magistrate_id ? (
+                      <Link className="govuk-link" to={`/magistrates/${task.magistrate_id}`}>
+                        {task.magistrate_name}
+                      </Link>
+                    ) : (
+                      task.magistrate_name
+                    )
+                  ) : (
+                    "—"
                   )}
                 </td>
                 <td className="govuk-table__cell">

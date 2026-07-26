@@ -46,6 +46,10 @@ class Task < ApplicationRecord
     due_on.present? && status == "open" && due_on < Date.current
   end
 
+  def linked_magistrate
+    self.case&.magistrate || note&.case&.magistrate
+  end
+
   private
 
   def sync_completed_at

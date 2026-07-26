@@ -107,6 +107,9 @@ export function OpenTasksReminderModal() {
                 Task
               </th>
               <th scope="col" className="govuk-table__header">
+                Magistrate
+              </th>
+              <th scope="col" className="govuk-table__header">
                 Due
               </th>
             </tr>
@@ -128,6 +131,7 @@ export function OpenTasksReminderModal() {
                     {task.overdue ? " (overdue)" : ""}
                   </button>
                 </td>
+                <td className="govuk-table__cell">{task.magistrate_name ?? "—"}</td>
                 <td className="govuk-table__cell">{formatTaskDate(task.due_on)}</td>
               </tr>
             ))}
