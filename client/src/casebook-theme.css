@@ -700,10 +700,13 @@ body.govuk-template__body {
   padding: 0.85rem 1rem 1rem;
   background: #fff;
   font-size: var(--csbk-font-size-base);
+  min-width: 0;
+  overflow: hidden;
 }
 
 .csbk-dl {
   margin: 0;
+  min-width: 0;
 }
 
 .csbk-dl__row {
@@ -713,6 +716,7 @@ body.govuk-template__body {
   padding: 0.35rem 0;
   border-bottom: 1px solid var(--csbk-grey-500);
   font-size: var(--csbk-font-size-base);
+  min-width: 0;
 }
 
 .csbk-dl__row:last-child {
@@ -727,6 +731,15 @@ body.govuk-template__body {
 .csbk-dl__value {
   margin: 0;
   color: var(--csbk-grey-950);
+  min-width: 0;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.csbk-dl__email {
+  display: inline;
+  overflow-wrap: anywhere;
+  word-break: break-all;
 }
 
 .csbk-tabs {

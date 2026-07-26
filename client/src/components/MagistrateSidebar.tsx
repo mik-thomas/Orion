@@ -30,6 +30,7 @@ export function MagistrateSidebar({
   onContactNumberUpdated?: (contactNumber: string | null) => void;
 }) {
   const title = `${magistrate.display_name}: ${magistrate.reference_code}`;
+  const email = magistrate.email?.trim() || null;
   const sittingLocations =
     "sitting_locations" in magistrate && Array.isArray(magistrate.sitting_locations)
       ? magistrate.sitting_locations
@@ -51,7 +52,13 @@ export function MagistrateSidebar({
             },
             {
               key: "Email address",
-              value: magistrate.email?.trim() ? magistrate.email : "Not recorded",
+              value: email ? (
+                <a href={`mailto:${email}`} className="govuk-link csbk-dl__email">
+                  {email}
+                </a>
+              ) : (
+                "Not recorded"
+              ),
             },
             {
               key: "Contact number",
