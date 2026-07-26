@@ -22,10 +22,13 @@ export function ChartTableToggle({
   return (
     <>
       <ViewChartButton title={tableCaption} chart={chart} />
-      <table className="govuk-table">
-        <caption className="govuk-table__caption govuk-table__caption--m">{tableCaption}</caption>
-        {table}
-      </table>
+      <div className="orion-table-scroll">
+        <table className="govuk-table">
+          {/* Caption kept for screen readers; section/card titles already show this visually. */}
+          <caption className="govuk-table__caption govuk-visually-hidden">{tableCaption}</caption>
+          {table}
+        </table>
+      </div>
     </>
   );
 }

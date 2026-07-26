@@ -557,57 +557,59 @@ export function MagistrateProfilePage() {
 {sittings.length === 0 ? (
         <p className="govuk-body">No individual sittings recorded.</p>
       ) : (
-        <table className="govuk-table">
-          <thead className="govuk-table__head">
-            <tr className="govuk-table__row">
-              <SortableTableHeader columnKey="session_date" sort={sittingSort} onSort={toggleSittingSort}>
-                Date
-              </SortableTableHeader>
-              <SortableTableHeader columnKey="session" sort={sittingSort} onSort={toggleSittingSort}>
-                Session
-              </SortableTableHeader>
-              <SortableTableHeader columnKey="location" sort={sittingSort} onSort={toggleSittingSort}>
-                Location
-              </SortableTableHeader>
-              <SortableTableHeader columnKey="court_room" sort={sittingSort} onSort={toggleSittingSort}>
-                Court room
-              </SortableTableHeader>
-              <SortableTableHeader columnKey="sitting_type" sort={sittingSort} onSort={toggleSittingSort}>
-                Type
-              </SortableTableHeader>
-              <SortableTableHeader columnKey="court_type" sort={sittingSort} onSort={toggleSittingSort}>
-                Court type
-              </SortableTableHeader>
-              <SortableTableHeader columnKey="sitting_position" sort={sittingSort} onSort={toggleSittingSort}>
-                Role
-              </SortableTableHeader>
-              <SortableTableHeader columnKey="status" sort={sittingSort} onSort={toggleSittingSort}>
-                Status
-              </SortableTableHeader>
-            </tr>
-          </thead>
-          <tbody className="govuk-table__body">
-            {sortedSittings.map((sitting) => (
-              <tr key={sitting.id} className="govuk-table__row">
-                <td className="govuk-table__cell">{sitting.session_date}</td>
-                <td className="govuk-table__cell">{sitting.session ?? "—"}</td>
-                <td className="govuk-table__cell">
-                  {sitting.courthouse.name}
-                  {sitting.away_from_home_court ? " (away)" : ""}
-                </td>
-                <td className="govuk-table__cell">{sitting.court_room ?? "—"}</td>
-                <td className="govuk-table__cell">{sitting.sitting_type.name}</td>
-                <td className="govuk-table__cell">{sitting.court_type ?? "—"}</td>
-                <td className="govuk-table__cell">
-                  <SittingPositionCell sittingPosition={sitting.sitting_position} />
-                </td>
-                <td className="govuk-table__cell">
-                  <SittingStatusCell sitting={sitting} />
-                </td>
+        <div className="orion-table-scroll">
+          <table className="govuk-table">
+            <thead className="govuk-table__head">
+              <tr className="govuk-table__row">
+                <SortableTableHeader columnKey="session_date" sort={sittingSort} onSort={toggleSittingSort}>
+                  Date
+                </SortableTableHeader>
+                <SortableTableHeader columnKey="session" sort={sittingSort} onSort={toggleSittingSort}>
+                  Session
+                </SortableTableHeader>
+                <SortableTableHeader columnKey="location" sort={sittingSort} onSort={toggleSittingSort}>
+                  Location
+                </SortableTableHeader>
+                <SortableTableHeader columnKey="court_room" sort={sittingSort} onSort={toggleSittingSort}>
+                  Court room
+                </SortableTableHeader>
+                <SortableTableHeader columnKey="sitting_type" sort={sittingSort} onSort={toggleSittingSort}>
+                  Type
+                </SortableTableHeader>
+                <SortableTableHeader columnKey="court_type" sort={sittingSort} onSort={toggleSittingSort}>
+                  Court type
+                </SortableTableHeader>
+                <SortableTableHeader columnKey="sitting_position" sort={sittingSort} onSort={toggleSittingSort}>
+                  Role
+                </SortableTableHeader>
+                <SortableTableHeader columnKey="status" sort={sittingSort} onSort={toggleSittingSort}>
+                  Status
+                </SortableTableHeader>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody className="govuk-table__body">
+              {sortedSittings.map((sitting) => (
+                <tr key={sitting.id} className="govuk-table__row">
+                  <td className="govuk-table__cell">{sitting.session_date}</td>
+                  <td className="govuk-table__cell">{sitting.session ?? "—"}</td>
+                  <td className="govuk-table__cell">
+                    {sitting.courthouse.name}
+                    {sitting.away_from_home_court ? " (away)" : ""}
+                  </td>
+                  <td className="govuk-table__cell">{sitting.court_room ?? "—"}</td>
+                  <td className="govuk-table__cell">{sitting.sitting_type.name}</td>
+                  <td className="govuk-table__cell">{sitting.court_type ?? "—"}</td>
+                  <td className="govuk-table__cell">
+                    <SittingPositionCell sittingPosition={sitting.sitting_position} />
+                  </td>
+                  <td className="govuk-table__cell">
+                    <SittingStatusCell sitting={sitting} />
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       )}
             </CasebookTabPanel>
 

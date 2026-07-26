@@ -396,6 +396,19 @@
   padding: 1.25rem;
   border: 1px solid rgba(0, 0, 0, 0.125);
   background-color: #ffffff;
+  min-width: 0;
+  max-width: 100%;
+}
+
+/* Wide tables scroll inside cards instead of overflowing the layout */
+.orion-table-scroll {
+  max-width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.orion-table-scroll > .govuk-table {
+  margin-bottom: 0;
 }
 
 .orion-dashboard-section__header {
@@ -432,6 +445,11 @@
 
 .orion-dashboard-section__content > :last-child {
   margin-bottom: 0;
+}
+
+.orion-dashboard-section__content {
+  min-width: 0;
+  max-width: 100%;
 }
 
 .orion-dashboard-subsection {
