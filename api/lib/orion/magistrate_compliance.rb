@@ -22,9 +22,11 @@ module Orion
       results = []
       results << tenure_violation(magistrate)
       results.concat(loa_review_violations(magistrate, as_of:))
+      results.concat(loa_expired_violations(magistrate, as_of:))
       results.concat(court_day_violations(magistrate, as_of:))
       results.compact.map { |violation| violation.to_h.transform_keys(&:to_s) }
     end
+
 
     def sitting_commitment_for(magistrate, as_of: Date.current)
       return nil unless magistrate.date_of_appointment.present?
@@ -64,6 +66,26 @@ module Orion
         end
       end
     end
+
+    def loa_expired_violations(magistrate, as_of:)
+      expired_leaves = if magistrate.leaves_of_absence.loaded?
+                         magistrate.leaves_of_absence.select { |leave| leave.expired_without_return?(as_of:) }
+                       else
+                         magistrate.leaves_of_absence.ended_without_return_on(as_of).to_a
+                       end
+
+      expired_leaves.sort_by(&:ends_on).reverse.map do |leave|
+        Violation.new(
+          code: "loa_expired_without_return",
+          severity: "red",
+          message: "LOA ended on #{leave.ends_on.strftime('%d %B %Y')} — return from leave has not been recorded",
+          actual: nil,
+          required: nil,
+          year: nil
+        )
+      end
+    end
+
 
     def tenure_violation(magistrate)
       return nil unless magistrate.leaving_date.present?

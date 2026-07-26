@@ -20,6 +20,7 @@ export interface LeaveOfAbsence {
   reason: string | null;
   notes: string | null;
   next_loa_review_on: string | null;
+  returned_on: string | null;
   active: boolean;
 }
 

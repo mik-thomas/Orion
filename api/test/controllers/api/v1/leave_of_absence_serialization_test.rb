@@ -63,4 +63,45 @@ class LeaveOfAbsenceSerializationTest < ActionDispatch::IntegrationTest
     body = JSON.parse(response.body)
     assert_equal "2026-08-15", body["next_loa_review_on"]
   end
+
+  test "expired leave without return raises violation on magistrate show" do
+    magistrate = magistrates(:alice)
+    magistrate.leaves_of_absence.create!(
+      starts_on: Date.new(2024, 1, 1),
+      ends_on: Date.new(2024, 6, 30),
+      reason: "Sabbatical"
+    )
+
+    get api_v1_magistrate_path(magistrate), headers: auth_headers(:developer)
+    assert_response :success
+
+    body = JSON.parse(response.body)
+    codes = body["violations"].map { |violation| violation["code"] }
+    assert_includes codes, "loa_expired_without_return"
+    assert_equal "red", body["violations"].find { |v| v["code"] == "loa_expired_without_return" }["severity"]
+  end
+
+  test "can update returned_on via leave endpoint and clear expired violation" do
+    magistrate = magistrates(:alice)
+    leave = magistrate.leaves_of_absence.create!(
+      starts_on: Date.new(2024, 1, 1),
+      ends_on: Date.new(2024, 6, 30),
+      reason: "Sabbatical"
+    )
+
+    patch api_v1_magistrate_leaves_of_absence_path(magistrate, leave),
+          params: { leave_of_absence: { returned_on: "2024-07-01" } },
+          headers: auth_headers(:developer),
+          as: :json
+    assert_response :success
+
+    body = JSON.parse(response.body)
+    assert_equal "2024-07-01", body["returned_on"]
+
+    get api_v1_magistrate_path(magistrate), headers: auth_headers(:developer)
+    assert_response :success
+
+    codes = JSON.parse(response.body)["violations"].map { |violation| violation["code"] }
+    assert_not_includes codes, "loa_expired_without_return"
+  end
 end

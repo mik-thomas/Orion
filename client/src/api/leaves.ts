@@ -11,6 +11,7 @@ export interface LeaveOfAbsenceCreate {
 
 export interface LeaveOfAbsenceUpdate {
   next_review_on?: string | null;
+  returned_on?: string | null;
   starts_on?: string;
   ends_on?: string | null;
   reason?: string | null;

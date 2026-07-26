@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2026_07_26_180000) do
+ActiveRecord::Schema[7.1].define(version: 2026_07_26_190000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
 
@@ -50,6 +50,7 @@ ActiveRecord::Schema[7.1].define(version: 2026_07_26_180000) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.date "next_review_on"
+    t.date "returned_on"
     t.index ["magistrate_id"], name: "index_leaves_of_absence_on_magistrate_id"
   end
 

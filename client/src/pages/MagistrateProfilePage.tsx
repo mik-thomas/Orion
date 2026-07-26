@@ -8,6 +8,7 @@ import { RetirementDueModal } from "../components/RetirementDueModal";
 import { SittingForecastPanel } from "../components/SittingForecastPanel";
 import { SittingScoreMeter } from "../components/SittingScoreMeter";
 import { LoaReviewDateEditor } from "../components/LoaReviewDateEditor";
+import { LoaReturnEditor } from "../components/LoaReturnEditor";
 import { NextLoaReviewTag } from "../lib/loaReview";
 import { DjCancellationSection } from "../components/DjCancellationSection";
 import { PeriodFilter } from "../components/PeriodFilter";
@@ -161,17 +162,11 @@ export function MagistrateProfilePage() {
       .finally(() => setLoading(false));
   }, [id, periodFilter, role]);
 
-  function handleLeaveUpdated(updated: LeaveOfAbsence) {
-    setMagistrate((current) =>
-      current
-        ? {
-            ...current,
-            leaves_of_absence: current.leaves_of_absence.map((leave) =>
-              leave.id === updated.id ? updated : leave
-            ),
-          }
-        : current
-    );
+  function handleLeaveUpdated(_updated: LeaveOfAbsence) {
+    if (!id) return;
+    getMagistrate(Number(id), periodFilterQuery(periodFilter))
+      .then(setMagistrate)
+      .catch((err: unknown) => setError(err instanceof ApiError ? err.message : "Failed to refresh profile"));
   }
 
   const sittings = magistrate?.sittings ?? [];
@@ -207,6 +202,10 @@ export function MagistrateProfilePage() {
       reason: { getValue: (row: (typeof leavesOfAbsence)[number]) => row.reason ?? "" },
       review_on: {
         getValue: (row: (typeof leavesOfAbsence)[number]) => row.next_loa_review_on ?? "",
+        type: "date" as const,
+      },
+      returned_on: {
+        getValue: (row: (typeof leavesOfAbsence)[number]) => row.returned_on ?? "",
         type: "date" as const,
       },
       status: { getValue: (row: (typeof leavesOfAbsence)[number]) => (row.active ? 1 : 0), type: "number" as const },
@@ -666,6 +665,9 @@ export function MagistrateProfilePage() {
               <SortableTableHeader columnKey="review_on" sort={leaveSort} onSort={toggleLeaveSort}>
                 Next LOA review
               </SortableTableHeader>
+              <SortableTableHeader columnKey="returned_on" sort={leaveSort} onSort={toggleLeaveSort}>
+                Returned
+              </SortableTableHeader>
               <SortableTableHeader columnKey="status" sort={leaveSort} onSort={toggleLeaveSort}>
                 Status
               </SortableTableHeader>
@@ -685,8 +687,13 @@ export function MagistrateProfilePage() {
                   />
                 </td>
                 <td className="govuk-table__cell">
+                  <LoaReturnEditor leave={leave} onUpdated={handleLeaveUpdated} />
+                </td>
+                <td className="govuk-table__cell">
                   {leave.active ? (
                     <strong className="govuk-tag govuk-tag--yellow">Active</strong>
+                  ) : leave.returned_on ? (
+                    "Returned"
                   ) : (
                     "Past"
                   )}

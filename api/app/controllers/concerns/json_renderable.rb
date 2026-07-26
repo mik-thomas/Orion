@@ -166,9 +166,11 @@ module JsonRenderable
   def leave_json(leave)
     leave.as_json(only: %i[id magistrate_id starts_on ends_on reason notes]).merge(
       "next_loa_review_on" => leave.next_review_on&.iso8601,
+      "returned_on" => leave.returned_on&.iso8601,
       "active" => leave.active?
     )
   end
+
 
   def case_json(kase)
     kase.as_json(

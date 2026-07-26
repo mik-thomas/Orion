@@ -47,7 +47,10 @@ module Api
       end
 
       def leave_params
-        params.require(:leave_of_absence).permit(:starts_on, :ends_on, :reason, :notes, :next_review_on)
+        params.require(:leave_of_absence).permit(
+          :starts_on, :ends_on, :reason, :notes, :next_review_on, :returned_on
+        )
+
       end
     end
   end
