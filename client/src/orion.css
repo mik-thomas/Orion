@@ -67,10 +67,16 @@
   font-family: var(--csbk-font-family);
 }
 
+.orion-app-header__dropdown--right {
+  left: auto;
+  right: 0;
+}
+
 .orion-app-header__brand-name {
   font-size: 1.25rem;
   font-weight: 700;
   letter-spacing: 0.01em;
+  text-transform: lowercase;
 }
 
 .orion-app-header__brand-tagline {
@@ -232,6 +238,11 @@
   background-color: #ffffff;
   max-height: calc(100vh - 5rem);
   overflow-y: auto;
+}
+
+.orion-app-header__dropdown--right {
+  left: auto;
+  right: 0;
 }
 
 .orion-app-header__dropdown-link {

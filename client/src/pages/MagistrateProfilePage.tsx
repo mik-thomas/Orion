@@ -42,13 +42,14 @@ import { createLeaveOfAbsence } from "../api/leaves";
 import { createCase } from "../api/cases";
 import { formatTaskDate } from "../lib/tasks";
 import { useAuth } from "../context/AuthContext";
-
-function formatUkDate(value: string | null) {
-  if (!value) return null;
-  const date = new Date(`${value}T00:00:00`);
-  if (Number.isNaN(date.getTime())) return value;
-  return date.toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" });
-}
+import {
+  CasebookActionBar,
+  CasebookMetaRow,
+  CasebookSplit,
+  CasebookTabPanel,
+  CasebookTabs,
+} from "../components/casebook/CasebookChrome";
+import { MagistrateSidebar } from "../components/MagistrateSidebar";
 
 function ProfileCourtRoomBreakdownTable({ rows }: { rows: CourtRoomRow[] }) {
   const sortColumns = useMemo(
@@ -135,6 +136,8 @@ export function MagistrateProfilePage() {
   const [loaNotes, setLoaNotes] = useState("");
   const [loaReviewOn, setLoaReviewOn] = useState("");
   const [creatingLoa, setCreatingLoa] = useState(false);
+  const [activeTab, setActiveTab] = useState("cases");
+  const [showCreateCase, setShowCreateCase] = useState(false);
   const statusSummaryId = useId();
   const homeAwaySummaryId = useId();
   const locationSummaryId = useId();
@@ -263,149 +266,100 @@ export function MagistrateProfilePage() {
 
       <OrionBreadcrumbs
         items={[
+          { label: "Home", to: "/" },
           { label: "Magistrates", to: "/magistrates" },
           { label: magistrate.display_name },
         ]}
       />
 
-      <h1 className="govuk-heading-xl">{magistrate.display_name}</h1>
-      {!canViewNames && (
-        <p className="govuk-body-l">
-          Demo identity <strong>{magistrate.display_name}</strong> (
-          <strong>{magistrate.reference_code}</strong>) — real names and emails are hidden for your
-          role.
-        </p>
-      )}
-
-      <ComplianceViolations
-        violations={magistrate.violations}
-        sittingCommitment={magistrate.sitting_commitment}
-      />
-
-      <SittingScoreMeter sittingScore={magistrate.sitting_score} />
-
-      <SittingForecastPanel forecast={magistrate.sitting_forecast} />
-
-      {magistrate.active_leave && (
-        <div className="govuk-notification-banner govuk-notification-banner--warning" role="region">
-          <div className="govuk-notification-banner__header">
-            <h2 className="govuk-notification-banner__title">Leave of absence in place</h2>
-          </div>
-          <div className="govuk-notification-banner__content">
-            <p className="govuk-notification-banner__heading">Check current leave dates before assigning sittings.</p>
-            <ul className="govuk-list govuk-!-margin-top-2">
-              {magistrate.current_leaves.map((leave) => (
-                <li key={leave.id}>
-                  {leave.starts_on} to {leave.ends_on ?? "open-ended"}
-                  {leave.reason ? ` — ${leave.reason}` : ""}
-                  {" — next review: "}
-                  <NextLoaReviewTag leave={leave} />
-                </li>
-              ))}
-            </ul>
-          </div>
-        </div>
-      )}
-
-      <dl className="govuk-summary-list">
-        <div className="govuk-summary-list__row">
-          <dt className="govuk-summary-list__key">Reference code</dt>
-          <dd className="govuk-summary-list__value">{magistrate.reference_code}</dd>
-        </div>
-        {canViewNames && magistrate.full_name && (
-          <div className="govuk-summary-list__row">
-            <dt className="govuk-summary-list__key">Full name</dt>
-            <dd className="govuk-summary-list__value">{magistrate.full_name}</dd>
-          </div>
-        )}
-        <div className="govuk-summary-list__row">
-          <dt className="govuk-summary-list__key">Cluster / bench</dt>
-          <dd className="govuk-summary-list__value">
-            {magistrate.cluster} / {magistrate.bench}
-          </dd>
-        </div>
-        <div className="govuk-summary-list__row">
-          <dt className="govuk-summary-list__key">Appraisal</dt>
-          <dd className="govuk-summary-list__value">
-            {magistrate.appraisal_status ?? "Not recorded"}
-            {magistrate.appraisal_cycle_years ? ` — every ${magistrate.appraisal_cycle_years} years` : ""}
-            {magistrate.presiding_justice ? " (Presiding Justice)" : " (Winger)"}
-          </dd>
-        </div>
-        <div className="govuk-summary-list__row">
-          <dt className="govuk-summary-list__key">Date of appointment</dt>
-          <dd className="govuk-summary-list__value">{magistrate.date_of_appointment ?? "Not recorded"}</dd>
-        </div>
-        <div className="govuk-summary-list__row">
-          <dt className="govuk-summary-list__key">Retirement date</dt>
-          <dd className="govuk-summary-list__value">
-            {magistrate.retirement_on ? (
-              isRetiringSoon(magistrate.retirement_on) ? (
-                <strong className="govuk-tag govuk-tag--yellow">{magistrate.retirement_on}</strong>
-              ) : (
-                magistrate.retirement_on
-              )
-            ) : (
-              "Not recorded"
+      <CasebookSplit
+        main={
+          <>
+            <h1 className="govuk-heading-xl csbk-page-title">{magistrate.display_name}</h1>
+            <CasebookMetaRow>
+              Reference: {magistrate.reference_code}
+              {magistrate.date_of_appointment ? ` · Appointed: ${magistrate.date_of_appointment}` : ""}
+              {magistrate.home_courthouse?.name ? ` · Home court: ${magistrate.home_courthouse.name}` : ""}
+              {magistrate.active_leave ? " · On leave" : ""}
+            </CasebookMetaRow>
+            {!canViewNames && (
+              <p className="govuk-body">
+                Demo identity <strong>{magistrate.display_name}</strong> (
+                <strong>{magistrate.reference_code}</strong>) — real names and emails are hidden for your
+                role.
+              </p>
             )}
-          </dd>
-        </div>
-        <div className="govuk-summary-list__row">
-          <dt className="govuk-summary-list__key">Home court</dt>
-          <dd className="govuk-summary-list__value">{magistrate.home_courthouse?.name ?? "Not recorded"}</dd>
-        </div>
-        <div className="govuk-summary-list__row">
-          <dt className="govuk-summary-list__key">Sitting locations</dt>
-          <dd className="govuk-summary-list__value">
-            {magistrate.sitting_locations.length > 0
-              ? magistrate.sitting_locations.map((court) => court.name).join(", ")
-              : "None recorded"}
-          </dd>
-        </div>
-        <div className="govuk-summary-list__row">
-          <dt className="govuk-summary-list__key">Reasonable adjustments</dt>
-          <dd className="govuk-summary-list__value">
-            {magistrate.reasonable_adjustments ?? "None recorded"}
-          </dd>
-        </div>
-        <div className="govuk-summary-list__row">
-          <dt className="govuk-summary-list__key">Last rota login</dt>
-          <dd className="govuk-summary-list__value">
-            {formatUkDate(magistrate.last_login_on) ?? (
-              <>
-                Not in rota login report
-                <span className="govuk-hint govuk-!-margin-top-1 govuk-!-margin-bottom-0">
-                  Login dates come from the Northeast Rota Last Login spreadsheet (77 magistrates).
-                </span>
-              </>
-            )}
-          </dd>
-        </div>
-        <div className="govuk-summary-list__row">
-          <dt className="govuk-summary-list__key">Days since login</dt>
-          <dd className="govuk-summary-list__value">
-            {magistrate.days_since_login != null ? (
-              magistrate.days_since_login >= 90 ? (
-                <strong className="govuk-tag govuk-tag--red">{magistrate.days_since_login}</strong>
-              ) : magistrate.days_since_login >= 30 ? (
-                <strong className="govuk-tag govuk-tag--yellow">{magistrate.days_since_login}</strong>
-              ) : (
-                magistrate.days_since_login
-              )
-            ) : (
-              "Not in rota login report"
-            )}
-          </dd>
-        </div>
-      </dl>
 
-      <h2 className="govuk-heading-l">Sittings</h2>
-      <PeriodFilter
-        value={periodFilter}
-        onChange={handlePeriodChange}
-        availableYears={availableYears}
-      />
+            <CasebookActionBar
+              actions={[
+                ...(session
+                  ? [
+                      {
+                        label: "Add case",
+                        primary: true as const,
+                        onClick: () => {
+                          setActiveTab("cases");
+                          setShowCreateCase(true);
+                        },
+                      },
+                      {
+                        label: "Add leave",
+                        primary: true as const,
+                        onClick: () => setActiveTab("leave"),
+                      },
+                    ]
+                  : []),
+                { label: "Sittings", onClick: () => setActiveTab("sittings") },
+                { label: "Overview", onClick: () => setActiveTab("overview") },
+              ]}
+            />
 
+            <ComplianceViolations
+              violations={magistrate.violations}
+              sittingCommitment={magistrate.sitting_commitment}
+            />
+
+            {magistrate.active_leave && (
+              <div className="govuk-notification-banner govuk-notification-banner--warning" role="region">
+                <div className="govuk-notification-banner__header">
+                  <h2 className="govuk-notification-banner__title">Leave of absence in place</h2>
+                </div>
+                <div className="govuk-notification-banner__content">
+                  <p className="govuk-notification-banner__heading">Check current leave dates before assigning sittings.</p>
+                  <ul className="govuk-list govuk-!-margin-top-2">
+                    {magistrate.current_leaves.map((leave) => (
+                      <li key={leave.id}>
+                        {leave.starts_on} to {leave.ends_on ?? "open-ended"}
+                        {leave.reason ? ` — ${leave.reason}` : ""}
+                        {" — next review: "}
+                        <NextLoaReviewTag leave={leave} />
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+            )}
+
+            <CasebookTabs
+              tabs={[
+                { id: "cases", label: "Cases", count: cases.length },
+                { id: "sittings", label: "Sittings", count: sittings.length },
+                { id: "leave", label: "Leave", count: leavesOfAbsence.length },
+                { id: "overview", label: "Overview" },
+              ]}
+              activeId={activeTab}
+              onChange={setActiveTab}
+            />
+
+            <CasebookTabPanel id="overview" activeId={activeTab}>
+              <SittingScoreMeter sittingScore={magistrate.sitting_score} />
+              <SittingForecastPanel forecast={magistrate.sitting_forecast} />
+
+              <PeriodFilter
+                value={periodFilter}
+                onChange={handlePeriodChange}
+                availableYears={availableYears}
+              />
       <>
             <div className="orion-profile-charts-grid orion-profile-charts-grid--two">
               <DashboardSection
@@ -591,7 +545,16 @@ export function MagistrateProfilePage() {
             <SittingHistoryChart sittings={magistrate.sittings} periodLabel={periodLabel} />
       </>
 
-      {sittings.length === 0 ? (
+      
+            </CasebookTabPanel>
+
+            <CasebookTabPanel id="sittings" activeId={activeTab}>
+              <PeriodFilter
+                value={periodFilter}
+                onChange={handlePeriodChange}
+                availableYears={availableYears}
+              />
+{sittings.length === 0 ? (
         <p className="govuk-body">No individual sittings recorded.</p>
       ) : (
         <table className="govuk-table">
@@ -646,8 +609,9 @@ export function MagistrateProfilePage() {
           </tbody>
         </table>
       )}
+            </CasebookTabPanel>
 
-      <h2 className="govuk-heading-l">Leave of absence</h2>
+            <CasebookTabPanel id="leave" activeId={activeTab}>
       {leavesOfAbsence.length === 0 ? (
         <p className="govuk-body">No leave recorded.</p>
       ) : (
@@ -807,8 +771,9 @@ export function MagistrateProfilePage() {
           </button>
         </form>
       )}
+            </CasebookTabPanel>
 
-      <h2 className="govuk-heading-l">Cases</h2>
+            <CasebookTabPanel id="cases" activeId={activeTab}>
       {cases.length === 0 ? (
         <p className="govuk-body">No cases recorded.</p>
       ) : (
@@ -858,7 +823,7 @@ export function MagistrateProfilePage() {
         </table>
       )}
 
-      {session && (
+      {(session && (showCreateCase || cases.length === 0)) && (
         <form
           className="govuk-!-margin-bottom-8"
           onSubmit={(event) => {
@@ -914,7 +879,7 @@ export function MagistrateProfilePage() {
         </form>
       )}
 
-      <h2 className="govuk-heading-l">Magistrate timeline</h2>
+              <h3 className="govuk-heading-m">Magistrate timeline</h3>
       {(magistrate.timeline ?? []).length === 0 ? (
         <p className="govuk-body">No case timeline entries yet.</p>
       ) : (
@@ -937,6 +902,13 @@ export function MagistrateProfilePage() {
           ))}
         </ol>
       )}
+            </CasebookTabPanel>
+          </>
+        }
+        sidebar={
+          <MagistrateSidebar magistrate={magistrate} canViewNames={canViewNames} />
+        }
+      />
     </>
   );
 }

@@ -592,3 +592,349 @@ body.govuk-template__body {
 .govuk-footer {
   display: none;
 }
+
+/* —— Casebook structural layout —— */
+
+.csbk-split {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(16rem, 22rem);
+  gap: var(--csbk-spacing-lg);
+  align-items: start;
+}
+
+@media (max-width: 56.25em) {
+  .csbk-split {
+    grid-template-columns: 1fr;
+  }
+
+  .csbk-split__side {
+    order: -1;
+  }
+}
+
+.csbk-sidebar {
+  background: #fff;
+  border: 1px solid var(--csbk-blue-450);
+}
+
+.csbk-sidebar__header {
+  background: var(--csbk-blue-550);
+  color: #fff;
+  font-weight: 700;
+  font-size: var(--csbk-font-size-lg);
+  padding: 0.75rem 1rem;
+}
+
+.csbk-sidebar__body {
+  background: #fff;
+}
+
+.csbk-sidebar__name {
+  font-weight: 700;
+  margin: 0 0 0.75rem;
+  font-size: var(--csbk-font-size-lg);
+}
+
+.csbk-sidebar__list {
+  margin: 0 0 0.75rem;
+  padding-left: 1.1rem;
+  font-size: var(--csbk-font-size-base);
+}
+
+.csbk-sidebar__list li {
+  margin-bottom: 0.5rem;
+}
+
+.csbk-sidebar__edit {
+  display: inline-block;
+  margin-top: 0.5rem;
+  font-size: var(--csbk-font-size-base);
+}
+
+.csbk-accordion {
+  border-bottom: 1px solid var(--csbk-blue-450);
+}
+
+.csbk-accordion__heading {
+  margin: 0;
+  font-size: inherit;
+}
+
+.csbk-accordion__button {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin: 0;
+  padding: 0.65rem 1rem;
+  border: 0;
+  background: var(--csbk-grey-400);
+  color: var(--csbk-grey-950);
+  font: inherit;
+  font-weight: 700;
+  text-align: left;
+  cursor: pointer;
+}
+
+.csbk-accordion--open .csbk-accordion__button {
+  background: var(--csbk-blue-200);
+}
+
+.csbk-accordion__toggle {
+  flex-shrink: 0;
+  font-weight: 400;
+  font-size: 0.75rem;
+  color: var(--csbk-blue-550);
+}
+
+.csbk-accordion__body {
+  padding: 0.85rem 1rem 1rem;
+  background: #fff;
+  font-size: var(--csbk-font-size-base);
+}
+
+.csbk-dl {
+  margin: 0;
+}
+
+.csbk-dl__row {
+  display: grid;
+  grid-template-columns: 7.5rem minmax(0, 1fr);
+  gap: 0.35rem 0.75rem;
+  padding: 0.35rem 0;
+  border-bottom: 1px solid var(--csbk-grey-500);
+  font-size: var(--csbk-font-size-base);
+}
+
+.csbk-dl__row:last-child {
+  border-bottom: 0;
+}
+
+.csbk-dl__key {
+  font-weight: 700;
+  color: var(--csbk-grey-950);
+}
+
+.csbk-dl__value {
+  margin: 0;
+  color: var(--csbk-grey-950);
+}
+
+.csbk-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0;
+  margin: 0 0 0;
+  border-bottom: 1px solid var(--csbk-blue-450);
+}
+
+.csbk-tabs__tab {
+  margin: 0;
+  padding: 0.65rem 1rem;
+  border: 1px solid transparent;
+  border-bottom: 0;
+  background: var(--csbk-grey-500);
+  color: var(--csbk-grey-950);
+  font: inherit;
+  font-size: var(--csbk-font-size-base);
+  cursor: pointer;
+}
+
+.csbk-tabs__tab--active {
+  background: #fff;
+  border-color: var(--csbk-blue-450);
+  border-bottom: 1px solid #fff;
+  margin-bottom: -1px;
+  font-weight: 700;
+  box-shadow: inset 0 3px 0 0 var(--csbk-blue-550);
+}
+
+.csbk-tabs__panel {
+  background: #fff;
+  border: 1px solid var(--csbk-blue-450);
+  border-top: 0;
+  padding: 1.25rem;
+  margin-bottom: var(--csbk-spacing-lg);
+}
+
+.csbk-action-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 0.75rem 0 1.25rem;
+}
+
+.csbk-action-bar__btn {
+  display: inline-flex;
+  align-items: center;
+  margin: 0;
+  padding: 0.4rem 0.85rem;
+  border: 1px solid var(--csbk-blue-550);
+  background: #fff;
+  color: var(--csbk-blue-550);
+  font: inherit;
+  font-size: var(--csbk-font-size-base);
+  font-weight: 700;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.csbk-action-bar__btn:hover {
+  background: var(--csbk-blue-200);
+  text-decoration: none;
+}
+
+.csbk-action-bar__btn--primary {
+  background: var(--csbk-blue-550);
+  color: #fff;
+}
+
+.csbk-action-bar__btn--primary:hover {
+  background: var(--csbk-blue-650);
+  color: #fff;
+}
+
+.csbk-action-bar__btn:disabled,
+.csbk-action-bar__btn[aria-disabled="true"] {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.csbk-meta-row {
+  margin: 0 0 0.5rem;
+  font-size: var(--csbk-font-size-base);
+  color: var(--csbk-grey-600);
+}
+
+.csbk-meta-row a {
+  color: var(--csbk-blue-550);
+}
+
+.csbk-note-card {
+  border: 1px solid var(--csbk-blue-450);
+  background: #fff;
+  margin-bottom: 1rem;
+}
+
+.csbk-note-card__header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.75rem;
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid var(--csbk-grey-500);
+  background: var(--csbk-blue-200);
+}
+
+.csbk-note-card__title {
+  font-weight: 700;
+  margin: 0;
+  flex: 1 1 auto;
+}
+
+.csbk-note-card__meta {
+  margin: 0;
+  padding: 0.5rem 1rem;
+  font-size: var(--csbk-font-size-base);
+  color: var(--csbk-grey-600);
+  border-bottom: 1px solid var(--csbk-grey-500);
+}
+
+.csbk-note-card__body {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(8rem, 12rem);
+  gap: 1rem;
+  padding: 1rem;
+}
+
+@media (max-width: 40em) {
+  .csbk-note-card__body {
+    grid-template-columns: 1fr;
+  }
+}
+
+.csbk-note-card__next {
+  background: var(--csbk-grey-400);
+  padding: 0.75rem;
+  font-size: var(--csbk-font-size-base);
+}
+
+.csbk-note-card__next-title {
+  font-weight: 700;
+  margin: 0 0 0.35rem;
+}
+
+.csbk-note-card__footer {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  border-top: 1px solid var(--csbk-grey-500);
+  background: var(--csbk-grey-400);
+}
+
+.csbk-search-layout {
+  display: grid;
+  grid-template-columns: minmax(16rem, 22rem) minmax(0, 1fr);
+  gap: var(--csbk-spacing-lg);
+  align-items: start;
+}
+
+@media (max-width: 48em) {
+  .csbk-search-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+.csbk-search-card {
+  background: #fff;
+  border: 1px solid var(--csbk-blue-450);
+  padding: 1.25rem;
+}
+
+.csbk-search-help {
+  background: #fff;
+  border: 1px solid var(--csbk-blue-450);
+  border-top: 3px solid var(--csbk-blue-450);
+  padding: 1.25rem;
+}
+
+.csbk-search-help h2 {
+  margin-top: 0;
+  font-size: 1.125rem;
+}
+
+.csbk-search-help h3 {
+  font-size: 1rem;
+  margin: 1rem 0 0.35rem;
+}
+
+.csbk-search-help hr {
+  border: 0;
+  border-top: 1px solid var(--csbk-grey-500);
+  margin: 1rem 0;
+}
+
+/* Purple info flash like Casebook training banner */
+.csbk-flash-bar--purple {
+  background: #641f86;
+  border-bottom: 0;
+}
+
+.csbk-flash-bar--purple .csbk-flash__badge {
+  background: #410160;
+  color: #fff;
+}
+
+.csbk-flash-bar--purple .csbk-flash__message {
+  color: #fff;
+}
+
+.csbk-flash-bar--purple.csbk-flash-bar--warning {
+  background: #641f86;
+}
+
+.csbk-page-title {
+  margin-bottom: 0.35rem;
+}

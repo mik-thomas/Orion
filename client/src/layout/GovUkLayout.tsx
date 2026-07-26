@@ -21,7 +21,7 @@ export function GovUkLayout() {
 
       <OrionHeader />
 
-      <div className="csbk-flash-bar">
+      <div className="csbk-flash-bar csbk-flash-bar--purple">
         <div className="govuk-width-container">
           <div className={`csbk-flash ${showingAnonymised ? "csbk-flash--warning" : "csbk-flash--info"}`}>
             <span className="csbk-flash__badge">{showingAnonymised ? "Demo" : "Info"}</span>

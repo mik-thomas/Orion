@@ -18,10 +18,12 @@ function NavDropdown({
   label,
   items,
   isSectionActive,
+  align = "left",
 }: {
   label: string;
   items: NavDropdownItem[];
   isSectionActive: boolean;
+  align?: "left" | "right";
 }) {
   const menuId = useId();
   const containerRef = useRef<HTMLLIElement>(null);
@@ -68,7 +70,15 @@ function NavDropdown({
         <span className="orion-app-header__chevron" aria-hidden="true" />
       </button>
       {open && (
-        <ul className="orion-app-header__dropdown" id={menuId} role="menu">
+        <ul
+          className={
+            align === "right"
+              ? "orion-app-header__dropdown orion-app-header__dropdown--right"
+              : "orion-app-header__dropdown"
+          }
+          id={menuId}
+          role="menu"
+        >
           {items.map((item) => (
             <li key={item.to} role="none">
               <NavLink
@@ -114,16 +124,23 @@ export function OrionHeader() {
     setMobileOpen(false);
   }, [location.pathname]);
 
-  const magistrateItems: NavDropdownItem[] = [
+  const manageItems: NavDropdownItem[] = [
     { label: "All magistrates", to: "/magistrates" },
     { label: "On leave", to: "/magistrates/on-leave" },
+    { label: "Tasks", to: "/tasks" },
+    { label: "Reports", to: "/reports" },
   ];
 
   if (canViewRoster) {
-    magistrateItems.push({ label: "Roster", to: "/magistrates/roster" });
+    manageItems.splice(2, 0, { label: "Roster", to: "/magistrates/roster" });
   }
 
-  const magistratesActive = location.pathname.startsWith("/magistrates");
+  const manageActive =
+    location.pathname.startsWith("/magistrates") ||
+    location.pathname.startsWith("/tasks") ||
+    location.pathname.startsWith("/reports");
+
+  const userLabel = session?.displayName?.split(" ")[0] ?? role;
 
   return (
     <header className="orion-app-header" role="banner">
@@ -132,8 +149,8 @@ export function OrionHeader() {
           <Link to="/" className="orion-app-header__brand">
             <OrionLogo className="orion-app-header__logo" />
             <span className="orion-app-header__brand-text">
-              <span className="orion-app-header__brand-name">Orion</span>
-              <span className="orion-app-header__brand-tagline">Bench</span>
+              <span className="orion-app-header__brand-name">orion</span>
+              <span className="orion-app-header__brand-tagline">Demo</span>
             </span>
           </Link>
 
@@ -156,20 +173,20 @@ export function OrionHeader() {
             <ul className="orion-app-header__nav-list">
               <li className="orion-app-header__nav-item">
                 <NavLink to="/" end className={({ isActive }) => navLinkClassName(isActive)}>
-                  Dashboard
+                  Home
                 </NavLink>
               </li>
-              <NavDropdown label="Magistrates" items={magistrateItems} isSectionActive={magistratesActive} />
+              <li className="orion-app-header__nav-item">
+                <NavLink to="/magistrates" className={({ isActive }) => navLinkClassName(isActive)}>
+                  Find magistrate
+                </NavLink>
+              </li>
               <li className="orion-app-header__nav-item">
                 <NavLink to="/tasks" className={({ isActive }) => navLinkClassName(isActive)}>
                   Tasks
                 </NavLink>
               </li>
-              <li className="orion-app-header__nav-item">
-                <NavLink to="/reports" className={({ isActive }) => navLinkClassName(isActive)}>
-                  Reports
-                </NavLink>
-              </li>
+              <NavDropdown label="Manage" items={manageItems} isSectionActive={manageActive} />
               <li className="orion-app-header__nav-item orion-app-header__nav-item--role">
                 <div className="orion-session-chip">
                   {session?.role === "Developer" ? (
@@ -178,7 +195,7 @@ export function OrionHeader() {
                     <span className="orion-session-chip__role">{role}</span>
                   )}
                   {session?.displayName && (
-                    <span className="orion-session-chip__user">{session.displayName}</span>
+                    <span className="orion-session-chip__user">{userLabel}</span>
                   )}
                   <button
                     type="button"
