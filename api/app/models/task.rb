@@ -13,6 +13,7 @@ class Task < ApplicationRecord
   belongs_to :updated_by, class_name: "User", optional: true
   belongs_to :case, optional: true
   belongs_to :note, optional: true
+  belongs_to :magistrate, optional: true
 
   validates :title, presence: true
   validates :status, inclusion: { in: STATUSES }
@@ -47,7 +48,7 @@ class Task < ApplicationRecord
   end
 
   def linked_magistrate
-    self.case&.magistrate || note&.case&.magistrate
+    self.case&.magistrate || note&.case&.magistrate || magistrate
   end
 
   private

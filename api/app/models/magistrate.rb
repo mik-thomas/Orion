@@ -5,6 +5,7 @@ class Magistrate < ApplicationRecord
   has_many :sitting_locations, through: :magistrate_sitting_locations, source: :courthouse
   has_many :leaves_of_absence, class_name: "LeaveOfAbsence", dependent: :destroy
   has_many :cases, dependent: :destroy
+  has_many :tasks, dependent: :nullify
   has_many :sittings, dependent: :destroy
   has_many :training_records, dependent: :destroy
 

@@ -286,7 +286,7 @@ module JsonRenderable
 
     task.as_json(
       only: %i[id title description status priority due_on reminder_on completed_at report_notes public_id
-               case_id note_id created_at updated_at]
+               case_id note_id magistrate_id created_at updated_at]
     ).merge(
       "created_by_user_id" => task.created_by_id,
       "assigned_to_user_id" => task.assigned_to_id,

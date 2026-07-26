@@ -184,6 +184,16 @@ export function TaskDetailPage() {
       )}
 
       <dl className="govuk-summary-list">
+        {task.magistrate_id && (
+          <div className="govuk-summary-list__row">
+            <dt className="govuk-summary-list__key">Magistrate</dt>
+            <dd className="govuk-summary-list__value">
+              <Link className="govuk-link" to={`/magistrates/${task.magistrate_id}`}>
+                {task.magistrate_name ?? `Magistrate ${task.magistrate_id}`}
+              </Link>
+            </dd>
+          </div>
+        )}
         <div className="govuk-summary-list__row">
           <dt className="govuk-summary-list__key">Delegated by</dt>
           <dd className="govuk-summary-list__value">{task.created_by.display_name}</dd>

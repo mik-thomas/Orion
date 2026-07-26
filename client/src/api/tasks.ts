@@ -44,6 +44,7 @@ export type TaskPayload = {
   report_notes?: string | null;
   case_id?: number | null;
   note_id?: number | null;
+  magistrate_id?: number | null;
 };
 
 export function createTask(task: TaskPayload) {

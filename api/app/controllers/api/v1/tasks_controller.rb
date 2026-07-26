@@ -11,7 +11,7 @@ module Api
       def index
         render json: {
           tasks: scoped_tasks.includes(
-            :created_by, :assigned_to, :updated_by,
+            :created_by, :assigned_to, :updated_by, :magistrate,
             { case: :magistrate },
             { note: { case: :magistrate } }
           ).then { |scope|
@@ -88,7 +88,7 @@ module Api
 
       def set_task
         @task = Task.includes(
-          :created_by, :assigned_to, :updated_by,
+          :created_by, :assigned_to, :updated_by, :magistrate,
           { case: :magistrate },
           { note: { case: :magistrate } }
         )
@@ -160,7 +160,7 @@ module Api
         remap_assignee(
           params.require(:task).permit(
             :title, :description, :status, :priority, :due_on, :reminder_on,
-            :assigned_to_user_id, :report_notes, :case_id, :note_id
+            :assigned_to_user_id, :report_notes, :case_id, :note_id, :magistrate_id
           )
         )
       end
@@ -170,7 +170,7 @@ module Api
           if current_user.developer? || current_user.bench_chair?
             params.require(:task).permit(
               :title, :description, :status, :priority, :due_on, :reminder_on,
-              :assigned_to_user_id, :report_notes, :case_id, :note_id
+              :assigned_to_user_id, :report_notes, :case_id, :note_id, :magistrate_id
             )
           else
             params.require(:task).permit(:status, :report_notes)

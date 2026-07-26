@@ -1,5 +1,5 @@
 import { useEffect, useId, useMemo, useState } from "react";
-import { Link, useParams, useSearchParams } from "react-router-dom";
+import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { getMagistrate } from "../api/magistrates";
 import { ApiError } from "../api/http";
 import { ComplianceViolations } from "../components/ComplianceViolations";
@@ -40,6 +40,7 @@ import { isRetirementAlertDismissed, isRetiringSoon } from "../lib/retirement";
 import type { CourtRoomRow, LeaveOfAbsence, MagistrateDetail } from "../types/domain";
 import { createLeaveOfAbsence } from "../api/leaves";
 import { createCase } from "../api/cases";
+import { createTask } from "../api/tasks";
 import { formatTaskDate } from "../lib/tasks";
 import { useAuth } from "../context/AuthContext";
 import {
@@ -116,6 +117,7 @@ function ProfileCourtRoomBreakdownTable({ rows }: { rows: CourtRoomRow[] }) {
 
 export function MagistrateProfilePage() {
   const { id } = useParams();
+  const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const { role, canViewNames } = useRole();
   const { session } = useAuth();
@@ -139,6 +141,12 @@ export function MagistrateProfilePage() {
   const [creatingLoa, setCreatingLoa] = useState(false);
   const [activeTab, setActiveTab] = useState("cases");
   const [showCreateCase, setShowCreateCase] = useState(false);
+  const [showCreateTask, setShowCreateTask] = useState(false);
+  const [taskTitle, setTaskTitle] = useState("");
+  const [taskDescription, setTaskDescription] = useState("");
+  const [taskDueOn, setTaskDueOn] = useState("");
+  const [creatingTask, setCreatingTask] = useState(false);
+  const canManageTasks = session?.role === "Bench Chair" || session?.role === "Developer";
   const statusSummaryId = useId();
   const homeAwaySummaryId = useId();
   const locationSummaryId = useId();
@@ -306,6 +314,7 @@ export function MagistrateProfilePage() {
                         label: "Add case",
                         primary: true as const,
                         onClick: () => {
+                          setShowCreateTask(false);
                           setActiveTab("cases");
                           setShowCreateCase(true);
                         },
@@ -313,7 +322,22 @@ export function MagistrateProfilePage() {
                       {
                         label: "Add leave",
                         primary: true as const,
-                        onClick: () => setActiveTab("leave"),
+                        onClick: () => {
+                          setShowCreateTask(false);
+                          setActiveTab("leave");
+                        },
+                      },
+                    ]
+                  : []),
+                ...(canManageTasks
+                  ? [
+                      {
+                        label: "Add task",
+                        primary: true as const,
+                        onClick: () => {
+                          setShowCreateCase(false);
+                          setShowCreateTask(true);
+                        },
                       },
                     ]
                   : []),
@@ -321,6 +345,89 @@ export function MagistrateProfilePage() {
                 { label: "Overview", onClick: () => setActiveTab("overview") },
               ]}
             />
+
+            {showCreateTask && canManageTasks && (
+              <form
+                className="govuk-!-margin-bottom-6"
+                onSubmit={(event) => {
+                  event.preventDefault();
+                  if (!magistrate || !taskTitle.trim()) return;
+                  setCreatingTask(true);
+                  setError(null);
+                  createTask({
+                    title: taskTitle.trim(),
+                    description: taskDescription.trim() || null,
+                    due_on: taskDueOn || null,
+                    magistrate_id: magistrate.id,
+                  })
+                    .then((created) => {
+                      setTaskTitle("");
+                      setTaskDescription("");
+                      setTaskDueOn("");
+                      setShowCreateTask(false);
+                      navigate(`/tasks/${created.public_id || created.id}`);
+                    })
+                    .catch((err: unknown) =>
+                      setError(err instanceof ApiError ? err.message : "Could not create task")
+                    )
+                    .finally(() => setCreatingTask(false));
+                }}
+              >
+                <h2 className="govuk-heading-m">Add task for {magistrate.display_name}</h2>
+                <div className="govuk-form-group">
+                  <label className="govuk-label" htmlFor="magistrate-task-title">
+                    Title
+                  </label>
+                  <input
+                    className="govuk-input govuk-!-width-two-thirds"
+                    id="magistrate-task-title"
+                    value={taskTitle}
+                    onChange={(event) => setTaskTitle(event.target.value)}
+                    required
+                    autoFocus
+                  />
+                </div>
+                <div className="govuk-form-group">
+                  <label className="govuk-label" htmlFor="magistrate-task-description">
+                    Description (optional)
+                  </label>
+                  <textarea
+                    className="govuk-textarea"
+                    id="magistrate-task-description"
+                    rows={3}
+                    value={taskDescription}
+                    onChange={(event) => setTaskDescription(event.target.value)}
+                  />
+                </div>
+                <div className="govuk-form-group">
+                  <label className="govuk-label" htmlFor="magistrate-task-due-on">
+                    Due date (optional)
+                  </label>
+                  <input
+                    className="govuk-input govuk-input--width-10"
+                    id="magistrate-task-due-on"
+                    type="date"
+                    value={taskDueOn}
+                    onChange={(event) => setTaskDueOn(event.target.value)}
+                  />
+                </div>
+                <button
+                  type="submit"
+                  className="govuk-button"
+                  disabled={creatingTask || !taskTitle.trim()}
+                >
+                  {creatingTask ? "Creating…" : "Create task"}
+                </button>
+                <button
+                  type="button"
+                  className="govuk-button govuk-button--secondary govuk-!-margin-left-2"
+                  onClick={() => setShowCreateTask(false)}
+                  disabled={creatingTask}
+                >
+                  Cancel
+                </button>
+              </form>
+            )}
 
             <ComplianceViolations
               violations={magistrate.violations}

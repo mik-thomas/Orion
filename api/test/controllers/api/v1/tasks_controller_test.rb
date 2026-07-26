@@ -135,6 +135,41 @@ class TasksControllerTest < ActionDispatch::IntegrationTest
     assert_equal 1, body["related_items"].size
   end
 
+  test "can link task to a magistrate without a case" do
+    magistrate = magistrates(:alice)
+
+    assert_difference("Task.count", 1) do
+      post api_v1_tasks_path, params: {
+        task: {
+          title: "Follow up with magistrate",
+          description: "Check sitting availability",
+          due_on: Date.current + 3,
+          magistrate_id: magistrate.id
+        }
+      }, headers: auth_headers(:bench_chair), as: :json
+    end
+
+    assert_response :created
+    body = JSON.parse(response.body)
+    assert_equal magistrate.id, body["magistrate_id"]
+    assert body["magistrate_name"].present?
+    assert_nil body["case_id"]
+    assert_nil body["note_id"]
+  end
+
+  test "can update task magistrate link" do
+    magistrate = magistrates(:bob)
+
+    patch api_v1_task_path(tasks(:rota_coverage)), params: {
+      task: { magistrate_id: magistrate.id }
+    }, headers: auth_headers(:bench_chair), as: :json
+
+    assert_response :success
+    body = JSON.parse(response.body)
+    assert_equal magistrate.id, body["magistrate_id"]
+    assert body["magistrate_name"].present?
+  end
+
   test "unauthenticated requests are rejected" do
     get api_v1_tasks_path
     assert_response :unauthorized
