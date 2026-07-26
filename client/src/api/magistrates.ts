@@ -19,6 +19,16 @@ export function getMagistrate(id: number, query = "") {
   return request<MagistrateDetail>(`/api/v1/magistrates/${id}${suffix}`);
 }
 
+export function updateMagistrate(
+  id: number,
+  attrs: { contact_number?: string | null }
+) {
+  return request<MagistrateDetail>(`/api/v1/magistrates/${id}`, {
+    method: "PATCH",
+    body: JSON.stringify({ magistrate: attrs }),
+  });
+}
+
 export function listCourthouses() {
   return request<Courthouse[]>("/api/v1/courthouses");
 }

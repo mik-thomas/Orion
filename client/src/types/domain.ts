@@ -194,6 +194,8 @@ export interface MagistrateSummary {
   first_name: string | null;
   last_name: string | null;
   full_name: string | null;
+  email: string | null;
+  contact_number: string | null;
   date_of_appointment: string | null;
   reasonable_adjustments: string | null;
   home_courthouse: Courthouse | null;

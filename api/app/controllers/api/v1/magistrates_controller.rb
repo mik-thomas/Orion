@@ -76,7 +76,8 @@ module Api
 
       def magistrate_params
         params.require(:magistrate).permit(
-          :first_name, :last_name, :email, :date_of_appointment, :home_courthouse_id, :reasonable_adjustments
+          :first_name, :last_name, :email, :contact_number, :date_of_appointment, :home_courthouse_id,
+          :reasonable_adjustments
         )
       end
 

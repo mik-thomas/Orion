@@ -602,6 +602,14 @@ body.govuk-template__body {
   align-items: start;
 }
 
+/* Grid items default to min-width: auto and can refuse to shrink below
+   wide table content — force the main column to respect the track width. */
+.csbk-split__main,
+.csbk-split__side {
+  min-width: 0;
+  max-width: 100%;
+}
+
 @media (max-width: 56.25em) {
   .csbk-split {
     grid-template-columns: 1fr;
@@ -756,6 +764,9 @@ body.govuk-template__body {
   border-top: 0;
   padding: 1.25rem;
   margin-bottom: var(--csbk-spacing-lg);
+  min-width: 0;
+  max-width: 100%;
+  overflow-x: hidden;
 }
 
 .csbk-action-bar {

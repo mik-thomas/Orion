@@ -25,26 +25,28 @@ export function SittingStatusTable({
   }
 
   return (
-    <table className="govuk-table">
-      <caption className="govuk-table__caption govuk-table__caption--m">{caption}</caption>
-      <thead className="govuk-table__head">
-        <tr className="govuk-table__row">
-          <th scope="col" className="govuk-table__header">
-            Status
-          </th>
-          <th scope="col" className="govuk-table__header">
-            Sittings
-          </th>
-        </tr>
-      </thead>
-      <tbody className="govuk-table__body">
-        {rows.map((row) => (
-          <tr key={row.key} className="govuk-table__row">
-            <td className="govuk-table__cell">{row.label}</td>
-            <td className="govuk-table__cell">{row.value}</td>
+    <div className="orion-table-scroll">
+      <table className="govuk-table">
+        <caption className="govuk-table__caption govuk-table__caption--m">{caption}</caption>
+        <thead className="govuk-table__head">
+          <tr className="govuk-table__row">
+            <th scope="col" className="govuk-table__header">
+              Status
+            </th>
+            <th scope="col" className="govuk-table__header">
+              Sittings
+            </th>
           </tr>
-        ))}
-      </tbody>
-    </table>
+        </thead>
+        <tbody className="govuk-table__body">
+          {rows.map((row) => (
+            <tr key={row.key} className="govuk-table__row">
+              <td className="govuk-table__cell">{row.label}</td>
+              <td className="govuk-table__cell">{row.value}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
   );
 }

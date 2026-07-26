@@ -32,13 +32,17 @@ module JsonRenderable
           base.merge(
             "full_name" => magistrate.full_name,
             "first_name" => magistrate.first_name,
-            "last_name" => magistrate.last_name
+            "last_name" => magistrate.last_name,
+            "email" => magistrate.email,
+            "contact_number" => magistrate.contact_number
           )
         else
           base.merge(
             "full_name" => identity["full_name"],
             "first_name" => identity["first_name"],
-            "last_name" => identity["last_name"]
+            "last_name" => identity["last_name"],
+            "email" => identity["email"],
+            "contact_number" => nil
           )
         end
       end

@@ -16,11 +16,13 @@ class MagistrateRoleSerializationTest < ActionDispatch::IntegrationTest
     assert_equal false, body["name_visible"]
     assert_equal true, body["pii_anonymized"]
     assert_equal fake["full_name"], body["full_name"]
-    assert_nil body["email"]
+    assert_equal fake["email"], body["email"]
+    assert_nil body["contact_number"]
   end
 
   test "developer role shows full names and reference code" do
     magistrate = magistrates(:alice)
+    magistrate.update!(contact_number: "0114 123 4567")
 
     get api_v1_magistrate_path(magistrate), headers: auth_headers(:developer)
     assert_response :success
@@ -31,7 +33,8 @@ class MagistrateRoleSerializationTest < ActionDispatch::IntegrationTest
     assert_equal true, body["name_visible"]
     assert_equal false, body["pii_anonymized"]
     assert_equal "SY-0001", body["reference_code"]
-    assert_nil body["email"]
+    assert_equal "alice@example.com", body["email"]
+    assert_equal "0114 123 4567", body["contact_number"]
   end
 
   test "roster is forbidden for bench chair" do

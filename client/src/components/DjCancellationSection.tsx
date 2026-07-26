@@ -183,16 +183,10 @@ export function DjCancellationSection({
         ]}
       />
 
-      <div className="govuk-grid-row">
-        <div className="govuk-grid-column-one-third">
-          <DjBreakdownPanel title="By location" rows={courthouseRows} periodFilter={periodFilter} />
-        </div>
-        <div className="govuk-grid-column-one-third">
-          <DjBreakdownPanel title="By sitting bench" rows={sittingTypeRows} periodFilter={periodFilter} />
-        </div>
-        <div className="govuk-grid-column-one-third">
-          <DjBreakdownPanel title="By court room" rows={courtRoomRows} periodFilter={periodFilter} />
-        </div>
+      <div className="orion-profile-charts-grid orion-profile-charts-grid--three">
+        <DjBreakdownPanel title="By location" rows={courthouseRows} periodFilter={periodFilter} />
+        <DjBreakdownPanel title="By sitting bench" rows={sittingTypeRows} periodFilter={periodFilter} />
+        <DjBreakdownPanel title="By court room" rows={courtRoomRows} periodFilter={periodFilter} />
       </div>
     </DashboardSection>
   );

@@ -319,27 +319,29 @@ export function SittingHistoryChart({ sittings, periodLabel }: SittingHistoryCha
             title="Sitting history"
             chart={<SittingHistoryChartVisual periodLabel={periodLabel} chartData={chartData} />}
           />
-          <table className="govuk-table">
-            <caption className="govuk-table__caption govuk-table__caption--m">Sitting history by month</caption>
-            <thead className="govuk-table__head">
-              <tr className="govuk-table__row">
-                <th scope="col" className="govuk-table__header">
-                  Month
-                </th>
-                <th scope="col" className="govuk-table__header">
-                  Sittings
-                </th>
-              </tr>
-            </thead>
-            <tbody className="govuk-table__body">
-              {chartData.monthRows.map((row) => (
-                <tr key={row.month} className="govuk-table__row">
-                  <td className="govuk-table__cell">{row.label}</td>
-                  <td className="govuk-table__cell">{row.total}</td>
+          <div className="orion-table-scroll">
+            <table className="govuk-table">
+              <caption className="govuk-table__caption govuk-table__caption--m">Sitting history by month</caption>
+              <thead className="govuk-table__head">
+                <tr className="govuk-table__row">
+                  <th scope="col" className="govuk-table__header">
+                    Month
+                  </th>
+                  <th scope="col" className="govuk-table__header">
+                    Sittings
+                  </th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody className="govuk-table__body">
+                {chartData.monthRows.map((row) => (
+                  <tr key={row.month} className="govuk-table__row">
+                    <td className="govuk-table__cell">{row.label}</td>
+                    <td className="govuk-table__cell">{row.total}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </>
       )}
     </DashboardSection>
