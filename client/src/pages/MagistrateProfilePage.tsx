@@ -908,7 +908,13 @@ export function MagistrateProfilePage() {
           </>
         }
         sidebar={
-          <MagistrateSidebar magistrate={magistrate} canViewNames={canViewNames} />
+          <MagistrateSidebar
+            magistrate={magistrate}
+            canViewNames={canViewNames}
+            onContactNumberUpdated={(contactNumber) =>
+              setMagistrate((current) => (current ? { ...current, contact_number: contactNumber } : current))
+            }
+          />
         }
       />
     </>

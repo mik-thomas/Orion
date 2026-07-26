@@ -283,6 +283,11 @@ export function NoteDetailPage() {
               magistrate={magistrate}
               canViewNames={canViewNames}
               profileHref={`/magistrates/${magistrate.id}`}
+              onContactNumberUpdated={(contactNumber) =>
+                setMagistrate((current) =>
+                  current ? { ...current, contact_number: contactNumber } : current
+                )
+              }
             />
           ) : (
             <aside className="csbk-sidebar" aria-label="Magistrate">

@@ -4,6 +4,7 @@ import {
   CasebookDl,
   CasebookSidebar,
 } from "./casebook/CasebookChrome";
+import { ContactNumberEditor } from "./ContactNumberEditor";
 import { NextLoaReviewTag } from "../lib/loaReview";
 import { isRetiringSoon } from "../lib/retirement";
 import type { MagistrateDetail, MagistrateSummary } from "../types/domain";
@@ -21,10 +22,12 @@ export function MagistrateSidebar({
   magistrate,
   canViewNames = true,
   profileHref,
+  onContactNumberUpdated,
 }: {
   magistrate: MagistrateLike;
   canViewNames?: boolean;
   profileHref?: string;
+  onContactNumberUpdated?: (contactNumber: string | null) => void;
 }) {
   const title = `${magistrate.display_name}: ${magistrate.reference_code}`;
   const sittingLocations =
@@ -45,6 +48,23 @@ export function MagistrateSidebar({
             {
               key: "Role",
               value: magistrate.presiding_justice ? "Presiding Justice" : "Winger",
+            },
+            {
+              key: "Email address",
+              value: magistrate.email?.trim() ? magistrate.email : "Not recorded",
+            },
+            {
+              key: "Contact number",
+              value: canViewNames ? (
+                <ContactNumberEditor
+                  magistrateId={magistrate.id}
+                  contactNumber={magistrate.contact_number}
+                  editable={Boolean(onContactNumberUpdated)}
+                  onUpdated={(contactNumber) => onContactNumberUpdated?.(contactNumber)}
+                />
+              ) : (
+                "Hidden"
+              ),
             },
             {
               key: "Appointed",

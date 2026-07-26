@@ -555,6 +555,11 @@ export function CaseDetailPage() {
               magistrate={magistrate}
               canViewNames={canViewNames}
               profileHref={`/magistrates/${magistrate.id}`}
+              onContactNumberUpdated={(contactNumber) =>
+                setMagistrate((current) =>
+                  current ? { ...current, contact_number: contactNumber } : current
+                )
+              }
             />
           ) : kase.magistrate ? (
             <aside className="csbk-sidebar" aria-label="Magistrate">
