@@ -1,0 +1,594 @@
+/**
+ * Casebook-inspired theme for Orion.
+ * Tokens adapted from Citizens Advice Casebook (training) saved UI — colours,
+ * typography, density and chrome only; no proprietary assets copied.
+ */
+
+:root {
+  /* Primitives */
+  --csbk-blue-200: #f2f8ff;
+  --csbk-blue-450: #a5c3cf;
+  --csbk-blue-550: #004b88;
+  --csbk-blue-650: #012760;
+  --csbk-grey-200: #ffffff;
+  --csbk-grey-400: #f2f2f2;
+  --csbk-grey-500: #e5e5e5;
+  --csbk-grey-550: #8d9093;
+  --csbk-grey-600: #4a4e4f;
+  --csbk-grey-950: #161616;
+  --csbk-green-400: #bdffcf;
+  --csbk-green-500: #0a8600;
+  --csbk-green-800: #005717;
+  --csbk-red-200: #fceaeb;
+  --csbk-red-500: #df3034;
+  --csbk-red-600: #9a0101;
+  --csbk-yellow-200: #fff8f0;
+  --csbk-yellow-500: #ffd250;
+  --csbk-yellow-600: #fcbb69;
+  --csbk-yellow-700: #ed8400;
+  --csbk-purple-400: #f0e9f3;
+  --csbk-purple-500: #8f3ea3;
+  --csbk-purple-600: #641f86;
+
+  --csbk-font-family: "Open Sans", Helvetica, "Helvetica Neue", Arial, sans-serif;
+  --csbk-font-size-base: 0.875rem;
+  --csbk-font-size-lg: 1rem;
+  --csbk-font-size-xl: 1.125rem;
+  --csbk-font-size-xxl: 1.5rem;
+  --csbk-font-size-xxxl: 2.25rem;
+  --csbk-line-height-base: 1.313rem;
+  --csbk-spacing-xs: 0.25rem;
+  --csbk-spacing-sm: 0.5rem;
+  --csbk-spacing-md: 0.75rem;
+  --csbk-spacing-base: 1rem;
+  --csbk-spacing-lg: 1.5rem;
+  --csbk-spacing-xl: 2rem;
+  --csbk-spacing-xxl: 2.5rem;
+  --csbk-header-height: 4rem;
+  --csbk-content-max: 75rem;
+
+  /* Map GOV.UK Frontend v6 tokens → Casebook palette */
+  --govuk-brand-colour: var(--csbk-blue-550);
+  --govuk-text-colour: var(--csbk-grey-950);
+  --govuk-template-background-colour: var(--csbk-grey-400);
+  --govuk-body-background-colour: var(--csbk-grey-200);
+  --govuk-secondary-text-colour: var(--csbk-grey-600);
+  --govuk-focus-colour: var(--csbk-yellow-500);
+  --govuk-focus-text-colour: var(--csbk-grey-950);
+  --govuk-error-colour: var(--csbk-red-500);
+  --govuk-success-colour: var(--csbk-green-500);
+  --govuk-border-colour: var(--csbk-blue-450);
+  --govuk-input-border-colour: var(--csbk-grey-550);
+  --govuk-hover-colour: var(--csbk-grey-500);
+  --govuk-link-colour: var(--csbk-blue-550);
+  --govuk-link-visited-colour: var(--csbk-purple-500);
+  --govuk-link-hover-colour: var(--csbk-blue-650);
+  --govuk-link-active-colour: var(--csbk-grey-950);
+  --govuk-surface-background-colour: var(--csbk-grey-400);
+  --govuk-surface-text-colour: var(--csbk-grey-950);
+  --govuk-surface-border-colour: var(--csbk-blue-450);
+}
+
+/* Global type + page chrome */
+
+html.govuk-template,
+body.govuk-template__body,
+.csbk-app {
+  font-family: var(--csbk-font-family);
+  background-color: var(--csbk-grey-400);
+  color: var(--csbk-grey-950);
+}
+
+body.govuk-template__body {
+  font-size: var(--csbk-font-size-lg);
+  line-height: 1.5;
+  margin: 0;
+  min-height: 100vh;
+}
+
+.csbk-app {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+.csbk-app__main {
+  flex: 1 0 auto;
+  padding: var(--csbk-spacing-lg) 0 var(--csbk-spacing-xxl);
+}
+
+.csbk-width-container {
+  max-width: var(--csbk-content-max);
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: var(--csbk-spacing-xl);
+  padding-right: var(--csbk-spacing-xl);
+}
+
+@media (max-width: 40.0625em) {
+  .csbk-width-container {
+    padding-left: var(--csbk-spacing-base);
+    padding-right: var(--csbk-spacing-base);
+  }
+}
+
+/* Remap GOV.UK width container to Casebook density */
+.govuk-width-container {
+  max-width: var(--csbk-content-max);
+  margin-right: auto;
+  margin-left: auto;
+  padding-right: var(--csbk-spacing-xl);
+  padding-left: var(--csbk-spacing-xl);
+}
+
+.govuk-main-wrapper {
+  padding-top: 0;
+  padding-bottom: 0;
+}
+
+.govuk-main-wrapper--auto-spacing:not(:first-child),
+.govuk-main-wrapper--auto-spacing > :first-child {
+  margin-top: 0;
+}
+
+/* Typography overrides — Open Sans everywhere GOV.UK used GDS Transport */
+.govuk-heading-xl,
+.govuk-heading-l,
+.govuk-heading-m,
+.govuk-heading-s,
+.govuk-body,
+.govuk-body-l,
+.govuk-body-s,
+.govuk-body-m,
+.govuk-caption-xl,
+.govuk-caption-l,
+.govuk-caption-m,
+.govuk-label,
+.govuk-hint,
+.govuk-fieldset__legend,
+.govuk-link,
+.govuk-table,
+.govuk-button,
+.govuk-input,
+.govuk-select,
+.govuk-textarea,
+.govuk-checkboxes__label,
+.govuk-radios__label,
+.govuk-breadcrumbs,
+.govuk-tag,
+.govuk-phase-banner,
+.govuk-footer,
+.govuk-error-summary,
+.govuk-notification-banner,
+.govuk-summary-list,
+.govuk-skip-link {
+  font-family: var(--csbk-font-family) !important;
+}
+
+.govuk-heading-xl {
+  font-size: 2rem;
+  font-weight: 700;
+  line-height: 1.2;
+  margin-top: 0;
+  margin-bottom: var(--csbk-spacing-lg);
+  color: var(--csbk-grey-950);
+}
+
+.govuk-heading-l {
+  font-size: 1.5rem;
+  font-weight: 700;
+  line-height: 1.3;
+  margin-top: 0;
+  margin-bottom: var(--csbk-spacing-base);
+}
+
+.govuk-heading-m {
+  font-size: 1.25rem;
+  font-weight: 700;
+  line-height: 1.35;
+  margin-bottom: var(--csbk-spacing-md);
+}
+
+.govuk-heading-s {
+  font-size: 1.125rem;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.govuk-body,
+.govuk-body-m {
+  font-size: var(--csbk-font-size-lg);
+  color: var(--csbk-grey-950);
+}
+
+.govuk-body-s,
+.govuk-hint {
+  color: var(--csbk-grey-600);
+}
+
+.govuk-link:link {
+  color: var(--csbk-blue-550);
+}
+
+.govuk-link:visited {
+  color: var(--csbk-purple-500);
+}
+
+.govuk-link:hover {
+  color: var(--csbk-blue-650);
+}
+
+.govuk-link:focus {
+  outline: 0;
+  background-color: var(--csbk-yellow-500);
+  box-shadow: 0 -2px var(--csbk-yellow-500), 0 4px var(--csbk-grey-600);
+  color: var(--csbk-grey-950);
+  text-decoration: none;
+}
+
+/* Primary actions — Casebook blue (not GOV.UK green) */
+.govuk-button {
+  background-color: var(--csbk-blue-550) !important;
+  box-shadow: 0 2px 0 var(--csbk-blue-650) !important;
+  border-radius: 0 !important;
+  color: #fff !important;
+  font-weight: 700;
+  font-size: var(--csbk-font-size-lg);
+  padding: 0.5rem 1.25rem;
+  border: 2px solid transparent;
+  min-height: 2.5rem;
+}
+
+.govuk-button:hover {
+  background-color: var(--csbk-blue-650) !important;
+}
+
+.govuk-button:focus {
+  background-color: var(--csbk-yellow-500) !important;
+  box-shadow: 0 0 0 2px var(--csbk-grey-950) !important;
+  color: var(--csbk-grey-950) !important;
+  outline: 0;
+}
+
+.govuk-button:active {
+  top: 2px;
+  box-shadow: none !important;
+}
+
+.govuk-button--secondary {
+  background-color: var(--csbk-grey-200) !important;
+  box-shadow: 0 2px 0 var(--csbk-grey-550) !important;
+  color: var(--csbk-grey-950) !important;
+  border: 1px solid var(--csbk-grey-550);
+}
+
+.govuk-button--secondary:hover {
+  background-color: var(--csbk-blue-200) !important;
+}
+
+.govuk-button--warning {
+  background-color: var(--csbk-red-500) !important;
+  box-shadow: 0 2px 0 var(--csbk-red-600) !important;
+}
+
+.govuk-button--warning:hover {
+  background-color: var(--csbk-red-600) !important;
+}
+
+/* Forms denser / Casebook-like */
+.govuk-input,
+.govuk-select,
+.govuk-textarea {
+  border: 1px solid var(--csbk-grey-550);
+  border-radius: 0;
+  font-size: var(--csbk-font-size-lg);
+  min-height: 2.5rem;
+  padding: 0.4rem 0.65rem;
+}
+
+.govuk-input:focus,
+.govuk-select:focus,
+.govuk-textarea:focus {
+  outline: 0;
+  border-color: var(--csbk-grey-950);
+  box-shadow: 0 0 0 3px var(--csbk-yellow-500);
+}
+
+.govuk-form-group {
+  margin-bottom: var(--csbk-spacing-base);
+}
+
+.govuk-label {
+  font-weight: 700;
+  font-size: var(--csbk-font-size-lg);
+  margin-bottom: var(--csbk-spacing-xs);
+}
+
+/* Tables — white cards with blue-grey border like Casebook */
+.govuk-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  background: #fff;
+  border: 1px solid var(--csbk-blue-450);
+  border-bottom: 3px solid var(--csbk-blue-450);
+  color: var(--csbk-grey-950);
+  font-size: var(--csbk-font-size-lg);
+  margin-bottom: var(--csbk-spacing-lg);
+}
+
+.govuk-table__caption {
+  font-weight: 700;
+  color: var(--csbk-grey-950);
+  margin-bottom: var(--csbk-spacing-sm);
+  caption-side: top;
+  text-align: left;
+}
+
+.govuk-table__head {
+  background-color: var(--csbk-blue-450);
+}
+
+.govuk-table__header {
+  background-color: var(--csbk-blue-450);
+  color: var(--csbk-grey-950);
+  font-weight: 700;
+  border-bottom: 2px solid var(--csbk-blue-450);
+  padding: 0.625rem 1rem;
+  vertical-align: bottom;
+}
+
+.govuk-table__cell {
+  border-top: 1px solid #d6e4ea;
+  padding: 0.625rem 1rem;
+  vertical-align: top;
+}
+
+.govuk-table__body .govuk-table__row:first-child .govuk-table__cell {
+  border-top: 0;
+}
+
+.govuk-table__body .govuk-table__row:hover {
+  background-color: var(--csbk-blue-200);
+}
+
+/* Tags → Casebook-style badges */
+.govuk-tag {
+  border-radius: 0;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  line-height: 1;
+  padding: 0.35em 0.55em;
+  text-transform: uppercase;
+}
+
+.govuk-tag--blue,
+.govuk-tag--turquoise,
+.govuk-phase-banner__content__tag {
+  background-color: var(--csbk-blue-550) !important;
+  color: #fff !important;
+}
+
+.govuk-tag--green {
+  background-color: var(--csbk-green-500) !important;
+  color: #fff !important;
+}
+
+.govuk-tag--yellow {
+  background-color: var(--csbk-yellow-600) !important;
+  color: var(--csbk-grey-950) !important;
+}
+
+.govuk-tag--red {
+  background-color: var(--csbk-red-500) !important;
+  color: #fff !important;
+}
+
+.govuk-tag--grey,
+.govuk-tag--purple {
+  background-color: var(--csbk-grey-600) !important;
+  color: #fff !important;
+}
+
+.govuk-tag--orange {
+  background-color: var(--csbk-yellow-700) !important;
+  color: #fff !important;
+}
+
+.govuk-tag--pink {
+  background-color: var(--csbk-purple-600) !important;
+  color: #fff !important;
+}
+
+/* Flash / info bar (replaces GOV.UK phase banner look) */
+.csbk-flash-bar {
+  background: #fff;
+  border-bottom: 1px solid var(--csbk-blue-450);
+}
+
+.csbk-flash {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--csbk-spacing-md);
+  padding: var(--csbk-spacing-md) 0;
+  font-size: var(--csbk-font-size-lg);
+}
+
+.csbk-flash__badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  flex-shrink: 0;
+  background: var(--csbk-blue-550);
+  color: #fff;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  padding: 0.3em 0.55em;
+  line-height: 1;
+}
+
+.csbk-flash--warning .csbk-flash__badge {
+  background: var(--csbk-yellow-600);
+  color: var(--csbk-grey-950);
+}
+
+.csbk-flash--info .csbk-flash__badge {
+  background: var(--csbk-blue-550);
+  color: #fff;
+}
+
+.csbk-flash__message {
+  color: var(--csbk-grey-950);
+  padding-top: 0.1rem;
+}
+
+/* Breadcrumbs — Casebook white strip (optional full-bleed) */
+.csbk-breadcrumb-wrapper {
+  background: #fff;
+  border-bottom: 1px solid var(--csbk-blue-450);
+  margin-bottom: var(--csbk-spacing-xl);
+}
+
+.csbk-breadcrumb-wrapper .govuk-breadcrumbs {
+  margin: 0;
+  padding: 0.65rem 0;
+}
+
+.orion-breadcrumbs {
+  margin-bottom: var(--csbk-spacing-base);
+  padding-bottom: var(--csbk-spacing-sm);
+  border-bottom: 1px solid var(--csbk-blue-450);
+}
+
+.govuk-breadcrumbs__list-item {
+  font-size: 0.75rem;
+}
+
+.govuk-breadcrumbs__list-item::before {
+  color: var(--csbk-blue-550);
+  margin-right: 0.35rem;
+}
+
+.govuk-breadcrumbs__link:link,
+.govuk-breadcrumbs__link:visited {
+  color: var(--csbk-blue-550);
+  text-decoration: none;
+}
+
+.govuk-breadcrumbs__link:hover {
+  text-decoration: underline;
+}
+
+/* Summary list denser */
+.govuk-summary-list__key,
+.govuk-summary-list__value,
+.govuk-summary-list__actions {
+  font-size: var(--csbk-font-size-lg);
+  padding-top: 0.625rem;
+  padding-bottom: 0.625rem;
+}
+
+.govuk-summary-list {
+  background: #fff;
+  border: 1px solid var(--csbk-blue-450);
+  padding: 0 var(--csbk-spacing-base);
+  margin-bottom: var(--csbk-spacing-lg);
+}
+
+/* Cards / panels */
+.csbk-card {
+  background: #fff;
+  border: 1px solid rgba(0, 0, 0, 0.125);
+  margin-bottom: var(--csbk-spacing-lg);
+}
+
+.csbk-card__body {
+  padding: 1.25rem;
+}
+
+.csbk-card__header {
+  padding: 0.75rem 1.25rem;
+  background: rgba(0, 0, 0, 0.03);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.125);
+  font-weight: 700;
+  font-size: 1.125rem;
+}
+
+/* Notification banners */
+.govuk-notification-banner {
+  border-color: var(--csbk-blue-550);
+  border-width: 4px;
+  background: #fff;
+}
+
+.govuk-notification-banner__header {
+  background-color: var(--csbk-blue-550);
+}
+
+.govuk-notification-banner--success {
+  border-color: var(--csbk-green-500);
+}
+
+.govuk-notification-banner--success .govuk-notification-banner__header {
+  background-color: var(--csbk-green-500);
+}
+
+.govuk-error-summary {
+  border-color: var(--csbk-red-500);
+  border-width: 4px;
+}
+
+/* Footer — light blue Casebook style */
+.csbk-footer {
+  background-color: var(--csbk-blue-200);
+  padding: var(--csbk-spacing-base) 0 var(--csbk-spacing-lg);
+  margin-top: auto;
+  border-top: 1px solid var(--csbk-blue-450);
+}
+
+.csbk-footer__inner {
+  max-width: var(--csbk-content-max);
+  margin: 0 auto;
+  padding: 0 var(--csbk-spacing-xl);
+}
+
+.csbk-footer__meta {
+  color: var(--csbk-grey-950);
+  font-size: var(--csbk-font-size-lg);
+}
+
+.csbk-footer__meta p {
+  margin: 0 0 var(--csbk-spacing-sm);
+}
+
+.csbk-footer__meta p:last-child {
+  margin-bottom: 0;
+}
+
+.csbk-footer__title {
+  font-weight: 700;
+  margin: 0 0 var(--csbk-spacing-sm);
+  font-size: var(--csbk-font-size-lg);
+}
+
+/* Skip link */
+.govuk-skip-link:focus {
+  background-color: var(--csbk-yellow-500);
+  color: var(--csbk-grey-950);
+  box-shadow: 0 0 0 2px var(--csbk-grey-950);
+  outline: 0;
+}
+
+/* Dialogs */
+.orion-dialog__panel {
+  border: 1px solid var(--csbk-blue-450) !important;
+  border-bottom: 3px solid var(--csbk-blue-450) !important;
+  box-shadow: 0 8px 24px rgba(1, 39, 96, 0.18) !important;
+}
+
+/* Hide legacy GOV.UK footer styling when using csbk-footer */
+.govuk-footer {
+  display: none;
+}

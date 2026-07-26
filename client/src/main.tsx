@@ -1,6 +1,7 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import "govuk-frontend/dist/govuk/govuk-frontend.min.css";
+import "./casebook-theme.css";
 import "./orion.css";
 import App from "./App.tsx";
 

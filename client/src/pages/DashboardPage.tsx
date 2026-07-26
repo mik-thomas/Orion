@@ -21,6 +21,7 @@ import { HorizontalBarChart } from "../components/charts/HorizontalBarChart";
 import { SittingStatusTable } from "../components/charts/SittingStatusTable";
 import { ViewChartButton } from "../components/charts/ViewChartButton";
 import { commitmentRiskRows } from "../components/charts/chartAggregations";
+import { useAuth } from "../context/AuthContext";
 import { useRole } from "../context/RoleContext";
 import {
   defaultPeriodFilter,
@@ -57,7 +58,15 @@ function searchTypeLabel(type: SearchResult["type"]): string {
   }
 }
 
+function greetingForNow(displayName: string | undefined): string {
+  const hour = new Date().getHours();
+  const salutation = hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
+  const name = displayName?.trim();
+  return name ? `${salutation}, ${name}.` : `${salutation}.`;
+}
+
 export function DashboardPage() {
+  const { session } = useAuth();
   const { role, canViewNames } = useRole();
   const [query, setQuery] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
@@ -171,8 +180,8 @@ export function DashboardPage() {
 
   return (
     <>
-      <h1 className="govuk-heading-xl">Dashboard</h1>
-      <p className="govuk-body-l">
+      <h1 className="govuk-heading-xl">{greetingForNow(session?.displayName)}</h1>
+      <p className="govuk-body">
         Sitting patterns across courthouses and magistrate movement.
       </p>
 

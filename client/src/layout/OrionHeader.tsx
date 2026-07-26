@@ -133,7 +133,7 @@ export function OrionHeader() {
             <OrionLogo className="orion-app-header__logo" />
             <span className="orion-app-header__brand-text">
               <span className="orion-app-header__brand-name">Orion</span>
-              <span className="orion-app-header__brand-tagline">Bench management</span>
+              <span className="orion-app-header__brand-tagline">Bench</span>
             </span>
           </Link>
 

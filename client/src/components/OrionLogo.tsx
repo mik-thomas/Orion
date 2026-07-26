@@ -15,7 +15,7 @@ export function OrionLogo({ className }: OrionLogoProps) {
       <circle cx="20" cy="20" r="17.5" stroke="currentColor" strokeWidth="1.5" fill="none" />
       <path
         d="M10 16 Q20 30 30 16"
-        stroke="#5694ca"
+        stroke="#a5c3cf"
         strokeWidth="1.25"
         fill="none"
         strokeLinecap="round"
