@@ -7,6 +7,7 @@ import { OrionBreadcrumbs } from "../components/OrionBreadcrumbs";
 import { RetirementDueModal } from "../components/RetirementDueModal";
 import { SittingForecastPanel } from "../components/SittingForecastPanel";
 import { SittingScoreMeter } from "../components/SittingScoreMeter";
+import { LoaExtendEditor } from "../components/LoaExtendEditor";
 import { LoaReviewDateEditor } from "../components/LoaReviewDateEditor";
 import { LoaReturnEditor } from "../components/LoaReturnEditor";
 import { NextLoaReviewTag } from "../lib/loaReview";
@@ -677,7 +678,9 @@ export function MagistrateProfilePage() {
             {sortedLeaves.map((leave) => (
               <tr key={leave.id} className="govuk-table__row">
                 <td className="govuk-table__cell">{leave.starts_on}</td>
-                <td className="govuk-table__cell">{leave.ends_on ?? "Open-ended"}</td>
+                <td className="govuk-table__cell">
+                  <LoaExtendEditor leave={leave} onUpdated={handleLeaveUpdated} />
+                </td>
                 <td className="govuk-table__cell">{leave.reason ?? "—"}</td>
                 <td className="govuk-table__cell">
                   <LoaReviewDateEditor

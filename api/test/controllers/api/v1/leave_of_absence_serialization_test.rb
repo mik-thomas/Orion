@@ -104,4 +104,74 @@ class LeaveOfAbsenceSerializationTest < ActionDispatch::IntegrationTest
     codes = JSON.parse(response.body)["violations"].map { |violation| violation["code"] }
     assert_not_includes codes, "loa_expired_without_return"
   end
+
+  test "can extend ends_on via leave endpoint" do
+    leave = leaves_of_absence(:alice_active)
+    leave.update!(ends_on: Date.new(2026, 3, 31))
+
+    patch api_v1_magistrate_leaves_of_absence_path(magistrates(:alice), leave),
+          params: { leave_of_absence: { ends_on: "2026-09-30" } },
+          headers: auth_headers(:developer),
+          as: :json
+    assert_response :success
+
+    body = JSON.parse(response.body)
+    assert_equal "2026-09-30", body["ends_on"]
+  end
+
+  test "rejects extend that is not after current ends_on" do
+    leave = leaves_of_absence(:alice_active)
+    leave.update!(ends_on: Date.new(2026, 3, 31))
+
+    patch api_v1_magistrate_leaves_of_absence_path(magistrates(:alice), leave),
+          params: { leave_of_absence: { ends_on: "2026-03-01" } },
+          headers: auth_headers(:developer),
+          as: :json
+    assert_response :unprocessable_entity
+
+    body = JSON.parse(response.body)
+    assert body["errors"].any? { |message| message.match?(/ends on/i) }
+  end
+
+  test "rejects extend when return has already been recorded" do
+    magistrate = magistrates(:alice)
+    leave = magistrate.leaves_of_absence.create!(
+      starts_on: Date.new(2024, 1, 1),
+      ends_on: Date.new(2024, 6, 30),
+      reason: "Sabbatical",
+      returned_on: Date.new(2024, 7, 1)
+    )
+
+    patch api_v1_magistrate_leaves_of_absence_path(magistrate, leave),
+          params: { leave_of_absence: { ends_on: "2024-12-31" } },
+          headers: auth_headers(:developer),
+          as: :json
+    assert_response :unprocessable_entity
+
+    body = JSON.parse(response.body)
+    assert body["errors"].any? { |message| message.match?(/return/i) }
+  end
+
+  test "extending expired leave into the future clears expired violation" do
+    magistrate = magistrates(:alice)
+    leave = magistrate.leaves_of_absence.create!(
+      starts_on: Date.new(2024, 1, 1),
+      ends_on: Date.new(2024, 6, 30),
+      reason: "Sabbatical"
+    )
+
+    patch api_v1_magistrate_leaves_of_absence_path(magistrate, leave),
+          params: { leave_of_absence: { ends_on: "2027-06-30" } },
+          headers: auth_headers(:developer),
+          as: :json
+    assert_response :success
+    assert_equal "2027-06-30", JSON.parse(response.body)["ends_on"]
+    assert_equal true, JSON.parse(response.body)["active"]
+
+    get api_v1_magistrate_path(magistrate), headers: auth_headers(:developer)
+    assert_response :success
+
+    codes = JSON.parse(response.body)["violations"].map { |violation| violation["code"] }
+    assert_not_includes codes, "loa_expired_without_return"
+  end
 end

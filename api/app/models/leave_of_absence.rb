@@ -5,6 +5,7 @@ class LeaveOfAbsence < ApplicationRecord
 
   validates :starts_on, presence: true
   validate :ends_on_after_starts_on
+  validate :ends_on_extension_rules, if: :will_save_change_to_ends_on?
   validate :next_review_on_on_or_after_starts_on
   validate :returned_on_on_or_after_starts_on
 
@@ -32,6 +33,24 @@ class LeaveOfAbsence < ApplicationRecord
     return if ends_on >= starts_on
 
     errors.add(:ends_on, "must be on or after starts on")
+  end
+
+  # Extending LOA end dates: new ends_on must be later than the current end
+  # (or on/after starts_on when open-ended). Returned leaves cannot be extended.
+  def ends_on_extension_rules
+    return if new_record?
+    return if ends_on.blank?
+
+    if returned_on.present?
+      errors.add(:ends_on, "cannot be changed after return from leave has been recorded")
+      return
+    end
+
+    previous_ends_on = ends_on_in_database
+    return if previous_ends_on.blank?
+    return if ends_on > previous_ends_on
+
+    errors.add(:ends_on, "must be after current end date")
   end
 
   def next_review_on_on_or_after_starts_on

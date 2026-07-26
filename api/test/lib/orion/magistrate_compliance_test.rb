@@ -80,4 +80,22 @@ class MagistrateComplianceTest < ActiveSupport::TestCase
       assert_not_includes codes, "loa_expired_without_return"
     end
   end
+
+  test "extending expired leave past as_of clears expired violation" do
+    leave = @magistrate.leaves_of_absence.create!(
+      starts_on: Date.new(2024, 1, 1),
+      ends_on: Date.new(2024, 6, 30),
+      reason: "Sabbatical"
+    )
+
+    travel_to Date.new(2026, 3, 1) do
+      assert_includes Orion::MagistrateCompliance.violations_for(@magistrate).map { |v| v["code"] },
+                      "loa_expired_without_return"
+
+      leave.update!(ends_on: Date.new(2026, 12, 31))
+
+      codes = Orion::MagistrateCompliance.violations_for(@magistrate.reload).map { |v| v["code"] }
+      assert_not_includes codes, "loa_expired_without_return"
+    end
+  end
 end
