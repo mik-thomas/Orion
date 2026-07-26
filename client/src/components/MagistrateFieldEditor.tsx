@@ -162,6 +162,21 @@ export function MagistrateFieldEditor({
             value={draft}
             onChange={(event) => setDraft(event.target.value)}
           />
+        ) : kind === "boolean" && !options ? (
+          <div className="govuk-checkboxes govuk-checkboxes--small">
+            <div className="govuk-checkboxes__item">
+              <input
+                className="govuk-checkboxes__input"
+                id={inputId}
+                type="checkbox"
+                checked={draft === "true"}
+                onChange={(event) => setDraft(event.target.checked ? "true" : "false")}
+              />
+              <label className="govuk-label govuk-checkboxes__label" htmlFor={inputId}>
+                {label}
+              </label>
+            </div>
+          </div>
         ) : kind === "select" || kind === "boolean" ? (
           <select
             className="govuk-select"

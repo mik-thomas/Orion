@@ -460,6 +460,132 @@ export function MagistrateSidebar({
         )}
       </CasebookAccordion>
 
+      <CasebookAccordion
+        title="RA"
+        defaultOpen={
+          magistrate.ra_in_place ||
+          magistrate.ra_passport_in_place ||
+          magistrate.ra_application_made ||
+          magistrate.ra_approved ||
+          supportNeedsSet
+        }
+      >
+        <CasebookDl
+          rows={[
+            {
+              key: "RA in place",
+              value: editable ? (
+                <MagistrateFieldEditor
+                  magistrateId={magistrate.id}
+                  label="RA in place"
+                  field="ra_in_place"
+                  value={magistrate.ra_in_place}
+                  kind="boolean"
+                  clearable={false}
+                  onUpdated={handleUpdated}
+                />
+              ) : magistrate.ra_in_place ? (
+                "Yes"
+              ) : (
+                "No"
+              ),
+            },
+            {
+              key: "Passport in place",
+              value: editable ? (
+                <MagistrateFieldEditor
+                  magistrateId={magistrate.id}
+                  label="Passport in place"
+                  field="ra_passport_in_place"
+                  value={magistrate.ra_passport_in_place}
+                  kind="boolean"
+                  clearable={false}
+                  onUpdated={handleUpdated}
+                />
+              ) : magistrate.ra_passport_in_place ? (
+                "Yes"
+              ) : (
+                "No"
+              ),
+            },
+            {
+              key: "RA Application made",
+              value: editable ? (
+                <MagistrateFieldEditor
+                  magistrateId={magistrate.id}
+                  label="RA Application made"
+                  field="ra_application_made"
+                  value={magistrate.ra_application_made}
+                  kind="boolean"
+                  clearable={false}
+                  withAttrs={(next) =>
+                    next === false ? { ra_application_made_on: null } : {}
+                  }
+                  onUpdated={handleUpdated}
+                />
+              ) : magistrate.ra_application_made ? (
+                "Yes"
+              ) : (
+                "No"
+              ),
+            },
+            ...(magistrate.ra_application_made
+              ? [
+                  {
+                    key: "Application date",
+                    value: editable ? (
+                      <MagistrateFieldEditor
+                        magistrateId={magistrate.id}
+                        label="Application date"
+                        field="ra_application_made_on"
+                        value={magistrate.ra_application_made_on}
+                        kind="date"
+                        onUpdated={handleUpdated}
+                      />
+                    ) : (
+                      magistrate.ra_application_made_on ?? "Not recorded"
+                    ),
+                  },
+                ]
+              : []),
+            {
+              key: "RA Requirements",
+              value: editable ? (
+                <MagistrateFieldEditor
+                  magistrateId={magistrate.id}
+                  label="RA Requirements"
+                  field="reasonable_adjustments"
+                  value={magistrate.reasonable_adjustments}
+                  kind="textarea"
+                  emptyLabel="None recorded"
+                  onUpdated={handleUpdated}
+                />
+              ) : (
+                magistrate.reasonable_adjustments?.trim() || "None recorded"
+              ),
+            },
+            {
+              key: "Approved",
+              value: editable ? (
+                <MagistrateFieldEditor
+                  magistrateId={magistrate.id}
+                  label="Approved"
+                  field="ra_approved"
+                  value={magistrate.ra_approved}
+                  kind="boolean"
+                  clearable={false}
+                  onUpdated={handleUpdated}
+                />
+              ) : magistrate.ra_approved ? (
+                "Yes"
+              ) : (
+                "No"
+              ),
+            },
+          ]}
+        />
+      </CasebookAccordion>
+
       <CasebookAccordion title="Rota login">
         <CasebookDl
           rows={[

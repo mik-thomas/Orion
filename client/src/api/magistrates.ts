@@ -37,6 +37,11 @@ export type MagistrateUpdateAttrs = {
   last_appraiser?: string | null;
   last_login_on?: string | null;
   days_since_login?: number | null;
+  ra_in_place?: boolean | null;
+  ra_passport_in_place?: boolean | null;
+  ra_application_made?: boolean | null;
+  ra_application_made_on?: string | null;
+  ra_approved?: boolean | null;
   sitting_location_ids?: number[];
 };
 

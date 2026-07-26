@@ -198,7 +198,13 @@ export interface MagistrateSummary {
   contact_number: string | null;
   date_of_appointment: string | null;
   reasonable_adjustments: string | null;
+  ra_in_place: boolean;
+  ra_passport_in_place: boolean;
+  ra_application_made: boolean;
+  ra_application_made_on: string | null;
+  ra_approved: boolean;
   home_courthouse: Courthouse | null;
+
   active_leave: boolean;
   current_leaves: LeaveOfAbsence[];
   cluster: string;

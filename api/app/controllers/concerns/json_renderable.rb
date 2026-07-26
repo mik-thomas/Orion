@@ -52,8 +52,10 @@ module JsonRenderable
           id date_of_appointment reasonable_adjustments title frequency sitting_pattern
           leaving_date leaving_reason retirement_on active cluster bench bench_role appraisal_status appraisal_cycle_years
           presiding_justice last_appraisal_on last_appraiser last_login_on days_since_login
+          ra_in_place ra_passport_in_place ra_application_made ra_application_made_on ra_approved
         ]
       end
+
 
       def retiring_soon_json(magistrate)
         identity = magistrate_identity_fields(magistrate)
