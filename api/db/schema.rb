@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2026_07_16_220000) do
+ActiveRecord::Schema[7.1].define(version: 2026_07_26_180000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
 
@@ -21,7 +21,13 @@ ActiveRecord::Schema[7.1].define(version: 2026_07_16_220000) do
     t.string "status", default: "open", null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.text "summary"
+    t.string "public_id"
+    t.bigint "created_by_id"
+    t.bigint "updated_by_id"
+    t.string "case_type"
     t.index ["magistrate_id"], name: "index_cases_on_magistrate_id"
+    t.index ["public_id"], name: "index_cases_on_public_id", unique: true
   end
 
   create_table "courthouses", force: :cascade do |t|
@@ -98,7 +104,12 @@ ActiveRecord::Schema[7.1].define(version: 2026_07_16_220000) do
     t.string "author_name"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.string "public_id"
+    t.bigint "created_by_id"
+    t.bigint "updated_by_id"
+    t.datetime "occurred_at"
     t.index ["case_id"], name: "index_notes_on_case_id"
+    t.index ["public_id"], name: "index_notes_on_public_id", unique: true
   end
 
   create_table "sitting_types", force: :cascade do |t|
@@ -164,10 +175,19 @@ ActiveRecord::Schema[7.1].define(version: 2026_07_16_220000) do
     t.text "report_notes"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.string "public_id"
+    t.date "reminder_on"
+    t.bigint "case_id"
+    t.bigint "note_id"
+    t.bigint "updated_by_id"
     t.index ["assigned_to_id"], name: "index_tasks_on_assigned_to_id"
+    t.index ["case_id"], name: "index_tasks_on_case_id"
     t.index ["completed_at"], name: "index_tasks_on_completed_at"
     t.index ["created_by_id"], name: "index_tasks_on_created_by_id"
     t.index ["due_on"], name: "index_tasks_on_due_on"
+    t.index ["note_id"], name: "index_tasks_on_note_id"
+    t.index ["public_id"], name: "index_tasks_on_public_id", unique: true
+    t.index ["reminder_on"], name: "index_tasks_on_reminder_on"
     t.index ["status"], name: "index_tasks_on_status"
   end
 
@@ -206,16 +226,23 @@ ActiveRecord::Schema[7.1].define(version: 2026_07_16_220000) do
   end
 
   add_foreign_key "cases", "magistrates"
+  add_foreign_key "cases", "users", column: "created_by_id"
+  add_foreign_key "cases", "users", column: "updated_by_id"
   add_foreign_key "leaves_of_absence", "magistrates"
   add_foreign_key "magistrate_sitting_locations", "courthouses"
   add_foreign_key "magistrate_sitting_locations", "magistrates"
   add_foreign_key "magistrates", "courthouses", column: "home_courthouse_id"
   add_foreign_key "notes", "cases"
+  add_foreign_key "notes", "users", column: "created_by_id"
+  add_foreign_key "notes", "users", column: "updated_by_id"
   add_foreign_key "sittings", "courthouses"
   add_foreign_key "sittings", "magistrates"
   add_foreign_key "sittings", "sitting_types"
+  add_foreign_key "tasks", "cases"
+  add_foreign_key "tasks", "notes"
   add_foreign_key "tasks", "users", column: "assigned_to_id"
   add_foreign_key "tasks", "users", column: "created_by_id"
+  add_foreign_key "tasks", "users", column: "updated_by_id"
   add_foreign_key "training_records", "magistrates"
   add_foreign_key "user_sessions", "users"
 end

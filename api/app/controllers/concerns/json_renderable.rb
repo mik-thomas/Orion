@@ -90,13 +90,15 @@ module JsonRenderable
       def magistrate_detail_json(magistrate, period: nil)
         summary = magistrate_summary_json(magistrate)
         filtered_sittings = sittings_for_period(magistrate, period)
+        cases = magistrate.cases.includes(:created_by, :updated_by).ordered
 
         summary.merge(
           "period" => period && period_filter_json,
           "available_fiscal_years" => period ? available_fiscal_years_json : nil,
           "sitting_locations" => magistrate.sitting_locations.map { |c| courthouse_json(c) },
           "leaves_of_absence" => magistrate.leaves_of_absence.ordered.map { |leave| leave_json(leave) },
-          "cases" => magistrate.cases.order(updated_at: :desc).map { |kase| case_json(kase) },
+          "cases" => cases.map { |kase| case_json(kase) },
+          "timeline" => cases.chronological.map { |kase| case_timeline_entry_json(kase) },
           "sitting_summary" => magistrate_sitting_summary_json(magistrate, sittings: filtered_sittings),
           "sittings" => filtered_sittings.ordered.map { |sitting| sitting_json(sitting) }
         )
@@ -169,19 +171,60 @@ module JsonRenderable
   end
 
   def case_json(kase)
-    kase.as_json(only: %i[id magistrate_id reference title status created_at updated_at]).merge(
-      "notes_count" => kase.notes.count
+    kase.as_json(
+      only: %i[id magistrate_id reference title status summary case_type public_id created_at updated_at]
+    ).merge(
+      "notes_count" => kase.association(:notes).loaded? ? kase.notes.size : kase.notes.count,
+      "created_by" => task_user_json(kase.created_by),
+      "updated_by" => task_user_json(kase.updated_by),
+      "magistrate" => kase.magistrate && {
+        "id" => kase.magistrate.id,
+        "display_name" => magistrate_display_name(kase.magistrate)
+      }
     )
   end
 
+  def case_timeline_entry_json(kase)
+    {
+      "id" => kase.id,
+      "public_id" => kase.public_id,
+      "title" => kase.title,
+      "status" => kase.status,
+      "created_at" => kase.created_at,
+      "updated_at" => kase.updated_at,
+      "path_hint" => "/cases/#{kase.public_id || kase.id}"
+    }
+  end
+
   def case_detail_json(kase)
+    notes = kase.notes.includes(:created_by, :updated_by).chronological
+    tasks = kase.tasks.includes(:created_by, :assigned_to, :updated_by).ordered
     case_json(kase).merge(
-      "notes" => kase.notes.order(created_at: :desc).map { |note| note_json(note) }
+      "notes" => notes.map { |note| note_json(note) },
+      "tasks" => tasks.map { |task| task_json(task) },
+      "timeline" => notes.map { |note| note_timeline_entry_json(note) }
     )
   end
 
   def note_json(note)
-    note.as_json(only: %i[id case_id body author_name created_at updated_at])
+    note.as_json(
+      only: %i[id case_id body author_name public_id occurred_at created_at updated_at]
+    ).merge(
+      "created_by" => task_user_json(note.created_by),
+      "updated_by" => task_user_json(note.updated_by),
+      "author" => note.author_name.presence || note.created_by&.display_name
+    )
+  end
+
+  def note_timeline_entry_json(note)
+    {
+      "id" => note.id,
+      "public_id" => note.public_id,
+      "body" => note.body,
+      "author" => note.author_name.presence || note.created_by&.display_name,
+      "occurred_at" => note.occurred_at || note.created_at,
+      "created_at" => note.created_at
+    }
   end
 
   def task_user_json(user)
@@ -195,14 +238,43 @@ module JsonRenderable
     }
   end
 
+  def related_item_json(type, record)
+    return nil unless record
+
+    title =
+      case type
+      when "case" then record.title
+      when "note" then record.body.to_s.truncate(80)
+      else record.try(:title) || record.try(:body).to_s.truncate(80)
+      end
+
+    {
+      "type" => type,
+      "id" => record.id,
+      "public_id" => record.try(:public_id),
+      "title" => title,
+      "path_hint" => "/#{type}s/#{record.try(:public_id) || record.id}"
+    }
+  end
+
   def task_json(task)
+    related = []
+    related << related_item_json("case", task.case) if task.case
+    related << related_item_json("note", task.note) if task.note
+
     task.as_json(
-      only: %i[id title description status priority due_on completed_at report_notes created_at updated_at]
+      only: %i[id title description status priority due_on reminder_on completed_at report_notes public_id
+               case_id note_id created_at updated_at]
     ).merge(
       "created_by_user_id" => task.created_by_id,
       "assigned_to_user_id" => task.assigned_to_id,
+      "updated_by_user_id" => task.updated_by_id,
       "created_by" => task_user_json(task.created_by),
       "assigned_to" => task_user_json(task.assigned_to),
+      "updated_by" => task_user_json(task.updated_by),
+      "case" => related_item_json("case", task.case),
+      "note" => related_item_json("note", task.note),
+      "related_items" => related.compact,
       "overdue" => task.overdue?
     )
   end
@@ -210,9 +282,7 @@ module JsonRenderable
   def task_summary_json(scope)
     {
       "open" => scope.where(status: "open").count,
-      "in_progress" => scope.where(status: "in_progress").count,
-      "done" => scope.where(status: "done").count,
-      "cancelled" => scope.where(status: "cancelled").count,
+      "closed" => scope.where(status: "closed").count,
       "overdue" => scope.overdue.count,
       "total" => scope.count
     }

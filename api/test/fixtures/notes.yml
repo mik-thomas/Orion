@@ -1,0 +1,19 @@
+# frozen_string_literal: true
+
+initial_contact:
+  case: appraisal
+  body: Initial contact made with clerk regarding appraisal scheduling.
+  author_name: Michael Thomas
+  public_id: NT-0000001
+  occurred_at: <%= 5.days.ago %>
+  created_by: developer
+  updated_by: developer
+
+availability:
+  case: appraisal
+  body: Magistrate confirmed availability for next month's panel.
+  author_name: Michael Thomas
+  public_id: NT-0000002
+  occurred_at: <%= 2.days.ago %>
+  created_by: developer
+  updated_by: developer

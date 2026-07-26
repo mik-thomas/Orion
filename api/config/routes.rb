@@ -8,6 +8,7 @@ Rails.application.routes.draw do
       get "status", to: "status#show"
       resource :session, only: %i[create show destroy]
       get "reports/overview", to: "reports#overview"
+      get "search", to: "search#index"
 
       resources :magistrates do
         collection do
@@ -22,6 +23,8 @@ Rails.application.routes.draw do
       resources :cases, only: %i[show update destroy] do
         resources :notes, only: %i[index create destroy]
       end
+
+      resources :notes, only: %i[show update destroy]
 
       resources :courthouses, only: %i[index]
       resources :sitting_types, only: %i[index]

@@ -23,15 +23,28 @@ export interface LeaveOfAbsence {
   active: boolean;
 }
 
+export interface TaskUser {
+  id: number;
+  username: string;
+  display_name: string;
+  role: string;
+}
+
 export interface CaseSummary {
   id: number;
   magistrate_id: number;
   reference: string | null;
   title: string;
   status: string;
+  summary: string | null;
+  case_type: string | null;
+  public_id: string | null;
   created_at: string;
   updated_at: string;
   notes_count: number;
+  created_by?: TaskUser | null;
+  updated_by?: TaskUser | null;
+  magistrate?: { id: number; display_name: string } | null;
 }
 
 export interface Note {
@@ -39,12 +52,40 @@ export interface Note {
   case_id: number;
   body: string;
   author_name: string | null;
+  author?: string | null;
+  public_id: string | null;
+  occurred_at: string | null;
   created_at: string;
   updated_at: string;
+  created_by?: TaskUser | null;
+  updated_by?: TaskUser | null;
+}
+
+export interface CaseTimelineEntry {
+  id: number;
+  public_id: string | null;
+  body?: string;
+  title?: string;
+  status?: string;
+  author?: string | null;
+  occurred_at?: string;
+  created_at: string;
+  updated_at?: string;
+  path_hint?: string;
+}
+
+export interface RelatedItem {
+  type: "case" | "note" | string;
+  id: number;
+  public_id: string | null;
+  title: string;
+  path_hint: string;
 }
 
 export interface CaseDetail extends CaseSummary {
   notes: Note[];
+  tasks?: Task[];
+  timeline?: CaseTimelineEntry[];
 }
 
 export interface ComplianceViolation {
@@ -332,6 +373,7 @@ export interface MagistrateDetail extends MagistrateSummary {
   sitting_locations: Courthouse[];
   leaves_of_absence: LeaveOfAbsence[];
   cases: CaseSummary[];
+  timeline?: CaseTimelineEntry[];
   sitting_summary: SittingSummary;
   sittings: Sitting[];
 }
@@ -395,15 +437,8 @@ export interface MagistrateRosterEntry {
   email: string | null;
 }
 
-export type TaskStatus = "open" | "in_progress" | "done" | "cancelled";
+export type TaskStatus = "open" | "closed";
 export type TaskPriority = "low" | "normal" | "high";
-
-export interface TaskUser {
-  id: number;
-  username: string;
-  display_name: string;
-  role: string;
-}
 
 export interface Task {
   id: number;
@@ -412,22 +447,29 @@ export interface Task {
   status: TaskStatus;
   priority: TaskPriority;
   due_on: string | null;
+  reminder_on: string | null;
   completed_at: string | null;
   report_notes: string | null;
+  public_id: string | null;
+  case_id: number | null;
+  note_id: number | null;
   created_at: string;
   updated_at: string;
   created_by_user_id: number;
   assigned_to_user_id: number;
+  updated_by_user_id: number | null;
   created_by: TaskUser;
   assigned_to: TaskUser;
+  updated_by?: TaskUser | null;
+  case?: RelatedItem | null;
+  note?: RelatedItem | null;
+  related_items?: RelatedItem[];
   overdue: boolean;
 }
 
 export interface TaskSummary {
   open: number;
-  in_progress: number;
-  done: number;
-  cancelled: number;
+  closed: number;
   overdue: number;
   total: number;
 }
@@ -435,4 +477,20 @@ export interface TaskSummary {
 export interface TaskListResponse {
   tasks: Task[];
   summary: TaskSummary;
+}
+
+export type SearchResultType = "magistrate" | "case" | "note";
+
+export interface SearchResult {
+  type: SearchResultType;
+  id: number;
+  public_id?: string | null;
+  title: string;
+  display_name?: string;
+  subtitle?: string | null;
+  path_hint: string;
+}
+
+export interface SearchResponse {
+  results: SearchResult[];
 }

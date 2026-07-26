@@ -9,6 +9,7 @@ import {
 import { createSession, destroySession, fetchSession } from "../api/sessions";
 import { ApiError } from "../api/http";
 import { clearDemoDisclaimerDismissal } from "../lib/demoDisclaimer";
+import { clearOpenTasksReminderDismissal } from "../lib/openTasksReminder";
 import { DEFAULT_ROLE, loadStoredRole, type Role } from "../lib/role";
 import {
   clearStoredSession,
@@ -130,6 +131,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // Local sign-out still clears the client session.
     }
     clearDemoDisclaimerDismissal();
+    clearOpenTasksReminderDismissal();
     applySession(null);
   }, [applySession]);
 

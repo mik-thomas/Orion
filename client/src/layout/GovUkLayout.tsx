@@ -1,5 +1,6 @@
 import { Outlet } from "react-router-dom";
 import { DemoDisclaimerModal } from "../components/DemoDisclaimerModal";
+import { OpenTasksReminderModal } from "../components/OpenTasksReminderModal";
 import { OrionHeader } from "./OrionHeader";
 import { useAuth } from "../context/AuthContext";
 import { useRole } from "../context/RoleContext";
@@ -16,6 +17,7 @@ export function GovUkLayout() {
       </a>
 
       <DemoDisclaimerModal />
+      <OpenTasksReminderModal />
 
       <OrionHeader />
 

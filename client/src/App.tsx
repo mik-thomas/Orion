@@ -3,11 +3,13 @@ import { RequireAuth } from "./components/RequireAuth";
 import { AuthProvider } from "./context/AuthContext";
 import { RoleProvider } from "./context/RoleContext";
 import { GovUkLayout } from "./layout/GovUkLayout";
+import { CaseDetailPage } from "./pages/CaseDetailPage";
 import { DashboardPage } from "./pages/DashboardPage";
 import { LoginPage } from "./pages/LoginPage";
 import { MagistrateProfilePage } from "./pages/MagistrateProfilePage";
 import { MagistrateRosterPage } from "./pages/MagistrateRosterPage";
 import { MagistratesPage } from "./pages/MagistratesPage";
+import { NoteDetailPage } from "./pages/NoteDetailPage";
 import { OnLeavePage } from "./pages/OnLeavePage";
 import { ReportsPage } from "./pages/ReportsPage";
 import { SittingsDrillDownPage } from "./pages/SittingsDrillDownPage";
@@ -33,6 +35,8 @@ export default function App() {
               <Route path="magistrates/on-leave" element={<OnLeavePage />} />
               <Route path="magistrates/roster" element={<MagistrateRosterPage />} />
               <Route path="magistrates/:id" element={<MagistrateProfilePage />} />
+              <Route path="cases/:id" element={<CaseDetailPage />} />
+              <Route path="notes/:id" element={<NoteDetailPage />} />
               <Route path="tasks" element={<TasksPage />} />
               <Route path="tasks/:id" element={<TaskDetailPage />} />
               <Route path="reports" element={<ReportsPage />} />

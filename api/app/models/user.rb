@@ -6,6 +6,11 @@ class User < ApplicationRecord
   has_many :user_sessions, dependent: :destroy
   has_many :created_tasks, class_name: "Task", foreign_key: :created_by_id, dependent: :restrict_with_exception, inverse_of: :created_by
   has_many :assigned_tasks, class_name: "Task", foreign_key: :assigned_to_id, dependent: :restrict_with_exception, inverse_of: :assigned_to
+  has_many :updated_tasks, class_name: "Task", foreign_key: :updated_by_id, dependent: :nullify, inverse_of: :updated_by
+  has_many :created_cases, class_name: "Case", foreign_key: :created_by_id, dependent: :nullify, inverse_of: :created_by
+  has_many :updated_cases, class_name: "Case", foreign_key: :updated_by_id, dependent: :nullify, inverse_of: :updated_by
+  has_many :created_notes, class_name: "Note", foreign_key: :created_by_id, dependent: :nullify, inverse_of: :created_by
+  has_many :updated_notes, class_name: "Note", foreign_key: :updated_by_id, dependent: :nullify, inverse_of: :updated_by
 
   ROLES = %w[deputy bench_chair hmcts_slm developer].freeze
 

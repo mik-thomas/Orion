@@ -8,27 +8,31 @@ rota_coverage:
   created_by: bench_chair
   assigned_to: deputy
   due_on: <%= Date.current + 7 %>
+  reminder_on: <%= Date.current + 5 %>
   report_notes:
   completed_at:
+  public_id: TK-000001
 
 appraisal_followup:
   title: Follow up overdue appraisals
   description: List magistrates with appraisal due within 30 days.
-  status: in_progress
+  status: open
   priority: normal
   created_by: bench_chair
   assigned_to: deputy
   due_on: <%= Date.current + 14 %>
   report_notes: Started contacting clerks for availability.
   completed_at:
+  public_id: TK-000002
 
 loa_report:
   title: Report on LOA return readiness
   description: Summarise magistrates due to return from leave this quarter.
-  status: done
+  status: closed
   priority: normal
   created_by: bench_chair
   assigned_to: deputy
   due_on: <%= Date.current - 3 %>
   report_notes: Three returns confirmed; one extended.
   completed_at: <%= 2.days.ago %>
+  public_id: TK-000003

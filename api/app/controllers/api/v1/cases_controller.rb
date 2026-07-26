@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module Api
   module V1
     class CasesController < ApplicationController
@@ -7,7 +9,7 @@ module Api
       before_action :set_case, only: %i[show update destroy]
 
       def index
-        render json: @magistrate.cases.order(updated_at: :desc).map { |kase| case_json(kase) }
+        render json: @magistrate.cases.ordered.map { |kase| case_json(kase) }
       end
 
       def show
@@ -16,6 +18,8 @@ module Api
 
       def create
         kase = @magistrate.cases.build(case_params)
+        kase.created_by = current_user
+        kase.updated_by = current_user
         if kase.save
           render json: case_detail_json(kase), status: :created
         else
@@ -24,6 +28,7 @@ module Api
       end
 
       def update
+        @case.updated_by = current_user
         if @case.update(case_params)
           render json: case_detail_json(@case)
         else
@@ -45,13 +50,14 @@ module Api
       end
 
       def set_case
-        @case = Case.includes(:notes).find(params[:id])
+        @case = Case.includes(:notes, :tasks, :created_by, :updated_by, :magistrate)
+          .find_by_id_or_public_id!(params[:id])
       rescue ActiveRecord::RecordNotFound
         render json: { error: "Not found" }, status: :not_found
       end
 
       def case_params
-        params.require(:case).permit(:reference, :title, :status)
+        params.require(:case).permit(:reference, :title, :status, :summary, :case_type)
       end
     end
   end

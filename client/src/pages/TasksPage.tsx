@@ -16,7 +16,7 @@ import {
 import type { Task, TaskPriority, TaskStatus, TaskSummary } from "../types/domain";
 
 function emptySummary(): TaskSummary {
-  return { open: 0, in_progress: 0, done: 0, cancelled: 0, overdue: 0, total: 0 };
+  return { open: 0, closed: 0, overdue: 0, total: 0 };
 }
 
 export function TasksPage() {
@@ -103,16 +103,16 @@ export function TasksPage() {
   }
 
   async function handleCancel(task: Task) {
-    if (!window.confirm(`Cancel task “${task.title}”?`)) return;
+    if (!window.confirm(`Close task “${task.title}”?`)) return;
     try {
       await cancelTask(task.id);
       reload();
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Could not cancel task");
+      setError(err instanceof ApiError ? err.message : "Could not close task");
     }
   }
 
-  const completedWithNotes = tasks.filter((task) => task.status === "done" && task.report_notes);
+  const completedWithNotes = tasks.filter((task) => task.status === "closed" && task.report_notes);
 
   return (
     <>
@@ -131,19 +131,15 @@ export function TasksPage() {
       )}
 
       <div className="govuk-grid-row govuk-!-margin-bottom-6">
-        <div className="govuk-grid-column-one-quarter">
+        <div className="govuk-grid-column-one-third">
           <p className="govuk-heading-m govuk-!-margin-bottom-1">{summary.open}</p>
           <p className="govuk-body">Open</p>
         </div>
-        <div className="govuk-grid-column-one-quarter">
-          <p className="govuk-heading-m govuk-!-margin-bottom-1">{summary.in_progress}</p>
-          <p className="govuk-body">In progress</p>
+        <div className="govuk-grid-column-one-third">
+          <p className="govuk-heading-m govuk-!-margin-bottom-1">{summary.closed}</p>
+          <p className="govuk-body">Closed</p>
         </div>
-        <div className="govuk-grid-column-one-quarter">
-          <p className="govuk-heading-m govuk-!-margin-bottom-1">{summary.done}</p>
-          <p className="govuk-body">Done</p>
-        </div>
-        <div className="govuk-grid-column-one-quarter">
+        <div className="govuk-grid-column-one-third">
           <p className="govuk-heading-m govuk-!-margin-bottom-1">{summary.overdue}</p>
           <p className="govuk-body">Overdue</p>
         </div>
@@ -284,6 +280,9 @@ export function TasksPage() {
           <thead className="govuk-table__head">
             <tr className="govuk-table__row">
               <th scope="col" className="govuk-table__header">
+                ID
+              </th>
+              <th scope="col" className="govuk-table__header">
                 Title
               </th>
               <th scope="col" className="govuk-table__header">
@@ -308,6 +307,7 @@ export function TasksPage() {
           <tbody className="govuk-table__body">
             {tasks.map((task) => (
               <tr key={task.id} className="govuk-table__row">
+                <td className="govuk-table__cell">{task.public_id ?? task.id}</td>
                 <td className="govuk-table__cell">
                   <TaskTitleLink task={task} />
                   {task.overdue && (
@@ -322,14 +322,14 @@ export function TasksPage() {
                 <td className="govuk-table__cell">{formatTaskDate(task.due_on)}</td>
                 {canManage && (
                   <td className="govuk-table__cell">
-                    {task.status !== "cancelled" && task.status !== "done" && (
+                    {task.status === "open" && (
                       <button
                         type="button"
                         className="govuk-link govuk-body govuk-!-margin-bottom-0"
                         style={{ background: "none", border: "none", padding: 0, cursor: "pointer" }}
                         onClick={() => void handleCancel(task)}
                       >
-                        Cancel
+                        Close
                       </button>
                     )}
                   </td>
@@ -342,7 +342,7 @@ export function TasksPage() {
 
       {completedWithNotes.length > 0 && (
         <section className="govuk-!-margin-top-8">
-          <h2 className="govuk-heading-m">Completed with outcomes</h2>
+          <h2 className="govuk-heading-m">Closed with outcomes</h2>
           <table className="govuk-table">
             <thead className="govuk-table__head">
               <tr className="govuk-table__row">
@@ -359,9 +359,9 @@ export function TasksPage() {
             </thead>
             <tbody className="govuk-table__body">
               {completedWithNotes.map((task) => (
-                <tr key={`done-${task.id}`} className="govuk-table__row">
+                <tr key={`closed-${task.id}`} className="govuk-table__row">
                   <td className="govuk-table__cell">
-                    <Link to={`/tasks/${task.id}`} className="govuk-link">
+                    <Link to={`/tasks/${task.public_id || task.id}`} className="govuk-link">
                       {task.title}
                     </Link>
                   </td>

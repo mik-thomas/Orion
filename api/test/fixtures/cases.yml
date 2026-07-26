@@ -1,0 +1,23 @@
+# frozen_string_literal: true
+
+appraisal:
+  magistrate: alice
+  reference: APP-100
+  title: Appraisal follow-up
+  status: open
+  summary: Schedule next appraisal cycle discussion.
+  case_type: appraisal
+  public_id: CA-000001
+  created_by: developer
+  updated_by: developer
+
+coverage:
+  magistrate: alice
+  reference: ROT-200
+  title: Rota coverage query
+  status: closed
+  summary: Resolved rota gap for family sittings.
+  case_type: rota
+  public_id: CA-000002
+  created_by: bench_chair
+  updated_by: bench_chair

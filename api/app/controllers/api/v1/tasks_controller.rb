@@ -10,7 +10,9 @@ module Api
 
       def index
         render json: {
-          tasks: scoped_tasks.includes(:created_by, :assigned_to).ordered.map { |task| task_json(task) },
+          tasks: scoped_tasks.includes(:created_by, :assigned_to, :updated_by, :case, :note).then { |scope|
+            params[:status] == "open" ? scope.open_tasks : scope.ordered
+          }.map { |task| task_json(task) },
           summary: task_summary_json(base_scope)
         }
       end
@@ -24,16 +26,21 @@ module Api
       end
 
       def create
-        unless current_user&.can_manage_tasks?
-          return render json: { error: "Only Bench Chair or Developer can create tasks" }, status: :forbidden
+        unless can_create_task?
+          return render json: { error: "Not authorised to create this task" }, status: :forbidden
         end
 
         task = Task.new(create_params)
         task.created_by = current_user
-        task.assigned_to ||= default_deputy
+        task.updated_by = current_user
+        task.assigned_to ||= default_assignee_for_create
 
         if task.assigned_to.nil?
-          return render json: { errors: ["No Deputy user available to assign"] }, status: :unprocessable_entity
+          return render json: { errors: ["No assignee available"] }, status: :unprocessable_entity
+        end
+
+        unless can_assign_to?(task.assigned_to)
+          return render json: { error: "Not authorised to assign this task" }, status: :forbidden
         end
 
         if task.save
@@ -49,6 +56,7 @@ module Api
         end
 
         attrs = update_params_for(@task)
+        @task.updated_by = current_user
         if @task.update(attrs)
           render json: task_json(@task)
         else
@@ -58,10 +66,11 @@ module Api
 
       def destroy
         unless current_user&.can_manage_tasks?
-          return render json: { error: "Only Bench Chair or Developer can cancel tasks" }, status: :forbidden
+          return render json: { error: "Only Bench Chair or Developer can close tasks" }, status: :forbidden
         end
 
-        @task.update!(status: "cancelled")
+        @task.updated_by = current_user
+        @task.update!(status: "closed")
         render json: task_json(@task)
       end
 
@@ -74,7 +83,8 @@ module Api
       end
 
       def set_task
-        @task = Task.includes(:created_by, :assigned_to).find(params[:id])
+        @task = Task.includes(:created_by, :assigned_to, :updated_by, :case, :note)
+          .find_by_id_or_public_id!(params[:id])
         return if can_view_task?(@task)
 
         render json: { error: "Not found" }, status: :not_found
@@ -117,9 +127,33 @@ module Api
         false
       end
 
+      def can_create_task?
+        return true if current_user&.can_manage_tasks?
+
+        # Personal tasks: any signed-in user may create a task assigned to themselves.
+        assignee_id = create_params[:assigned_to_id]
+        assignee_id.blank? || assignee_id.to_i == current_user.id
+      end
+
+      def can_assign_to?(user)
+        return true if current_user.can_manage_tasks?
+        return true if user.id == current_user.id
+
+        false
+      end
+
+      def default_assignee_for_create
+        return current_user unless current_user.can_manage_tasks?
+
+        default_deputy || current_user
+      end
+
       def create_params
         remap_assignee(
-          params.require(:task).permit(:title, :description, :status, :priority, :due_on, :assigned_to_user_id, :report_notes)
+          params.require(:task).permit(
+            :title, :description, :status, :priority, :due_on, :reminder_on,
+            :assigned_to_user_id, :report_notes, :case_id, :note_id
+          )
         )
       end
 
@@ -127,7 +161,8 @@ module Api
         permitted =
           if current_user.developer? || current_user.bench_chair?
             params.require(:task).permit(
-              :title, :description, :status, :priority, :due_on, :assigned_to_user_id, :report_notes
+              :title, :description, :status, :priority, :due_on, :reminder_on,
+              :assigned_to_user_id, :report_notes, :case_id, :note_id
             )
           else
             params.require(:task).permit(:status, :report_notes)

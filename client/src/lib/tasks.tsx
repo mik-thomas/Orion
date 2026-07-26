@@ -1,19 +1,15 @@
 import { Link } from "react-router-dom";
 import type { Task, TaskPriority, TaskStatus } from "../types/domain";
 
-export const TASK_STATUSES: TaskStatus[] = ["open", "in_progress", "done", "cancelled"];
+export const TASK_STATUSES: TaskStatus[] = ["open", "closed"];
 export const TASK_PRIORITIES: TaskPriority[] = ["low", "normal", "high"];
 
 export function taskStatusLabel(status: TaskStatus): string {
   switch (status) {
     case "open":
       return "Open";
-    case "in_progress":
-      return "In progress";
-    case "done":
-      return "Done";
-    case "cancelled":
-      return "Cancelled";
+    case "closed":
+      return "Closed";
     default:
       return status;
   }
@@ -36,11 +32,7 @@ export function taskStatusTagClass(status: TaskStatus): string {
   switch (status) {
     case "open":
       return "govuk-tag govuk-tag--blue";
-    case "in_progress":
-      return "govuk-tag govuk-tag--yellow";
-    case "done":
-      return "govuk-tag govuk-tag--green";
-    case "cancelled":
+    case "closed":
       return "govuk-tag govuk-tag--grey";
     default:
       return "govuk-tag";
@@ -60,7 +52,7 @@ export function TaskStatusTag({ status }: { status: TaskStatus }) {
 
 export function TaskTitleLink({ task }: { task: Task }) {
   return (
-    <Link to={`/tasks/${task.id}`} className="govuk-link">
+    <Link to={`/tasks/${task.public_id || task.id}`} className="govuk-link">
       {task.title}
     </Link>
   );

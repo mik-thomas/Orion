@@ -29,8 +29,8 @@ export function getTaskSummary() {
   return request<TaskSummary>("/api/v1/tasks/summary");
 }
 
-export function getTask(id: number) {
-  return request<Task>(`/api/v1/tasks/${id}`);
+export function getTask(id: number | string) {
+  return request<Task>(`/api/v1/tasks/${encodeURIComponent(String(id))}`);
 }
 
 export type TaskPayload = {
@@ -39,8 +39,11 @@ export type TaskPayload = {
   status?: TaskStatus;
   priority?: "low" | "normal" | "high";
   due_on?: string | null;
+  reminder_on?: string | null;
   assigned_to_user_id?: number;
   report_notes?: string | null;
+  case_id?: number | null;
+  note_id?: number | null;
 };
 
 export function createTask(task: TaskPayload) {
@@ -50,15 +53,15 @@ export function createTask(task: TaskPayload) {
   });
 }
 
-export function updateTask(id: number, task: TaskPayload) {
-  return request<Task>(`/api/v1/tasks/${id}`, {
+export function updateTask(id: number | string, task: TaskPayload) {
+  return request<Task>(`/api/v1/tasks/${encodeURIComponent(String(id))}`, {
     method: "PATCH",
     body: JSON.stringify({ task }),
   });
 }
 
-export function cancelTask(id: number) {
-  return request<Task>(`/api/v1/tasks/${id}`, {
+export function cancelTask(id: number | string) {
+  return request<Task>(`/api/v1/tasks/${encodeURIComponent(String(id))}`, {
     method: "DELETE",
   });
 }

@@ -1,5 +1,7 @@
 import { useEffect, useId, useMemo, useState, type FormEvent } from "react";
-import { listMagistrates } from "../api/magistrates";
+import { Link } from "react-router-dom";
+import { listTasks } from "../api/tasks";
+import { searchAll } from "../api/search";
 import { getReportsOverview } from "../api/reports";
 import { ApiError } from "../api/http";
 import { ClusterMovementSection } from "../components/ClusterMovementSection";
@@ -26,7 +28,8 @@ import {
   periodFilterQuery,
   type PeriodFilterState,
 } from "../lib/periodFilter";
-import type { MagistrateSummary, ReportsOverview } from "../types/domain";
+import { formatTaskDate, TaskStatusTag, TaskTitleLink } from "../lib/tasks";
+import type { ReportsOverview, SearchResult, Task } from "../types/domain";
 import { useTableSort } from "../lib/useTableSort";
 
 const RISK_SORT_ORDER = {
@@ -41,6 +44,19 @@ function awaySittingsTag(count: number) {
   return null;
 }
 
+function searchTypeLabel(type: SearchResult["type"]): string {
+  switch (type) {
+    case "magistrate":
+      return "Magistrate";
+    case "case":
+      return "Case";
+    case "note":
+      return "Note";
+    default:
+      return type;
+  }
+}
+
 export function DashboardPage() {
   const { role, canViewNames } = useRole();
   const [query, setQuery] = useState("");
@@ -48,7 +64,8 @@ export function DashboardPage() {
   const [periodFilter, setPeriodFilter] = useState<PeriodFilterState>(defaultPeriodFilter());
   const [availableYears, setAvailableYears] = useState<string[]>([]);
   const [reports, setReports] = useState<ReportsOverview | null>(null);
-  const [results, setResults] = useState<MagistrateSummary[]>([]);
+  const [results, setResults] = useState<SearchResult[]>([]);
+  const [openTasks, setOpenTasks] = useState<Task[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -66,13 +83,19 @@ export function DashboardPage() {
   }, [periodFilter, role]);
 
   useEffect(() => {
+    listTasks({ status: "open" })
+      .then((response) => setOpenTasks(response.tasks))
+      .catch(() => setOpenTasks([]));
+  }, [role]);
+
+  useEffect(() => {
     if (!searchTerm) {
       setResults([]);
       return;
     }
 
-    listMagistrates(searchTerm)
-      .then(setResults)
+    searchAll(searchTerm)
+      .then((response) => setResults(response.results))
       .catch((err: unknown) => {
         setError(err instanceof ApiError ? err.message : "Search failed");
       });
@@ -92,9 +115,9 @@ export function DashboardPage() {
 
   const searchSortColumns = useMemo(
     () => ({
-      display_name: { getValue: (row: MagistrateSummary) => row.display_name },
-      home_court: { getValue: (row: MagistrateSummary) => row.home_courthouse?.name ?? "" },
-      bench: { getValue: (row: MagistrateSummary) => row.home_courthouse?.bench ?? "" },
+      type: { getValue: (row: SearchResult) => row.type },
+      title: { getValue: (row: SearchResult) => row.title },
+      subtitle: { getValue: (row: SearchResult) => row.subtitle ?? "" },
     }),
     []
   );
@@ -102,7 +125,7 @@ export function DashboardPage() {
     sort: searchSort,
     toggleSort: toggleSearchSort,
     sortedData: sortedSearchResults,
-  } = useTableSort(results, searchSortColumns, { key: "display_name", direction: "asc" });
+  } = useTableSort(results, searchSortColumns, { key: "type", direction: "asc" });
 
   const awayFromHome = reports?.away_from_home ?? [];
   const awaySortColumns = useMemo(
@@ -162,16 +185,58 @@ export function DashboardPage() {
         </div>
       )}
 
-      <DashboardSection title="Search magistrates">
+      <DashboardSection
+        title="Open tasks"
+        tag={openTasks.length > 0 ? String(openTasks.length) : undefined}
+        tagColour="blue"
+      >
+        {openTasks.length === 0 ? (
+          <p className="govuk-body">No open tasks.</p>
+        ) : (
+          <table className="govuk-table">
+            <thead className="govuk-table__head">
+              <tr className="govuk-table__row">
+                <th scope="col" className="govuk-table__header">
+                  Task
+                </th>
+                <th scope="col" className="govuk-table__header">
+                  Status
+                </th>
+                <th scope="col" className="govuk-table__header">
+                  Due
+                </th>
+              </tr>
+            </thead>
+            <tbody className="govuk-table__body">
+              {openTasks.map((task) => (
+                <tr key={task.id} className="govuk-table__row">
+                  <td className="govuk-table__cell">
+                    <TaskTitleLink task={task} />
+                    {task.overdue && (
+                      <strong className="govuk-tag govuk-tag--red govuk-!-margin-left-2">Overdue</strong>
+                    )}
+                  </td>
+                  <td className="govuk-table__cell">
+                    <TaskStatusTag status={task.status} />
+                  </td>
+                  <td className="govuk-table__cell">{formatTaskDate(task.due_on)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </DashboardSection>
+
+      <DashboardSection title="Search">
         <form onSubmit={handleSearch}>
           <div className="govuk-form-group govuk-!-margin-bottom-4">
             <label className="govuk-label govuk-label--m" htmlFor="search">
-              Find a magistrate
+              Find a magistrate, case or note
             </label>
             <div id="search-hint" className="govuk-hint">
               {canViewNames
-                ? "Search by name, email, reference code, home court, sitting location or bench."
-                : "Search by reference code, home court, sitting location or bench."}
+                ? "Search by magistrate name, case ID/title, or note text."
+                : "Search by home court, sitting location, case ID/title, or note text."}
             </div>
             <input
               className="govuk-input govuk-!-width-two-thirds"
@@ -194,30 +259,36 @@ export function DashboardPage() {
               Results for &ldquo;{searchTerm}&rdquo;
             </h3>
             {results.length === 0 ? (
-              <p className="govuk-body">No magistrates matched.</p>
+              <p className="govuk-body">No matches.</p>
             ) : (
               <table className="govuk-table">
                 <thead className="govuk-table__head">
                   <tr className="govuk-table__row">
-                    <SortableTableHeader columnKey="display_name" sort={searchSort} onSort={toggleSearchSort}>
-                      {canViewNames ? "Name" : "Reference"}
+                    <SortableTableHeader columnKey="type" sort={searchSort} onSort={toggleSearchSort}>
+                      Type
                     </SortableTableHeader>
-                    <SortableTableHeader columnKey="home_court" sort={searchSort} onSort={toggleSearchSort}>
-                      Home court
+                    <SortableTableHeader columnKey="title" sort={searchSort} onSort={toggleSearchSort}>
+                      Title
                     </SortableTableHeader>
-                    <SortableTableHeader columnKey="bench" sort={searchSort} onSort={toggleSearchSort}>
-                      Bench
+                    <SortableTableHeader columnKey="subtitle" sort={searchSort} onSort={toggleSearchSort}>
+                      Details
                     </SortableTableHeader>
                   </tr>
                 </thead>
                 <tbody className="govuk-table__body">
-                  {sortedSearchResults.map((magistrate) => (
-                    <tr key={magistrate.id} className="govuk-table__row">
+                  {sortedSearchResults.map((row) => (
+                    <tr key={`${row.type}-${row.id}`} className="govuk-table__row">
+                      <td className="govuk-table__cell">{searchTypeLabel(row.type)}</td>
                       <td className="govuk-table__cell">
-                        <MagistrateLink id={magistrate.id} name={magistrate.display_name} />
+                        {row.type === "magistrate" ? (
+                          <MagistrateLink id={row.id} name={row.display_name ?? row.title} />
+                        ) : (
+                          <Link to={row.path_hint} className="govuk-link">
+                            {row.title}
+                          </Link>
+                        )}
                       </td>
-                      <td className="govuk-table__cell">{magistrate.home_courthouse?.name ?? "—"}</td>
-                      <td className="govuk-table__cell">{magistrate.home_courthouse?.bench ?? "—"}</td>
+                      <td className="govuk-table__cell">{row.subtitle ?? "—"}</td>
                     </tr>
                   ))}
                 </tbody>

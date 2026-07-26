@@ -35,6 +35,9 @@ import { SittingPositionCell } from "../lib/sittingPosition";
 import { SittingStatusCell } from "../lib/sittingStatus";
 import { isRetirementAlertDismissed, isRetiringSoon } from "../lib/retirement";
 import type { CourtRoomRow, LeaveOfAbsence, MagistrateDetail } from "../types/domain";
+import { createCase } from "../api/cases";
+import { formatTaskDate } from "../lib/tasks";
+import { useAuth } from "../context/AuthContext";
 
 function formatUkDate(value: string | null) {
   if (!value) return null;
@@ -109,6 +112,7 @@ export function MagistrateProfilePage() {
   const { id } = useParams();
   const [searchParams, setSearchParams] = useSearchParams();
   const { role, canViewNames } = useRole();
+  const { session } = useAuth();
   const [magistrate, setMagistrate] = useState<MagistrateDetail | null>(null);
   const periodFilter = useMemo(
     () => parsePeriodFilterSearch(searchParams.toString(), defaultProfilePeriodFilter()),
@@ -118,6 +122,9 @@ export function MagistrateProfilePage() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [showRetirementModal, setShowRetirementModal] = useState(false);
+  const [newCaseTitle, setNewCaseTitle] = useState("");
+  const [newCaseSummary, setNewCaseSummary] = useState("");
+  const [creatingCase, setCreatingCase] = useState(false);
   const statusSummaryId = useId();
   const homeAwaySummaryId = useId();
   const locationSummaryId = useId();
@@ -206,10 +213,11 @@ export function MagistrateProfilePage() {
 
   const caseSortColumns = useMemo(
     () => ({
-      reference: { getValue: (row: (typeof cases)[number]) => row.reference ?? "" },
+      public_id: { getValue: (row: (typeof cases)[number]) => row.public_id ?? "" },
       title: { getValue: (row: (typeof cases)[number]) => row.title },
       status: { getValue: (row: (typeof cases)[number]) => row.status },
-      notes_count: { getValue: (row: (typeof cases)[number]) => row.notes_count, type: "number" as const },
+      created_at: { getValue: (row: (typeof cases)[number]) => row.created_at, type: "date" as const },
+      updated_at: { getValue: (row: (typeof cases)[number]) => row.updated_at, type: "date" as const },
     }),
     []
   );
@@ -217,7 +225,7 @@ export function MagistrateProfilePage() {
     sort: caseSort,
     toggleSort: toggleCaseSort,
     sortedData: sortedCases,
-  } = useTableSort(cases, caseSortColumns, { key: "reference", direction: "asc" });
+  } = useTableSort(cases, caseSortColumns, { key: "updated_at", direction: "desc" });
 
   if (loading) return <p className="govuk-body">Loading…</p>;
   if (error || !magistrate) {
@@ -694,8 +702,8 @@ export function MagistrateProfilePage() {
         <table className="govuk-table">
           <thead className="govuk-table__head">
             <tr className="govuk-table__row">
-              <SortableTableHeader columnKey="reference" sort={caseSort} onSort={toggleCaseSort}>
-                Reference
+              <SortableTableHeader columnKey="public_id" sort={caseSort} onSort={toggleCaseSort}>
+                Case ID
               </SortableTableHeader>
               <SortableTableHeader columnKey="title" sort={caseSort} onSort={toggleCaseSort}>
                 Title
@@ -703,22 +711,118 @@ export function MagistrateProfilePage() {
               <SortableTableHeader columnKey="status" sort={caseSort} onSort={toggleCaseSort}>
                 Status
               </SortableTableHeader>
-              <SortableTableHeader columnKey="notes_count" sort={caseSort} onSort={toggleCaseSort}>
-                Notes
+              <SortableTableHeader columnKey="created_at" sort={caseSort} onSort={toggleCaseSort}>
+                Created
+              </SortableTableHeader>
+              <SortableTableHeader columnKey="updated_at" sort={caseSort} onSort={toggleCaseSort}>
+                Updated
               </SortableTableHeader>
             </tr>
           </thead>
           <tbody className="govuk-table__body">
             {sortedCases.map((kase) => (
               <tr key={kase.id} className="govuk-table__row">
-                <td className="govuk-table__cell">{kase.reference ?? "—"}</td>
-                <td className="govuk-table__cell">{kase.title}</td>
-                <td className="govuk-table__cell">{kase.status}</td>
-                <td className="govuk-table__cell">{kase.notes_count}</td>
+                <td className="govuk-table__cell">
+                  <Link to={`/cases/${kase.public_id || kase.id}`} className="govuk-link">
+                    {kase.public_id ?? kase.id}
+                  </Link>
+                </td>
+                <td className="govuk-table__cell">
+                  <Link to={`/cases/${kase.public_id || kase.id}`} className="govuk-link">
+                    {kase.title}
+                  </Link>
+                </td>
+                <td className="govuk-table__cell">
+                  <strong className={`govuk-tag ${kase.status === "open" ? "govuk-tag--blue" : "govuk-tag--grey"}`}>
+                    {kase.status}
+                  </strong>
+                </td>
+                <td className="govuk-table__cell">{formatTaskDate(kase.created_at)}</td>
+                <td className="govuk-table__cell">{formatTaskDate(kase.updated_at)}</td>
               </tr>
             ))}
           </tbody>
         </table>
+      )}
+
+      {session && (
+        <form
+          className="govuk-!-margin-bottom-8"
+          onSubmit={(event) => {
+            event.preventDefault();
+            if (!magistrate || !newCaseTitle.trim()) return;
+            setCreatingCase(true);
+            createCase(magistrate.id, {
+              title: newCaseTitle.trim(),
+              summary: newCaseSummary.trim() || null,
+              status: "open",
+            })
+              .then((created) => {
+                setMagistrate((current) =>
+                  current ? { ...current, cases: [created, ...current.cases] } : current
+                );
+                setNewCaseTitle("");
+                setNewCaseSummary("");
+              })
+              .catch((err: unknown) =>
+                setError(err instanceof ApiError ? err.message : "Could not create case")
+              )
+              .finally(() => setCreatingCase(false));
+          }}
+        >
+          <h3 className="govuk-heading-m">Create case</h3>
+          <div className="govuk-form-group">
+            <label className="govuk-label" htmlFor="new-case-title">
+              Title
+            </label>
+            <input
+              className="govuk-input govuk-!-width-two-thirds"
+              id="new-case-title"
+              value={newCaseTitle}
+              onChange={(event) => setNewCaseTitle(event.target.value)}
+              required
+            />
+          </div>
+          <div className="govuk-form-group">
+            <label className="govuk-label" htmlFor="new-case-summary">
+              Summary (optional)
+            </label>
+            <textarea
+              className="govuk-textarea"
+              id="new-case-summary"
+              rows={2}
+              value={newCaseSummary}
+              onChange={(event) => setNewCaseSummary(event.target.value)}
+            />
+          </div>
+          <button type="submit" className="govuk-button" disabled={creatingCase || !newCaseTitle.trim()}>
+            {creatingCase ? "Creating…" : "Create case"}
+          </button>
+        </form>
+      )}
+
+      <h2 className="govuk-heading-l">Magistrate timeline</h2>
+      {(magistrate.timeline ?? []).length === 0 ? (
+        <p className="govuk-body">No case timeline entries yet.</p>
+      ) : (
+        <ol className="govuk-list">
+          {(magistrate.timeline ?? []).map((entry) => (
+            <li key={entry.id} className="govuk-!-margin-bottom-4">
+              <p className="govuk-body-s govuk-!-margin-bottom-1">
+                {formatTaskDate(entry.created_at)} · {entry.public_id}
+              </p>
+              <p className="govuk-body">
+                <Link to={entry.path_hint ?? `/cases/${entry.public_id || entry.id}`} className="govuk-link">
+                  {entry.title}
+                </Link>
+                {" "}
+                <strong className={`govuk-tag ${entry.status === "open" ? "govuk-tag--blue" : "govuk-tag--grey"}`}>
+                  {entry.status}
+                </strong>
+              </p>
+            </li>
+          ))}
+        </ol>
       )}
     </>
   );
