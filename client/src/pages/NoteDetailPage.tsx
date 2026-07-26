@@ -3,8 +3,28 @@ import { Link, useParams } from "react-router-dom";
 import { getNote, updateNote } from "../api/notes";
 import { createTask, listTasks, updateTask } from "../api/tasks";
 import { ApiError } from "../api/http";
+import { OrionBreadcrumbs, type BreadcrumbItem } from "../components/OrionBreadcrumbs";
 import { useAuth } from "../context/AuthContext";
 import type { Note, Task } from "../types/domain";
+
+function noteBreadcrumbItems(note: Note): BreadcrumbItem[] {
+  const items: BreadcrumbItem[] = [];
+  const magistrateId = note.magistrate_id ?? note.case?.magistrate_id ?? note.case?.magistrate?.id;
+  const magistrateName =
+    note.magistrate_name ?? note.case?.magistrate?.display_name ?? "Magistrate";
+  const caseRef = note.case?.public_id ?? (note.case_id ? `Case ${note.case_id}` : null);
+  const casePath = note.case
+    ? `/cases/${note.case.public_id ?? note.case.id}`
+    : `/cases/${note.case_id}`;
+
+  if (magistrateId) {
+    items.push({ label: "Magistrates", to: "/magistrates" });
+    items.push({ label: magistrateName, to: `/magistrates/${magistrateId}` });
+  }
+  items.push({ label: caseRef ?? "Case", to: casePath });
+  items.push({ label: note.public_id ?? `Note ${note.id}` });
+  return items;
+}
 
 function formatDateTime(value: string | null | undefined): string {
   if (!value) return "—";
@@ -95,18 +115,7 @@ export function NoteDetailPage() {
 
   return (
     <>
-      <nav className="govuk-breadcrumbs" aria-label="Breadcrumb">
-        <ol className="govuk-breadcrumbs__list">
-          <li className="govuk-breadcrumbs__list-item">
-            <Link to={`/cases/${note.case_id}`} className="govuk-breadcrumbs__link">
-              Case
-            </Link>
-          </li>
-          <li className="govuk-breadcrumbs__list-item" aria-current="page">
-            {note.public_id ?? `Note ${note.id}`}
-          </li>
-        </ol>
-      </nav>
+      <OrionBreadcrumbs items={noteBreadcrumbItems(note)} />
 
       <h1 className="govuk-heading-xl">{note.public_id ?? `Note ${note.id}`}</h1>
       <p className="govuk-body">

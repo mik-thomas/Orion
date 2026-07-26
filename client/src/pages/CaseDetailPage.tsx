@@ -4,9 +4,22 @@ import { getCase, updateCase } from "../api/cases";
 import { createNote, destroyNote, updateNote } from "../api/notes";
 import { createTask, listTasks, updateTask } from "../api/tasks";
 import { ApiError } from "../api/http";
+import { OrionBreadcrumbs, type BreadcrumbItem } from "../components/OrionBreadcrumbs";
 import { useAuth } from "../context/AuthContext";
 import { formatTaskDate, TaskStatusTag, TaskTitleLink } from "../lib/tasks";
 import type { CaseDetail, Note, Task } from "../types/domain";
+
+function caseBreadcrumbItems(kase: CaseDetail): BreadcrumbItem[] {
+  const items: BreadcrumbItem[] = [{ label: "Magistrates", to: "/magistrates" }];
+  if (kase.magistrate_id) {
+    items.push({
+      label: kase.magistrate?.display_name ?? "Magistrate",
+      to: `/magistrates/${kase.magistrate_id}`,
+    });
+  }
+  items.push({ label: kase.public_id ?? kase.title });
+  return items;
+}
 
 function formatDateTime(value: string | null | undefined): string {
   if (!value) return "—";
@@ -161,25 +174,11 @@ export function CaseDetailPage() {
     );
   }
 
-  const magistrateName = kase.magistrate?.display_name;
   const linkedTasks = kase.tasks ?? [];
 
   return (
     <>
-      <nav className="govuk-breadcrumbs" aria-label="Breadcrumb">
-        <ol className="govuk-breadcrumbs__list">
-          {kase.magistrate_id && (
-            <li className="govuk-breadcrumbs__list-item">
-              <Link to={`/magistrates/${kase.magistrate_id}`} className="govuk-breadcrumbs__link">
-                {magistrateName ?? "Magistrate"}
-              </Link>
-            </li>
-          )}
-          <li className="govuk-breadcrumbs__list-item" aria-current="page">
-            {kase.public_id ?? kase.title}
-          </li>
-        </ol>
-      </nav>
+      <OrionBreadcrumbs items={caseBreadcrumbItems(kase)} />
 
       <h1 className="govuk-heading-xl">{kase.title}</h1>
       <p className="govuk-body">

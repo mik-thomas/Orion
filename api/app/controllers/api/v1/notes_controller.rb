@@ -56,7 +56,7 @@ module Api
       end
 
       def set_note
-        @note = Note.includes(:case, :created_by, :updated_by).find_by_id_or_public_id!(params[:id])
+        @note = Note.includes(case: :magistrate, created_by: {}, updated_by: {}).find_by_id_or_public_id!(params[:id])
       rescue ActiveRecord::RecordNotFound
         render json: { error: "Not found" }, status: :not_found
       end

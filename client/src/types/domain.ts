@@ -59,6 +59,15 @@ export interface Note {
   updated_at: string;
   created_by?: TaskUser | null;
   updated_by?: TaskUser | null;
+  case?: {
+    id: number;
+    public_id: string | null;
+    title: string;
+    magistrate_id: number;
+    magistrate?: { id: number; display_name: string } | null;
+  } | null;
+  magistrate_id?: number | null;
+  magistrate_name?: string | null;
 }
 
 export interface CaseTimelineEntry {

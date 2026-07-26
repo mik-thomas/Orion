@@ -3,6 +3,7 @@ import { Link, useParams, useSearchParams } from "react-router-dom";
 import { getMagistrate } from "../api/magistrates";
 import { ApiError } from "../api/http";
 import { ComplianceViolations } from "../components/ComplianceViolations";
+import { OrionBreadcrumbs } from "../components/OrionBreadcrumbs";
 import { RetirementDueModal } from "../components/RetirementDueModal";
 import { SittingForecastPanel } from "../components/SittingForecastPanel";
 import { SittingScoreMeter } from "../components/SittingScoreMeter";
@@ -260,18 +261,12 @@ export function MagistrateProfilePage() {
         />
       ) : null}
 
-      <nav className="govuk-breadcrumbs" aria-label="Breadcrumb">
-        <ol className="govuk-breadcrumbs__list">
-          <li className="govuk-breadcrumbs__list-item">
-            <Link to="/magistrates" className="govuk-breadcrumbs__link">
-              Magistrates
-            </Link>
-          </li>
-          <li className="govuk-breadcrumbs__list-item" aria-current="page">
-            {magistrate.display_name}
-          </li>
-        </ol>
-      </nav>
+      <OrionBreadcrumbs
+        items={[
+          { label: "Magistrates", to: "/magistrates" },
+          { label: magistrate.display_name },
+        ]}
+      />
 
       <h1 className="govuk-heading-xl">{magistrate.display_name}</h1>
       {!canViewNames && (

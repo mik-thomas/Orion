@@ -207,12 +207,27 @@ module JsonRenderable
   end
 
   def note_json(note)
+    kase = note.case
+    magistrate = kase&.magistrate
+
     note.as_json(
       only: %i[id case_id body author_name public_id occurred_at created_at updated_at]
     ).merge(
       "created_by" => task_user_json(note.created_by),
       "updated_by" => task_user_json(note.updated_by),
-      "author" => note.author_name.presence || note.created_by&.display_name
+      "author" => note.author_name.presence || note.created_by&.display_name,
+      "case" => kase && {
+        "id" => kase.id,
+        "public_id" => kase.public_id,
+        "title" => kase.title,
+        "magistrate_id" => kase.magistrate_id,
+        "magistrate" => magistrate && {
+          "id" => magistrate.id,
+          "display_name" => magistrate_display_name(magistrate)
+        }
+      },
+      "magistrate_id" => magistrate&.id,
+      "magistrate_name" => magistrate && magistrate_display_name(magistrate)
     )
   end
 

@@ -2,6 +2,7 @@ import { useEffect, useState, type FormEvent } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { cancelTask, getTask, listTasks, updateTask } from "../api/tasks";
 import { ApiError } from "../api/http";
+import { OrionBreadcrumbs, type BreadcrumbItem } from "../components/OrionBreadcrumbs";
 import { useAuth } from "../context/AuthContext";
 import {
   formatTaskDate,
@@ -11,6 +12,32 @@ import {
   taskStatusLabel,
 } from "../lib/tasks";
 import type { RelatedItem, Task, TaskStatus } from "../types/domain";
+
+function taskBreadcrumbItems(task: Task): BreadcrumbItem[] {
+  const items: BreadcrumbItem[] = [];
+  if (task.magistrate_id) {
+    items.push({ label: "Magistrates", to: "/magistrates" });
+    items.push({
+      label: task.magistrate_name ?? "Magistrate",
+      to: `/magistrates/${task.magistrate_id}`,
+    });
+  }
+  if (task.case) {
+    items.push({
+      label: task.case.public_id ?? task.case.title,
+      to: task.case.path_hint ?? `/cases/${task.case.public_id ?? task.case.id}`,
+    });
+  }
+  if (task.note) {
+    items.push({
+      label: task.note.public_id ?? `Note ${task.note.id}`,
+      to: task.note.path_hint ?? `/notes/${task.note.public_id ?? task.note.id}`,
+    });
+  }
+  items.push({ label: "Tasks", to: "/tasks" });
+  items.push({ label: task.public_id ?? task.title });
+  return items;
+}
 
 export function TaskDetailPage() {
   const { id } = useParams();
@@ -136,18 +163,7 @@ export function TaskDetailPage() {
 
   return (
     <>
-      <nav className="govuk-breadcrumbs" aria-label="Breadcrumb">
-        <ol className="govuk-breadcrumbs__list">
-          <li className="govuk-breadcrumbs__list-item">
-            <Link to="/tasks" className="govuk-breadcrumbs__link">
-              Tasks
-            </Link>
-          </li>
-          <li className="govuk-breadcrumbs__list-item" aria-current="page">
-            {task.public_id ?? task.title}
-          </li>
-        </ol>
-      </nav>
+      <OrionBreadcrumbs items={taskBreadcrumbItems(task)} />
 
       <h1 className="govuk-heading-xl">{task.title}</h1>
       <p className="govuk-body">
