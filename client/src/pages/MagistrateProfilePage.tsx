@@ -35,6 +35,7 @@ import { SittingPositionCell } from "../lib/sittingPosition";
 import { SittingStatusCell } from "../lib/sittingStatus";
 import { isRetirementAlertDismissed, isRetiringSoon } from "../lib/retirement";
 import type { CourtRoomRow, LeaveOfAbsence, MagistrateDetail } from "../types/domain";
+import { createLeaveOfAbsence } from "../api/leaves";
 import { createCase } from "../api/cases";
 import { formatTaskDate } from "../lib/tasks";
 import { useAuth } from "../context/AuthContext";
@@ -125,6 +126,12 @@ export function MagistrateProfilePage() {
   const [newCaseTitle, setNewCaseTitle] = useState("");
   const [newCaseSummary, setNewCaseSummary] = useState("");
   const [creatingCase, setCreatingCase] = useState(false);
+  const [loaStartsOn, setLoaStartsOn] = useState("");
+  const [loaEndsOn, setLoaEndsOn] = useState("");
+  const [loaReason, setLoaReason] = useState("");
+  const [loaNotes, setLoaNotes] = useState("");
+  const [loaReviewOn, setLoaReviewOn] = useState("");
+  const [creatingLoa, setCreatingLoa] = useState(false);
   const statusSummaryId = useId();
   const homeAwaySummaryId = useId();
   const locationSummaryId = useId();
@@ -693,6 +700,107 @@ export function MagistrateProfilePage() {
             ))}
           </tbody>
         </table>
+      )}
+
+      {session && (
+        <form
+          className="govuk-!-margin-bottom-8"
+          onSubmit={(event) => {
+            event.preventDefault();
+            if (!magistrate || !loaStartsOn) return;
+            setCreatingLoa(true);
+            setError(null);
+            createLeaveOfAbsence(magistrate.id, {
+              starts_on: loaStartsOn,
+              ends_on: loaEndsOn.trim() || null,
+              reason: loaReason.trim() || null,
+              notes: loaNotes.trim() || null,
+              next_review_on: loaReviewOn.trim() || null,
+            })
+              .then(() =>
+                getMagistrate(magistrate.id, periodFilterQuery(periodFilter)).then((data) => {
+                  setMagistrate(data);
+                  setLoaStartsOn("");
+                  setLoaEndsOn("");
+                  setLoaReason("");
+                  setLoaNotes("");
+                  setLoaReviewOn("");
+                })
+              )
+              .catch((err: unknown) =>
+                setError(err instanceof ApiError ? err.message : "Could not add leave of absence")
+              )
+              .finally(() => setCreatingLoa(false));
+          }}
+        >
+          <h3 className="govuk-heading-m">Add leave of absence</h3>
+          <div className="govuk-form-group">
+            <label className="govuk-label" htmlFor="loa-starts-on">
+              Start date
+            </label>
+            <input
+              className="govuk-input govuk-input--width-10"
+              id="loa-starts-on"
+              type="date"
+              value={loaStartsOn}
+              onChange={(event) => setLoaStartsOn(event.target.value)}
+              required
+            />
+          </div>
+          <div className="govuk-form-group">
+            <label className="govuk-label" htmlFor="loa-ends-on">
+              End date (optional)
+            </label>
+            <div className="govuk-hint">Leave blank for open-ended leave.</div>
+            <input
+              className="govuk-input govuk-input--width-10"
+              id="loa-ends-on"
+              type="date"
+              value={loaEndsOn}
+              onChange={(event) => setLoaEndsOn(event.target.value)}
+              min={loaStartsOn || undefined}
+            />
+          </div>
+          <div className="govuk-form-group">
+            <label className="govuk-label" htmlFor="loa-reason">
+              Reason (optional)
+            </label>
+            <input
+              className="govuk-input govuk-!-width-two-thirds"
+              id="loa-reason"
+              value={loaReason}
+              onChange={(event) => setLoaReason(event.target.value)}
+            />
+          </div>
+          <div className="govuk-form-group">
+            <label className="govuk-label" htmlFor="loa-review-on">
+              Next LOA review (optional)
+            </label>
+            <input
+              className="govuk-input govuk-input--width-10"
+              id="loa-review-on"
+              type="date"
+              value={loaReviewOn}
+              onChange={(event) => setLoaReviewOn(event.target.value)}
+              min={loaStartsOn || undefined}
+            />
+          </div>
+          <div className="govuk-form-group">
+            <label className="govuk-label" htmlFor="loa-notes">
+              Notes (optional)
+            </label>
+            <textarea
+              className="govuk-textarea"
+              id="loa-notes"
+              rows={2}
+              value={loaNotes}
+              onChange={(event) => setLoaNotes(event.target.value)}
+            />
+          </div>
+          <button type="submit" className="govuk-button" disabled={creatingLoa || !loaStartsOn}>
+            {creatingLoa ? "Saving…" : "Add leave of absence"}
+          </button>
+        </form>
       )}
 
       <h2 className="govuk-heading-l">Cases</h2>
