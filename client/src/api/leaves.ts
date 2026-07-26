@@ -38,3 +38,9 @@ export function updateLeaveOfAbsence(
     }
   );
 }
+
+export function destroyLeaveOfAbsence(magistrateId: number, leaveId: number) {
+  return request<void>(`/api/v1/magistrates/${magistrateId}/leaves_of_absence/${leaveId}`, {
+    method: "DELETE",
+  });
+}

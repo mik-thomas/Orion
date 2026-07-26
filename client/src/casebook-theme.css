@@ -962,3 +962,75 @@ body.govuk-template__body {
 .csbk-page-title {
   margin-bottom: 0.35rem;
 }
+
+.orion-magistrate-name {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.orion-magistrate-name .orion-support-needs-alert {
+  width: 1.75rem;
+  height: 1.75rem;
+}
+
+.orion-magistrate-name .orion-support-needs-alert__bang {
+  font-size: 1.25rem;
+}
+
+.orion-support-needs-alert {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 1.35rem;
+  height: 1.35rem;
+  border-radius: 50%;
+  background: var(--csbk-yellow-500);
+  border: 2px solid var(--csbk-grey-950);
+  color: var(--csbk-grey-950);
+  vertical-align: middle;
+  line-height: 1;
+}
+
+.orion-support-needs-alert__bang {
+  font-weight: 800;
+  font-size: 0.95rem;
+  font-family: var(--csbk-font-family);
+  transform: translateY(-0.5px);
+}
+
+.orion-support-needs-alert--sidebar {
+  width: 1.1rem;
+  height: 1.1rem;
+  margin-left: 0.4rem;
+  border-width: 1.5px;
+  vertical-align: text-top;
+}
+
+.orion-support-needs-alert--sidebar .orion-support-needs-alert__bang {
+  font-size: 0.8rem;
+}
+
+.csbk-sidebar__header {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.csbk-sidebar__name {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+
+.csbk-accordion__title {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  flex-wrap: wrap;
+  text-align: left;
+}

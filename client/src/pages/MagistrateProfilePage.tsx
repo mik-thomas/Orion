@@ -50,6 +50,7 @@ import {
   CasebookTabs,
 } from "../components/casebook/CasebookChrome";
 import { MagistrateSidebar } from "../components/MagistrateSidebar";
+import { hasSupportNeeds, SupportNeedsAlert } from "../components/SupportNeedsAlert";
 
 function ProfileCourtRoomBreakdownTable({ rows }: { rows: CourtRoomRow[] }) {
   const sortColumns = useMemo(
@@ -275,7 +276,14 @@ export function MagistrateProfilePage() {
       <CasebookSplit
         main={
           <>
-            <h1 className="govuk-heading-xl csbk-page-title">{magistrate.display_name}</h1>
+            <h1 className="govuk-heading-xl csbk-page-title">
+              <span className="orion-magistrate-name">
+                {magistrate.display_name}
+                {hasSupportNeeds(magistrate.reasonable_adjustments) ? (
+                  <SupportNeedsAlert />
+                ) : null}
+              </span>
+            </h1>
             <CasebookMetaRow>
               Reference: {magistrate.reference_code}
               {magistrate.date_of_appointment ? ` · Appointed: ${magistrate.date_of_appointment}` : ""}
@@ -911,9 +919,31 @@ export function MagistrateProfilePage() {
           <MagistrateSidebar
             magistrate={magistrate}
             canViewNames={canViewNames}
-            onContactNumberUpdated={(contactNumber) =>
-              setMagistrate((current) => (current ? { ...current, contact_number: contactNumber } : current))
+            editable={Boolean(session)}
+            onMagistrateUpdated={(updated) =>
+              setMagistrate((current) => {
+                if (!current) return current;
+                return {
+                  ...current,
+                  ...updated,
+                  // Keep period-scoped profile panels from the current load.
+                  period: current.period,
+                  available_fiscal_years: current.available_fiscal_years,
+                  sitting_summary: current.sitting_summary,
+                  sittings: current.sittings,
+                  cases: current.cases,
+                  timeline: current.timeline,
+                };
+              })
             }
+            onLeavesChanged={() => {
+              if (!id) return;
+              getMagistrate(Number(id), periodFilterQuery(periodFilter))
+                .then(setMagistrate)
+                .catch((err: unknown) =>
+                  setError(err instanceof ApiError ? err.message : "Failed to refresh profile")
+                );
+            }}
           />
         }
       />

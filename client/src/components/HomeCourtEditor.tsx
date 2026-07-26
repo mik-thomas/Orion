@@ -1,39 +1,49 @@
-import { useState } from "react";
-import { updateMagistrate } from "../api/magistrates";
+import { useEffect, useState } from "react";
+import { listCourthouses, updateMagistrate } from "../api/magistrates";
 import { ApiError } from "../api/http";
-import type { MagistrateDetail } from "../types/domain";
+import type { Courthouse, MagistrateDetail } from "../types/domain";
 
-interface ContactNumberEditorProps {
-  magistrateId: number;
-  contactNumber: string | null;
-  onUpdated: (contactNumber: string | null, magistrate?: MagistrateDetail) => void;
-  editable?: boolean;
-}
-
-export function ContactNumberEditor({
+export function HomeCourtEditor({
   magistrateId,
-  contactNumber,
-  onUpdated,
+  homeCourthouse,
   editable = true,
-}: ContactNumberEditorProps) {
+  onUpdated,
+}: {
+  magistrateId: number;
+  homeCourthouse: Courthouse | null;
+  editable?: boolean;
+  onUpdated: (magistrate: MagistrateDetail) => void;
+}) {
   const [editing, setEditing] = useState(false);
-  const [value, setValue] = useState(contactNumber ?? "");
+  const [courthouses, setCourthouses] = useState<Courthouse[]>([]);
+  const [draftId, setDraftId] = useState(homeCourthouse ? String(homeCourthouse.id) : "");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
 
+  useEffect(() => {
+    if (!editing) return;
+    listCourthouses()
+      .then(setCourthouses)
+      .catch((err: unknown) =>
+        setError(err instanceof ApiError ? err.message : "Failed to load courthouses")
+      );
+  }, [editing]);
+
+  const label = homeCourthouse?.name ?? "Not recorded";
+
   if (!editable) {
-    return <span>{contactNumber?.trim() ? contactNumber : "Not recorded"}</span>;
+    return <span>{label}</span>;
   }
 
-  async function persist(next: string | null) {
+  async function persist(nextId: number | null) {
     setSaving(true);
     setError(null);
     try {
       const updated = await updateMagistrate(magistrateId, {
-        contact_number: next,
+        home_courthouse_id: nextId,
       });
-      onUpdated(updated.contact_number, updated);
+      onUpdated(updated);
       setEditing(false);
       setSaved(true);
     } catch (err) {
@@ -46,7 +56,7 @@ export function ContactNumberEditor({
   if (!editing) {
     return (
       <div className="orion-loa-review-editor">
-        <span>{contactNumber?.trim() ? contactNumber : "Not recorded"}</span>
+        <span>{label}</span>
         {saved && (
           <p className="govuk-body-s govuk-!-margin-bottom-0 orion-loa-review-editor__saved" role="status">
             Saved
@@ -57,15 +67,15 @@ export function ContactNumberEditor({
             type="button"
             className="govuk-link orion-loa-review-editor__change"
             onClick={() => {
-              setValue(contactNumber ?? "");
+              setDraftId(homeCourthouse ? String(homeCourthouse.id) : "");
               setError(null);
               setSaved(false);
               setEditing(true);
             }}
           >
-            {contactNumber?.trim() ? "Change" : "Add number"}
+            {homeCourthouse ? "Change" : "Add"}
           </button>
-          {contactNumber?.trim() ? (
+          {homeCourthouse ? (
             <button
               type="button"
               className="govuk-link orion-loa-review-editor__change"
@@ -80,20 +90,27 @@ export function ContactNumberEditor({
     );
   }
 
+  const inputId = `home-court-${magistrateId}`;
+
   return (
     <div className="orion-loa-review-editor orion-loa-review-editor--editing">
       <div className="govuk-form-group govuk-!-margin-bottom-2">
-        <label className="govuk-label govuk-label--s" htmlFor={`contact-number-${magistrateId}`}>
-          Contact number
+        <label className="govuk-label govuk-label--s" htmlFor={inputId}>
+          Home court
         </label>
-        <input
-          className="govuk-input"
-          id={`contact-number-${magistrateId}`}
-          type="tel"
-          autoComplete="tel"
-          value={value}
-          onChange={(event) => setValue(event.target.value)}
-        />
+        <select
+          className="govuk-select"
+          id={inputId}
+          value={draftId}
+          onChange={(event) => setDraftId(event.target.value)}
+        >
+          <option value="">Not recorded</option>
+          {courthouses.map((court) => (
+            <option key={court.id} value={court.id}>
+              {court.name}
+            </option>
+          ))}
+        </select>
       </div>
       {error && (
         <p className="govuk-error-message govuk-!-margin-bottom-2">
@@ -105,12 +122,8 @@ export function ContactNumberEditor({
         <button
           type="button"
           className="govuk-button govuk-!-margin-bottom-0"
-          data-module="govuk-button"
           disabled={saving}
-          onClick={() => {
-            const trimmed = value.trim();
-            void persist(trimmed.length > 0 ? trimmed : null);
-          }}
+          onClick={() => void persist(draftId ? Number(draftId) : null)}
         >
           {saving ? "Saving…" : "Save"}
         </button>

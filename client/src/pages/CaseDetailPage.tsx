@@ -555,11 +555,16 @@ export function CaseDetailPage() {
               magistrate={magistrate}
               canViewNames={canViewNames}
               profileHref={`/magistrates/${magistrate.id}`}
-              onContactNumberUpdated={(contactNumber) =>
-                setMagistrate((current) =>
-                  current ? { ...current, contact_number: contactNumber } : current
-                )
+              editable={Boolean(session)}
+              onMagistrateUpdated={(updated) =>
+                setMagistrate((current) => (current ? { ...current, ...updated } : current))
               }
+              onLeavesChanged={() => {
+                if (!magistrate) return;
+                getMagistrate(magistrate.id)
+                  .then(setMagistrate)
+                  .catch(() => undefined);
+              }}
             />
           ) : kase.magistrate ? (
             <aside className="csbk-sidebar" aria-label="Magistrate">

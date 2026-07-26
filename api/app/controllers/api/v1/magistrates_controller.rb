@@ -50,7 +50,18 @@ module Api
       end
 
       def update
-        if @magistrate.update(magistrate_params)
+        attrs = magistrate_params.to_h
+        %w[
+          email contact_number date_of_appointment reasonable_adjustments retirement_on
+          appraisal_status last_appraisal_on last_appraiser last_login_on
+        ].each do |key|
+          attrs[key] = nil if attrs.key?(key) && attrs[key].blank?
+        end
+        attrs["appraisal_cycle_years"] = nil if attrs.key?("appraisal_cycle_years") && attrs["appraisal_cycle_years"].blank?
+        attrs["days_since_login"] = nil if attrs.key?("days_since_login") && attrs["days_since_login"].blank?
+        attrs["home_courthouse_id"] = nil if attrs.key?("home_courthouse_id") && attrs["home_courthouse_id"].blank?
+
+        if @magistrate.update(attrs)
           sync_sitting_locations!(@magistrate)
           render json: magistrate_detail_json(@magistrate.reload)
         else
@@ -77,7 +88,9 @@ module Api
       def magistrate_params
         params.require(:magistrate).permit(
           :first_name, :last_name, :email, :contact_number, :date_of_appointment, :home_courthouse_id,
-          :reasonable_adjustments
+          :reasonable_adjustments, :cluster, :bench, :presiding_justice, :retirement_on,
+          :appraisal_status, :appraisal_cycle_years, :last_appraisal_on, :last_appraiser,
+          :last_login_on, :days_since_login
         )
       end
 

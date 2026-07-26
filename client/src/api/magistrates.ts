@@ -19,10 +19,28 @@ export function getMagistrate(id: number, query = "") {
   return request<MagistrateDetail>(`/api/v1/magistrates/${id}${suffix}`);
 }
 
-export function updateMagistrate(
-  id: number,
-  attrs: { contact_number?: string | null }
-) {
+export type MagistrateUpdateAttrs = {
+  first_name?: string | null;
+  last_name?: string | null;
+  email?: string | null;
+  contact_number?: string | null;
+  date_of_appointment?: string | null;
+  home_courthouse_id?: number | null;
+  reasonable_adjustments?: string | null;
+  cluster?: string | null;
+  bench?: string | null;
+  presiding_justice?: boolean | null;
+  retirement_on?: string | null;
+  appraisal_status?: string | null;
+  appraisal_cycle_years?: number | null;
+  last_appraisal_on?: string | null;
+  last_appraiser?: string | null;
+  last_login_on?: string | null;
+  days_since_login?: number | null;
+  sitting_location_ids?: number[];
+};
+
+export function updateMagistrate(id: number, attrs: MagistrateUpdateAttrs) {
   return request<MagistrateDetail>(`/api/v1/magistrates/${id}`, {
     method: "PATCH",
     body: JSON.stringify({ magistrate: attrs }),

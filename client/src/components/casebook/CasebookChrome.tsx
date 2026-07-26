@@ -67,7 +67,7 @@ export function CasebookAccordion({
   defaultOpen = false,
   children,
 }: {
-  title: string;
+  title: ReactNode;
   defaultOpen?: boolean;
   children: ReactNode;
 }) {
@@ -101,13 +101,17 @@ export function CasebookAccordion({
 
 export function CasebookSidebar({
   title,
+  ariaLabel,
   children,
 }: {
-  title: string;
+  title: ReactNode;
+  ariaLabel?: string;
   children: ReactNode;
 }) {
+  const label =
+    ariaLabel ?? (typeof title === "string" ? title : "Magistrate details");
   return (
-    <aside className="csbk-sidebar" aria-label={title}>
+    <aside className="csbk-sidebar" aria-label={label}>
       <div className="csbk-sidebar__header">{title}</div>
       <div className="csbk-sidebar__body">{children}</div>
     </aside>
