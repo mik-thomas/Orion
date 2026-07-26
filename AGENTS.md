@@ -45,7 +45,7 @@ This is Orion app login, not HMCTS SSO. Logged-out users are redirected to `/log
 
 ## Tasks
 
-Bench Chair creates tasks at `/tasks` (assigned to Deputy by default). Deputies update status and `report_notes`. Developer has full access. Seeded demo tasks: rota coverage, appraisals follow-up, LOA return report.
+Bench Chair creates tasks at `/tasks` (assigned to Deputy by default). Deputies update status and `report_notes`. Developer has full access. Seeds only create login users — not demo tasks, cases, or notes.
 
 ## Railway production (monorepo)
 

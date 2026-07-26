@@ -80,7 +80,7 @@ Verify: `npm run verify:pii-gate`. This is Orion app login, not HMCTS SSO yet.
 
 ## Tasks (delegation)
 
-Bench Chair creates tasks and delegates them to the Deputy (`/tasks`). Deputies update status and report notes; Bench Chair and Developer see all tasks and summary counts. Seeded demo tasks appear after `db:seed`.
+Bench Chair creates tasks and delegates them to the Deputy (`/tasks`). Deputies update status and report notes; Bench Chair and Developer see all tasks and summary counts. `db:seed` creates login accounts only — not demo tasks, cases, or notes.
 
 | Who | Can do |
 | --- | --- |
